@@ -53,7 +53,7 @@ export async function logActivity(logData: {
       createdAt: serverTimestamp(),
     });
   } catch (err) {
-    console.warn('Firestore logActivity notice:', err);
+    console.warn('Supabase logActivity notice:', err);
   }
 }
 
@@ -87,7 +87,7 @@ export async function createNotification(data: {
       createdAt: serverTimestamp(),
     });
   } catch (err) {
-    console.warn('Firestore createNotification notice:', err);
+    console.warn('Supabase createNotification notice:', err);
   }
 }
 
@@ -97,7 +97,7 @@ export async function markNotificationAsRead(notificationId: string) {
       read: true,
     });
   } catch (err) {
-    console.warn('Firestore markNotificationAsRead notice:', err);
+    console.warn('Supabase markNotificationAsRead notice:', err);
   }
 }
 
@@ -139,7 +139,7 @@ export async function createTask(
     });
     generatedId = taskDocRef.id;
   } catch (err) {
-    console.warn('Firestore addDoc task notice:', err);
+    console.warn('Supabase addDoc task notice:', err);
   }
 
   // Persist locally for instant multi-tab sync
@@ -395,7 +395,7 @@ export async function endTask(
       updatedAt: serverTimestamp(),
     });
   } catch (err) {
-    console.warn('Firestore endTask notice:', err);
+    console.warn('Supabase endTask notice:', err);
   }
 
   patchLocalTask(taskId, (t) => ({ ...t, status: 'completed', updatedAt: new Date().toISOString() as any }));
@@ -422,7 +422,7 @@ export async function archiveTask(
       updatedAt: serverTimestamp(),
     });
   } catch (err) {
-    console.warn('Firestore archiveTask notice:', err);
+    console.warn('Supabase archiveTask notice:', err);
   }
 
   patchLocalTask(taskId, (t) => ({ ...t, status: 'archived', updatedAt: new Date().toISOString() as any }));
@@ -456,7 +456,7 @@ export async function approveTask(
     targetIdentifier = task.assignedTo[0].toLowerCase().trim();
   }
 
-  // Resolve UID by looking up in Firestore or local users
+  // Resolve UID by looking up in Supabase or local users
   if (!resolvedUid && targetIdentifier) {
     if (targetIdentifier.startsWith('user_') || targetIdentifier === 'owner_super_admin') {
       resolvedUid = targetIdentifier;
@@ -808,8 +808,8 @@ export async function deleteTask(
   try {
     await deleteDoc(doc(db, 'tasks', taskId));
   } catch (err) {
-    console.warn('Firestore deleteDoc notice (proceeding with local cleanup):', err);
-    // Re-throw only if we could not delete from Firestore and local also has no entry;
+    console.warn('Supabase deleteDoc notice (proceeding with local cleanup):', err);
+    // Re-throw only if we could not delete from Supabase and local also has no entry;
     // For offline-first resilience we still clean local below and let caller handle success.
     // To surface hard failures, rethrow if desired – but don't block local cleanup.
     // We intentionally do NOT rethrow here to allow offline deletion to appear successful via local cache.
@@ -855,7 +855,7 @@ export async function manualOCoinAdjustment(params: {
   const finalType: OCoinTransactionType = params.type || (isDeduction ? 'penalty_deduction' : 'manual_reward');
   const delta = isDeduction ? -Math.abs(amount) : Math.abs(amount);
 
-  // 1. Fetch fresh balance from Firestore to prevent race conditions
+  // 1. Fetch fresh balance from Supabase to prevent race conditions
   let currentBalance = Number(targetUser.oCoinsBalance) || 0;
   if (targetUser.uid) {
     try {
@@ -977,7 +977,7 @@ export async function deleteOCoinTransaction(
   try {
     await deleteDoc(doc(db, 'oCoins', transactionId));
   } catch (err) {
-    console.warn('deleteOCoinTransaction Firestore error:', err);
+    console.warn('deleteOCoinTransaction Supabase error:', err);
   }
 
   logActivity({
@@ -1000,7 +1000,7 @@ export async function clearAllOCoinTransactions(
     snap.docs.forEach((d) => batch.delete(d.ref));
     await batch.commit();
   } catch (err) {
-    console.warn('clearAllOCoinTransactions Firestore error:', err);
+    console.warn('clearAllOCoinTransactions Supabase error:', err);
   }
 
   logActivity({
@@ -1047,7 +1047,7 @@ export async function addAuthorizedUser(
     await setDoc(docRef, newUser);
     await setDoc(doc(db, 'users', generatedUid), userProfileDoc);
   } catch (err) {
-    console.warn('Firestore setDoc notice (synced locally):', err);
+    console.warn('Supabase setDoc notice (synced locally):', err);
   }
 
   // Always update local stores & trigger event so UI updates instantly
@@ -1097,7 +1097,7 @@ export async function updateUserAccess(
   try {
     await updateDoc(docRef, updates);
   } catch (err) {
-    console.warn('Firestore updateUserAccess notice:', err);
+    console.warn('Supabase updateUserAccess notice:', err);
   }
 
   try {
@@ -1137,7 +1137,7 @@ export async function removeAuthorizedUser(
   try {
     await updateDoc(docRef, { status: 'disabled' });
   } catch (err) {
-    console.warn('Firestore removeAuthorizedUser notice:', err);
+    console.warn('Supabase removeAuthorizedUser notice:', err);
   }
 
   try {
@@ -1191,7 +1191,7 @@ export async function addAuthorizedAdmin(
 
   await setDoc(docRef, payload, { merge: true });
 
-  // Also sync with users collection for Firestore Rules and local storage
+  // Also sync with users collection for Supabase Rules and local storage
   const generatedUid = 'user_' + emailKey.replace(/[^a-z0-9]/g, '_');
   try {
     await setDoc(doc(db, 'users', generatedUid), {
