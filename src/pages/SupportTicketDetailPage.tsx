@@ -39,6 +39,7 @@ import { SkeletonCard } from '@/components/ui/skeleton';
 import { formatDate, formatRelative, cn } from '@/utils';
 import { toast } from 'sonner';
 import { isAdminRole } from '@/utils/permissions';
+import type { UserRole } from '@/types';
 import {
   TICKET_CATEGORY_CONFIG,
   TICKET_STATUS_CONFIG,

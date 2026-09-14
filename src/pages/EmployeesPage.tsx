@@ -20,7 +20,7 @@ import { subscribeBans, createBan, endBan, getActiveBan } from '@/lib/bans';
 import { AdminActionConfirmModal } from '@/components/auth/AdminActionConfirmModal';
 import type { AdminActionType } from '@/lib/action-auth';
 import { generateEmployeeCode } from '@/lib/attendance';
-import { canManageRole, isTopTierRole, getRoleLabel, getRoleColor } from '@/utils/permissions';
+import { canManageRole, isTopTierRole, getRoleLabel, getRoleColor, isAdminRole } from '@/utils/permissions';
 
 const AVAILABLE_PERMISSIONS: { key: Permission; label: string }[] = [
   { key: 'employees.manage' as Permission, label: 'إدارة الموظفين (manageEmployees)' },

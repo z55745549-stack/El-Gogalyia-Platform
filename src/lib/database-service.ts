@@ -26,6 +26,7 @@ import type {
   AuthorizedUser,
   AuthorizedAdmin,
   UserProfile,
+  UserRole,
   NotificationType,
   ActivityLog,
   OCoinTransaction,
