@@ -24,4 +24,17 @@ export default defineConfig({
       '/api': process.env.VITE_API_PROXY_TARGET || 'http://localhost:3000',
     },
   },
+  build: {
+    chunkSizeWarningLimit: 1200,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-supabase': ['@supabase/supabase-js'],
+          'vendor-icons': ['lucide-react'],
+          'vendor-export': ['jspdf', 'xlsx'],
+        },
+      },
+    },
+  },
 });

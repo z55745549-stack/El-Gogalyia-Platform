@@ -17,6 +17,7 @@ import {
   getGreeting, getFirstName, formatDate, formatOCoins, isOverdue, formatRelative, cn, safeDate
 } from '@/utils';
 import { getUserTaskStatus } from '@/lib/database-service';
+import { subscribeBans, getActiveBan } from '@/lib/bans';
 import type { Task, TaskStatus, OCoinTransaction, Notification, Meeting } from '@/types';
 import type { SupportTicket } from '@/types/support';
 
@@ -136,18 +137,10 @@ export function EmployeeDashboard() {
 
   useEffect(() => {
     if (!userProfile?.uid) return;
-    const check = async () => {
-      try {
-        const { subscribeBans, getActiveBan } = await import('@/lib/bans');
-        const unsub = subscribeBans((list) => {
-          const active = getActiveBan(list, userProfile.uid);
-          setActiveBan(active);
-        });
-        return unsub;
-      } catch {}
-    };
-    let unsub: any;
-    check().then((u) => { unsub = u; });
+    const unsub = subscribeBans((list) => {
+      const active = getActiveBan(list, userProfile.uid);
+      setActiveBan(active);
+    });
     return () => { if (unsub) unsub(); };
   }, [userProfile?.uid]);
 
