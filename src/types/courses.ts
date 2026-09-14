@@ -1,4 +1,4 @@
-import { Timestamp } from 'firebase/firestore';
+import type { Timestamp } from './index';
 
 export type CourseStatus = 'draft' | 'published' | 'unpublished' | 'archived';
 export type CourseLevel = 'all' | 'beginner' | 'intermediate' | 'advanced';

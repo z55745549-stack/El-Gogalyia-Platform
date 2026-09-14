@@ -11,10 +11,10 @@ import {
   onSnapshot,
   serverTimestamp,
   increment,
-  writeBatch
-} from 'firebase/firestore';
-import { db } from './firebase';
-import { logActivity } from './firestore';
+  writeBatch,
+  db,
+} from './supabase';
+import { logActivity } from './database-service';
 import type { AttendanceSession, AttendanceRecord, AttendanceSessionStatus } from '@/types/attendance';
 import type { UserProfile } from '@/types';
 

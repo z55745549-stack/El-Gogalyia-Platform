@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
-import { doc, updateDoc, query, collection, where, getDocs, serverTimestamp } from 'firebase/firestore';
-import { signInWithPopup, signOut as firebaseSignOut } from 'firebase/auth';
-import { auth, db, googleProvider } from '@/lib/firebase';
+import { doc, updateDoc, query, collection, where, getDocs, serverTimestamp, db, auth, googleProvider, signInWithPopup, signOut as appSignOut } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -149,7 +147,7 @@ export function SettingsPage() {
       const emailLower = (googleUser.email || '').trim().toLowerCase();
 
       if (!emailLower) {
-        await firebaseSignOut(auth);
+        await appSignOut();
         toast.error('لم نتمكن من قراءة البريد الإلكتروني لحساب Google.');
         return;
       }

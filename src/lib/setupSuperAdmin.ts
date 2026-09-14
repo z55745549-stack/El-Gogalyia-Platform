@@ -7,8 +7,7 @@
  * Global window injection has been removed for OWASP security compliance.
  */
 
-import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from './firebase';
+import { doc, setDoc, getDoc, serverTimestamp, db } from './supabase';
 import { hashPassword, generateSalt } from './auth-security';
 import type { UserProfile } from '@/types';
 

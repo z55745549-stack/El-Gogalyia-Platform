@@ -12,9 +12,9 @@ import {
   onSnapshot,
   serverTimestamp,
   writeBatch,
-} from 'firebase/firestore';
-import { db } from './firebase';
-import { logActivity, createNotification } from './firestore';
+  db,
+} from './supabase';
+import { logActivity, createNotification } from './database-service';
 import { importYouTubePlaylist } from './youtube';
 import type {
   Course,

@@ -3,8 +3,7 @@
  * Captures sensitive administrative events, role modifications, financial changes, and data access.
  * Compliant with OWASP Security Logging and Monitoring requirements.
  */
-import { collection, addDoc, serverTimestamp, query, orderBy, limit, getDocs } from 'firebase/firestore';
-import { db } from './firebase';
+import { collection, addDoc, serverTimestamp, query, orderBy, limit, getDocs, db } from './supabase';
 
 export interface AuditEntry {
   actorId: string;

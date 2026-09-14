@@ -1,5 +1,4 @@
-import { collection, doc, setDoc, getDocs, updateDoc, deleteDoc, serverTimestamp, query, onSnapshot } from 'firebase/firestore';
-import { db } from './firebase';
+import { collection, doc, setDoc, getDocs, updateDoc, deleteDoc, serverTimestamp, query, onSnapshot, db } from './supabase';
 import type { Committee } from '@/types';
 import { DEFAULT_COMMITTEES } from '@/types';
 

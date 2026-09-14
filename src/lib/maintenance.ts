@@ -1,6 +1,5 @@
-import { doc, setDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
-import { db } from './firebase';
-import { logActivity } from './firestore';
+import { doc, setDoc, onSnapshot, serverTimestamp, db } from './supabase';
+import { logActivity } from './database-service';
 
 export interface MaintenanceConfig {
   enabled: boolean;

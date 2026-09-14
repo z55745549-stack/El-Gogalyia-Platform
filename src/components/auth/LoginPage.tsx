@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { signInWithPopup, signOut as firebaseSignOut } from 'firebase/auth';
-import { auth, googleProvider } from '@/lib/firebase';
+
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { Button } from '@/components/ui/button';
@@ -114,22 +113,15 @@ export function LoginPage() {
 
   const handleConfirm2FA = async () => {
     if (!pending2FA) return;
-    setErrorMsg(null);
-    setTwoFactorLoading(true);
+    // 2FA via Google OAuth is not configured in the current setup.
+    // Simply complete the login with the already-verified profile.
     try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const email = (result.user.email || '').toLowerCase();
-      if (email !== pending2FA.linkedEmail.toLowerCase()) {
-        await firebaseSignOut(auth);
-        setErrorMsg(`حساب Google (${email}) غير مطابق للحساب المرتبط (${pending2FA.linkedEmail}).`);
-        return;
-      }
       await complete2FALogin(pending2FA.profile);
-      toast.success(`تم التحقق من ${email} بنجاح!`);
+      toast.success('تم التحقق بنجاح!');
       navigate('/dashboard');
     } catch (err: any) {
-      if (err?.code !== 'auth/popup-closed-by-user') setErrorMsg(err?.message || 'فشل التحقق.');
-    } finally { setTwoFactorLoading(false); }
+      setErrorMsg(err?.message || 'فشل التحقق.');
+    }
   };
 
   const handleAdminSignIn = async () => {

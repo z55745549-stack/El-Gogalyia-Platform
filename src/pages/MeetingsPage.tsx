@@ -25,7 +25,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { SkeletonCard } from '@/components/ui/skeleton';
 import { formatDate, cn } from '@/utils';
 import type { Meeting, MeetingType, MeetingStatus } from '@/types';
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp } from '@/lib/supabase';
 
 const TYPE_OPTIONS: { value: MeetingType; label: string }[] = [
   { value: 'general', label: 'اجتماع عام (General)' },

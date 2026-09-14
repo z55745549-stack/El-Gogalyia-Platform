@@ -15,8 +15,8 @@ import {
   writeBatch,
   Timestamp,
   onSnapshot,
-} from 'firebase/firestore';
-import { db } from './firebase';
+  db,
+} from './supabase';
 import type {
   Task,
   TaskStatus,

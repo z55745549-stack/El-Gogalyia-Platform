@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, db } from '@/lib/supabase';
 import { BarChart3, Download, Users, CheckCircle, AlertTriangle, Coins, TrendingUp } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
-import { db } from '@/lib/firebase';
 import { StatCard } from '@/components/ui/stat-card';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';

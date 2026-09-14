@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { collection, query, onSnapshot } from 'firebase/firestore';
+import { collection, query, onSnapshot, db } from '@/lib/supabase';
 import {
   Plus,
   Search,
@@ -13,9 +13,8 @@ import {
   Archive
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
-import { deleteTask, endTask, archiveTask } from '@/lib/firestore';
+import { deleteTask, endTask, archiveTask } from '@/lib/database-service';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';

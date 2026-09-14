@@ -1,4 +1,11 @@
-import { Timestamp } from 'firebase/firestore';
+// ─── Timestamp compatibility ─────────────────────────────────────────────────
+// Supports both Timestamp objects and ISO string dates (Supabase)
+export interface Timestamp {
+  seconds: number;
+  nanoseconds: number;
+  toDate(): Date;
+  toMillis(): number;
+}
 
 // ─── User & Auth ────────────────────────────────────────────────────────────
 

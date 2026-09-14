@@ -12,10 +12,10 @@ import {
   serverTimestamp,
   Timestamp,
   increment,
-  writeBatch
-} from 'firebase/firestore';
-import { db } from './firebase';
-import { logActivity, createNotification } from './firestore';
+  writeBatch,
+  db,
+} from './supabase';
+import { logActivity, createNotification } from './database-service';
 import type {
   SupportTicket,
   TicketMessage,

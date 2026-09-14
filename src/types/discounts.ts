@@ -1,4 +1,4 @@
-import { Timestamp } from 'firebase/firestore';
+import type { Timestamp } from './index';
 
 export type DiscountType = 'percentage' | 'fixed' | 'voucher' | 'partner' | 'special';
 export type DiscountStatus = 'active' | 'inactive' | 'expired' | 'archived';

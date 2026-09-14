@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, db } from '@/lib/supabase';
 import {
   CheckCircle2,
   QrCode,
@@ -16,7 +16,6 @@ import {
   HelpCircle,
   LogIn
 } from 'lucide-react';
-import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { recordAttendance, ensureUserEmployeeCode } from '@/lib/attendance';
 import { Button } from '@/components/ui/button';

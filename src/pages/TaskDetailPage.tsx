@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { doc, onSnapshot, collection, query, orderBy } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, orderBy, db } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, Calendar, Coins, User, AlertTriangle, CheckCircle, CheckCircle2,
@@ -8,7 +8,6 @@ import {
   Sparkles, ExternalLink, ShieldCheck, MessageSquare
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import {
   approveTask,
@@ -18,7 +17,7 @@ import {
   endTask,
   archiveTask,
   getUserTaskStatus,
-} from '@/lib/firestore';
+} from '@/lib/database-service';
 import { Button } from '@/components/ui/button';
 import { StatusBadge, PriorityBadge } from '@/components/ui/status-badge';
 import { Modal } from '@/components/ui/modal';

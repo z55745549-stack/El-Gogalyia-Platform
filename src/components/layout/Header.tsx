@@ -11,8 +11,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { AdminActionConfirmModal } from '@/components/auth/AdminActionConfirmModal';
 import { getRoleLabel } from '@/utils/permissions';
 import { formatRelative, getNotificationEmoji, cn } from '@/utils';
-import { doc, updateDoc, writeBatch, collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { doc, updateDoc, writeBatch, collection, query, where, getDocs, db } from '@/lib/supabase';
 import { toast } from 'sonner';
 
 interface HeaderProps {

@@ -44,7 +44,7 @@ export function parseErrorMessage(error: unknown, defaultMessage = ERROR_MESSAGE
   if (error instanceof Error) {
     const msg = error.message;
 
-    // Map common Firebase and standard error patterns to safe Arabic messages
+    // Map common database and standard error patterns to safe Arabic messages
     if (msg.includes('permission-denied') || msg.includes('PERMISSION_DENIED') || msg.includes('Missing or insufficient permissions')) {
       return ERROR_MESSAGES.FORBIDDEN;
     }

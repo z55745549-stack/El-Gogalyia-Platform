@@ -1,3 +1,5 @@
+import { supabase } from './supabase';
+
 export interface UploadedFile {
   name: string;
   url: string;
@@ -7,8 +9,8 @@ export interface UploadedFile {
 }
 
 /**
- * Local Task Attachment Helper (Zero Firebase Storage requirement)
- * Converts attached file into metadata/local DataURL so no paid Firebase Storage bucket is needed.
+ * Upload attachment to Supabase Storage bucket 'attachments'
+ * Fallback to local DataURL if Supabase storage upload encounters issues.
  */
 export async function uploadTaskAttachment(
   taskId: string,
@@ -16,8 +18,40 @@ export async function uploadTaskAttachment(
   file: File,
   onProgress?: (progress: number) => void
 ): Promise<UploadedFile> {
-  if (onProgress) onProgress(50);
+  if (onProgress) onProgress(30);
 
+  const cleanName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const filePath = `tasks/${taskId}/${Date.now()}_${userId}_${cleanName}`;
+
+  try {
+    const { data, error } = await supabase.storage
+      .from('attachments')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: true,
+      });
+
+    if (onProgress) onProgress(80);
+
+    if (!error && data) {
+      const { data: pubUrlData } = supabase.storage
+        .from('attachments')
+        .getPublicUrl(data.path);
+
+      if (onProgress) onProgress(100);
+      return {
+        name: file.name,
+        url: pubUrlData.publicUrl,
+        size: file.size,
+        type: file.type,
+        path: data.path,
+      };
+    }
+  } catch (err) {
+    console.warn('Supabase storage notice, falling back to local data:', err);
+  }
+
+  // Fallback to Data URL
   return new Promise((resolve) => {
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -27,11 +61,9 @@ export async function uploadTaskAttachment(
         url: typeof reader.result === 'string' ? reader.result : '',
         size: file.size,
         type: file.type,
-        path: `local_attachments/${file.name}`,
+        path: filePath,
       });
     };
-
-    // If file is large or binary, convert to Data URL for direct local viewing
     reader.readAsDataURL(file);
   });
 }

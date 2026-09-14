@@ -1,16 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, db } from '@/lib/supabase';
 import { CheckSquare, Calendar, Coins, ArrowLeft, ShieldAlert } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { StatusBadge, PriorityBadge } from '@/components/ui/status-badge';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SkeletonCard } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { formatDate, isOverdue, cn, safeDate } from '@/utils';
-import { getUserTaskStatus } from '@/lib/firestore';
+import { getUserTaskStatus } from '@/lib/database-service';
 import type { Task, TaskStatus } from '@/types';
 
 const TABS = [

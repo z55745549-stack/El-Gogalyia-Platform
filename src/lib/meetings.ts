@@ -1,6 +1,5 @@
 // @ts-nocheck
-import { collection, doc, setDoc, getDocs, getDoc, updateDoc, deleteDoc, serverTimestamp, query, orderBy, onSnapshot, Timestamp } from 'firebase/firestore';
-import { db } from './firebase';
+import { collection, doc, setDoc, getDocs, getDoc, updateDoc, deleteDoc, serverTimestamp, query, orderBy, onSnapshot, Timestamp, db } from './supabase';
 import type { Meeting } from '@/types';
 import { canViewAllBans } from './security';
 import { createMeetingSchema, sanitizeInput } from './validation';
@@ -62,7 +61,7 @@ export async function createMeeting(data: Omit<Meeting, 'id' | 'createdAt' | 'up
   // notify all employees (best effort)
   try {
     const usersSnap = await getDocs(collection(db, 'users'));
-    const { createNotification } = await import('./firestore');
+    const { createNotification } = await import('./database-service');
     for (const d of usersSnap.docs) {
       const u: any = d.data();
       if (u.status !== 'active') continue;
@@ -80,7 +79,7 @@ export async function createMeeting(data: Omit<Meeting, 'id' | 'createdAt' | 'up
   } catch {}
 
   try {
-    const { logActivity } = await import('./firestore');
+    const { logActivity } = await import('./database-service');
     await logActivity({ actor: creator.email, actorName: creator.displayName, action: 'meeting.created' as any, targetType: 'meeting' as any, targetId: id, targetName: meeting.title, metadata: { location: meeting.location } });
   } catch {}
 
@@ -102,7 +101,7 @@ export async function updateMeeting(id: string, updates: Partial<Meeting>, actor
     writeLocal(list);
   }
   try {
-    const { logActivity } = await import('./firestore');
+    const { logActivity } = await import('./database-service');
     await logActivity({ actor: actor.email, actorName: actor.displayName, action: 'meeting.updated' as any, targetType: 'meeting' as any, targetId: id, targetName: updates.title || id, metadata: updates as any });
   } catch {}
 }
@@ -118,7 +117,7 @@ export async function deleteMeeting(id: string, title: string, actor: { email: s
   const list = readLocal().filter(m => m.id !== id);
   writeLocal(list);
   try {
-    const { logActivity } = await import('./firestore');
+    const { logActivity } = await import('./database-service');
     await logActivity({ actor: actor.email, actorName: actor.displayName, action: 'meeting.deleted' as any, targetType: 'meeting' as any, targetId: id, targetName: title, metadata: {} });
   } catch {}
 }

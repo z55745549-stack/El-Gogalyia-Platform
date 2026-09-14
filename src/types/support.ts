@@ -1,4 +1,4 @@
-import { Timestamp } from 'firebase/firestore';
+import type { Timestamp } from './index';
 
 export type TicketCategory =
   | 'technical'      // مشاكل تقنية ونظام

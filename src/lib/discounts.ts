@@ -12,9 +12,9 @@ import {
   serverTimestamp,
   increment,
   runTransaction,
-} from 'firebase/firestore';
-import { db } from './firebase';
-import { logActivity, createNotification } from './firestore';
+  db,
+} from './supabase';
+import { logActivity, createNotification } from './database-service';
 import type { Discount, DiscountPurchase, DiscountStatus, UserProfile } from '@/types';
 
 // ─── 1. Create Discount (Admin) ──────────────────────────────────────────────

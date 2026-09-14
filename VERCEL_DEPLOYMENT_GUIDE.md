@@ -22,13 +22,9 @@
 3. اضغط على **Add New...** -> **Project**.
 4. اختر المستودع الخاص بـ **SAAS Work Hub** واضغط **Import**.
 5. في شاشة الإعدادات (**Environment Variables**):
-   - أضف متغيرات بيئة الفايربيز التالية (من ملف `.env.local`):
-     - `VITE_FIREBASE_API_KEY`
-     - `VITE_FIREBASE_AUTH_DOMAIN`
-     - `VITE_FIREBASE_PROJECT_ID`
-     - `VITE_FIREBASE_STORAGE_BUCKET`
-     - `VITE_FIREBASE_MESSAGING_SENDER_ID`
-     - `VITE_FIREBASE_APP_ID`
+   - أضف متغيرات بيئة Supabase التالية (من ملف `.env.local`):
+     - `VITE_SUPABASE_URL`
+     - `VITE_SUPABASE_ANON_KEY`
    - **مهم للتأكيدات الإدارية (Environmental Variables for the serverless API):**
      أضف نفس قيم التفويض الموجودة في `.env.local` (بدون بادئة `VITE_` لأنها أسرار تُقرأ فقط سيرفراً):
      - `ADD_EMPLOYEE_CONFIRM_USERNAME` و `ADD_EMPLOYEE_CONFIRM_PASSWORD`

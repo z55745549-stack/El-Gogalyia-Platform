@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
-import { collection, onSnapshot, doc, setDoc, updateDoc, deleteDoc, getDocs, query, where, serverTimestamp } from 'firebase/firestore';
+import { collection, onSnapshot, doc, setDoc, updateDoc, deleteDoc, getDocs, query, where, serverTimestamp, db } from '@/lib/supabase';
 import { motion } from 'framer-motion';
 import {
   Users, UserPlus, Shield, MoreVertical, KeyRound, Edit3, Trash2, UserX, UserCheck, Search, CheckSquare, Ban as BanIcon, Gavel, AlertTriangle
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { generateSalt, hashPassword } from '@/lib/auth-security';
 import { Button } from '@/components/ui/button';

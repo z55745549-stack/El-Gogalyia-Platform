@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
-  collection, query, where, orderBy, onSnapshot, limit,
-} from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+  collection, query, where, orderBy, onSnapshot, limit, db,
+} from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import type { Notification } from '@/types';
 

@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, query, where, getDocs, doc, updateDoc, writeBatch } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, writeBatch, db } from '@/lib/supabase';
 import { Bell, CheckCheck, Inbox, Sparkles, Filter, CheckCircle2, ChevronLeft, ArrowUpRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { useNotifications } from '@/hooks/useNotifications';
 import { Button } from '@/components/ui/button';

@@ -1,37 +1,19 @@
 /**
- * HARDENED & SECURE AUTHENTICATION CONTEXT (SaaS WorkHub)
- * 
+ * HARDENED & SECURE AUTHENTICATION CONTEXT — GDG HITU Platform
+ *
  * Authentication Architecture:
- * 1. Team Members / Students: Secure username & password with PBKDF2 cryptographic hashing.
- * 2. Administrators: Google OAuth with server-side / Firestore authorized whitelist verification.
- * 3. Real-time account status & role synchronization.
- * 4. Two-Factor Authentication (2FA) support with Google account linking.
+ * 1. Tier 0 – Master / Seed Accounts (local predefined, instant access).
+ * 2. Tier 1 – Supabase direct-id lookup  ('user_<username>').
+ * 3. Tier 2 – Supabase query by username or email.
+ * 4. PBKDF2 cryptographic password hashing.
+ * 5. Two-Factor Authentication (2FA) support.
  */
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import {
-  signInAnonymously,
-  signInWithPopup,
-  signOut as firebaseSignOut,
-  type User,
-} from 'firebase/auth';
-import {
-  doc,
-  getDoc,
-  getDocs,
-  setDoc,
-  updateDoc,
-  collection,
-  query,
-  where,
-  limit,
-  onSnapshot,
-  serverTimestamp,
-} from 'firebase/firestore';
-import { auth, db, googleProvider } from '@/lib/firebase';
+import { supabase } from '@/lib/supabase';
 import { verifyPassword, generateSalt, hashPassword } from '@/lib/auth-security';
 import { parseErrorMessage, logError } from '@/lib/errors';
-import type { UserProfile, Permission, AuthorizedAdmin } from '@/types';
+import type { UserProfile, Permission } from '@/types';
 
 // -------------------------------------------------------------------
 // Login Rate Limiter (In-memory + Session scoped protection)
@@ -108,225 +90,78 @@ function loadSavedUid(): string | null {
 }
 
 // -------------------------------------------------------------------
-// Fetch fresh UserProfile from Firestore
+// Fetch fresh UserProfile from Supabase
 // -------------------------------------------------------------------
-async function fetchProfileFromFirestore(uid: string): Promise<UserProfile | null> {
+async function fetchProfileFromSupabase(uid: string): Promise<UserProfile | null> {
   try {
-    const snap = await getDoc(doc(db, 'users', uid));
-    if (snap.exists()) {
-      const data = snap.data();
-      const { passwordHash: _ph, salt: _s, ...safeData } = data as any;
-      return { uid: snap.id, ...safeData } as UserProfile;
-    }
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', uid)
+      .single();
+
+    if (error || !data) return null;
+
+    return mapRowToProfile(data);
   } catch (err) {
-    logError('fetchProfileFromFirestore', err);
+    logError('fetchProfileFromSupabase', err);
+    return null;
   }
-  return null;
 }
 
 // -------------------------------------------------------------------
-// Context Definition
+// Map a Supabase users row → UserProfile shape
 // -------------------------------------------------------------------
-interface AuthContextValue {
-  user: User | null;
-  userProfile: UserProfile | null;
-  loading: boolean;
-  unauthorized: boolean;
-  signInWithUsername: (username: string, password: string) => Promise<boolean | { requires2FA: true; linkedEmail: string; profile: UserProfile }>;
-  complete2FALogin: (profile: UserProfile) => Promise<boolean>;
-  signInWithGoogleAdmin: () => Promise<boolean>;
-  updateCurrentUserProfile: (updated: Partial<UserProfile>) => Promise<void>;
-  signOut: () => Promise<void>;
-  hasPermission: (perm: Permission) => boolean;
+function mapRowToProfile(row: any): UserProfile {
+  return {
+    uid: row.id,
+    username: row.username,
+    displayName: row.display_name,
+    email: row.email ?? '',
+    photoURL: row.photo_url ?? '',
+    role: row.role,
+    status: row.status,
+    committeeId: row.committee_id ?? undefined,
+    committeeName: row.committee_name ?? undefined,
+    employeeCode: row.employee_code ?? undefined,
+    oCoinsBalance: row.o_coins_balance ?? 0,
+    permissions: row.permissions ?? [],
+    isTwoFactorEnabled: row.is_two_factor_enabled ?? false,
+    googleLinkedEmail: row.google_linked_email ?? undefined,
+    createdAt: row.created_at,
+    passwordHash: row.password_hash ?? undefined,
+    salt: row.salt ?? undefined,
+  };
 }
 
-const AuthContext = createContext<AuthContextValue | null>(null);
-
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [unauthorized, setUnauthorized] = useState(false);
-
-  // -------------------------------------------------------------------
-  // On Mount: restore session from saved UID and verify against Firestore
-  // -------------------------------------------------------------------
-  useEffect(() => {
-    const savedUid = loadSavedUid();
-    if (!savedUid) {
-      setLoading(false);
-      return;
-    }
-
-    (async () => {
-      try {
-        if (!auth.currentUser) {
-          await signInAnonymously(auth);
-        }
-      } catch (err) {
-        logError('AuthInitAnonymous', err);
-      }
-
-      let profile = await fetchProfileFromFirestore(savedUid);
-
-      if (!profile) {
-        clearSession();
-        setLoading(false);
-        return;
-      }
-
-      if (profile.status === 'suspended' || profile.status === 'inactive') {
-        clearSession();
-        setUnauthorized(true);
-        setLoading(false);
-        return;
-      }
-
-      setUser({ uid: profile.uid, displayName: profile.displayName } as User);
-      setUserProfile(profile);
-      setLoading(false);
-    })();
-  }, []);
-
-  // -------------------------------------------------------------------
-  // Realtime Sync Listener from Firestore
-  // -------------------------------------------------------------------
-  useEffect(() => {
-    if (!userProfile?.uid) return;
-
-    let unsub: (() => void) | null = null;
-    try {
-      const ref = doc(db, 'users', userProfile.uid);
-      unsub = onSnapshot(ref, (snap) => {
-        if (snap.exists()) {
-          const data = snap.data() as any;
-          const { passwordHash: _ph, salt: _s, ...safeData } = data;
-          const updated: UserProfile = { uid: snap.id, ...safeData };
-
-          if (updated.status === 'suspended' || updated.status === 'inactive') {
-            clearSession();
-            setUser(null);
-            setUserProfile(null);
-            setUnauthorized(true);
-            return;
-          }
-
-          setUserProfile(updated);
-          saveSession(updated);
-        }
-      }, (err) => {
-        logError('FirestoreUserSnapshot', err);
-      });
-    } catch (err) {
-      logError('UserSnapshotInit', err);
-    }
-
-    return () => {
-      if (unsub) unsub();
-    };
-  }, [userProfile?.uid]);
-
-  // -------------------------------------------------------------------
-  // signInWithGoogleAdmin — Google Sign-In for Whitelisted Admins
-  // -------------------------------------------------------------------
-  const signInWithGoogleAdmin = useCallback(async (): Promise<boolean> => {
-    setLoading(true);
-    setUnauthorized(false);
-
-    try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const googleUser = result.user;
-      const emailLower = (googleUser.email || '').trim().toLowerCase();
-
-      if (!emailLower) {
-        await firebaseSignOut(auth);
-        setLoading(false);
-        throw new Error('لم يتم العثور على بريد إلكتروني مرتبط بحساب Google هذا.');
-      }
-
-      let isAdminAuthorized = false;
-      let adminRole: 'superAdmin' | 'admin' = 'admin';
-      let adminDisplayName = googleUser.displayName || emailLower.split('@')[0];
-
-      // Check 1: authorized_admins collection whitelist in Firestore
-      try {
-        const adminSnap = await getDoc(doc(db, 'authorized_admins', emailLower));
-        if (adminSnap.exists()) {
-          const adminData = adminSnap.data() as AuthorizedAdmin;
-          if (adminData.status === 'active') {
-            isAdminAuthorized = true;
-            adminRole = adminData.role || 'admin';
-            if (adminData.displayName) adminDisplayName = adminData.displayName;
-          }
-        }
-      } catch (e) {
-        logError('authorized_admins check notice', e);
-      }
-
-      // Check 2: users collection check for admin/superAdmin role matching email
-      if (!isAdminAuthorized) {
-        try {
-          const q = query(collection(db, 'users'), where('email', '==', emailLower), limit(1));
-          const snap = await getDocs(q);
-          if (!snap.empty) {
-            const uData = snap.docs[0].data() as UserProfile;
-            if ((uData.role === 'admin' || uData.role === 'superAdmin') && uData.status === 'active') {
-              isAdminAuthorized = true;
-              adminRole = uData.role;
-              if (uData.displayName) adminDisplayName = uData.displayName;
-            }
-          }
-        } catch (e) {
-          logError('users admin email check notice', e);
-        }
-      }
-
-      if (!isAdminAuthorized) {
-        await firebaseSignOut(auth);
-        setLoading(false);
-        throw new Error(`حساب Google (${emailLower}) غير مصرح له بالدخول كمسؤول. يرجى التواصل مع مسؤول النظام لإضافة حسابك.`);
-      }
-
-      // Construct verified Admin Profile
-      const generatedUid = 'user_' + emailLower.replace(/[^a-z0-9]/g, '_');
-      const adminProfile: UserProfile = {
-        uid: generatedUid,
-        email: emailLower,
-        username: emailLower.split('@')[0],
-        displayName: adminDisplayName,
-        photoURL: googleUser.photoURL || '',
-        role: adminRole,
-        status: 'active',
-        permissions: [
-          'tasks.create', 'tasks.edit', 'tasks.delete', 'tasks.assign',
-          'tasks.review', 'tasks.view_all', 'employees.view', 'employees.manage',
-          'ocoins.manage', 'ocoins.view_all', 'reports.view', 'reports.export',
-          'access.manage', 'activity.view', 'notifications.send'
-        ],
-        oCoinsBalance: 5000,
-        createdAt: new Date().toISOString(),
-      };
-
-      // Sync user profile in Firestore
-      try {
-        await setDoc(doc(db, 'users', generatedUid), {
-          ...adminProfile,
-          updatedAt: serverTimestamp(),
-        }, { merge: true });
-      } catch (e) {
-        logError('Sync admin profile notice', e);
-      }
-
-      saveSession(adminProfile);
-      setUser(googleUser);
-      setUserProfile(adminProfile);
-      setLoading(false);
-      return true;
-    } catch (err: any) {
-      setLoading(false);
-      throw new Error(parseErrorMessage(err, 'تعذر إتمام تسجيل الدخول باستخدام Google.'));
-    }
-  }, []);
+// -------------------------------------------------------------------
+// Upsert user profile into Supabase
+// -------------------------------------------------------------------
+async function upsertProfileToSupabase(profile: UserProfile & { passwordHash?: string; salt?: string }) {
+  try {
+    await supabase.from('users').upsert({
+      id: profile.uid,
+      username: profile.username,
+      display_name: profile.displayName,
+      email: profile.email || null,
+      photo_url: profile.photoURL || null,
+      role: profile.role,
+      status: profile.status,
+      committee_id: profile.committeeId || null,
+      committee_name: profile.committeeName || null,
+      employee_code: profile.employeeCode || null,
+      o_coins_balance: profile.oCoinsBalance ?? 0,
+      permissions: profile.permissions ?? [],
+      is_two_factor_enabled: profile.isTwoFactorEnabled ?? false,
+      google_linked_email: profile.googleLinkedEmail || null,
+      password_hash: profile.passwordHash || null,
+      salt: profile.salt || null,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'id' });
+  } catch (err) {
+    logError('upsertProfileToSupabase', err);
+  }
+}
 
 // -------------------------------------------------------------------
 // Pre-configured Master / Seed Accounts
@@ -409,10 +244,86 @@ export const MASTER_ACCOUNTS: Record<string, {
   },
 };
 
+// -------------------------------------------------------------------
+// Context Definition
+// -------------------------------------------------------------------
+interface AuthContextValue {
+  user: { uid: string; displayName: string | null } | null;
+  userProfile: UserProfile | null;
+  loading: boolean;
+  unauthorized: boolean;
+  signInWithUsername: (username: string, password: string) => Promise<boolean | { requires2FA: true; linkedEmail: string; profile: UserProfile }>;
+  complete2FALogin: (profile: UserProfile) => Promise<boolean>;
+  signInWithGoogleAdmin: () => Promise<boolean>;
+  updateCurrentUserProfile: (updated: Partial<UserProfile>) => Promise<void>;
+  signOut: () => Promise<void>;
+  hasPermission: (perm: Permission) => boolean;
+}
+
+const AuthContext = createContext<AuthContextValue | null>(null);
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<{ uid: string; displayName: string | null } | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [unauthorized, setUnauthorized] = useState(false);
+
   // -------------------------------------------------------------------
-  // signInWithUsername — Student/Employee/Admin Login (PBKDF2 + Master Seed)
+  // On Mount: restore session and verify against Supabase
   // -------------------------------------------------------------------
-  const signInWithUsername = useCallback(async (usernameInput: string, passwordInput: string): Promise<boolean | { requires2FA: true; linkedEmail: string; profile: UserProfile }> => {
+  useEffect(() => {
+    const savedUid = loadSavedUid();
+    if (!savedUid) {
+      setLoading(false);
+      return;
+    }
+
+    (async () => {
+      // Check master accounts first (no DB call needed)
+      const masterEntry = Object.values(MASTER_ACCOUNTS).find(m => m.profile.uid === savedUid);
+      if (masterEntry) {
+        setUser({ uid: masterEntry.profile.uid, displayName: masterEntry.profile.displayName });
+        setUserProfile(masterEntry.profile);
+        setLoading(false);
+        return;
+      }
+
+      const profile = await fetchProfileFromSupabase(savedUid);
+
+      if (!profile) {
+        clearSession();
+        setLoading(false);
+        return;
+      }
+
+      if (profile.status === 'suspended' || profile.status === 'inactive') {
+        clearSession();
+        setUnauthorized(true);
+        setLoading(false);
+        return;
+      }
+
+      setUser({ uid: profile.uid, displayName: profile.displayName });
+      setUserProfile(profile);
+      setLoading(false);
+    })();
+  }, []);
+
+  // -------------------------------------------------------------------
+  // signInWithGoogleAdmin — Placeholder (kept for interface compatibility)
+  // Google OAuth via Supabase can be added later
+  // -------------------------------------------------------------------
+  const signInWithGoogleAdmin = useCallback(async (): Promise<boolean> => {
+    throw new Error('تسجيل الدخول بـ Google غير متاح حالياً. يرجى استخدام اسم المستخدم وكلمة المرور.');
+  }, []);
+
+  // -------------------------------------------------------------------
+  // signInWithUsername — Student/Employee/Admin Login
+  // -------------------------------------------------------------------
+  const signInWithUsername = useCallback(async (
+    usernameInput: string,
+    passwordInput: string
+  ): Promise<boolean | { requires2FA: true; linkedEmail: string; profile: UserProfile }> => {
     setLoading(true);
     setUnauthorized(false);
 
@@ -429,77 +340,63 @@ export const MASTER_ACCOUNTS: Record<string, {
       throw new Error('تم تجاوز الحد الأقصى لمحاولات تسجيل الدخول. يرجى المحاولة بعد 10 دقائق.');
     }
 
-    // Ensure Firebase Anonymous Auth is active for Firestore rules
-    try {
-      if (!auth.currentUser) {
-        await signInAnonymously(auth);
-      }
-    } catch (e) {
-      logError('Firebase pre-auth notice', e);
-    }
-
-    // ── Targeted Multi-tier Lookup ──────────────────────────────────
     let matchedProfile: (UserProfile & { passwordHash?: string; salt?: string }) | null = null;
     let isMasterVerified = false;
 
-    // Tier 0: Check Master / Pre-configured Admin Accounts
+    // ── Tier 0: Master / Pre-configured Accounts ──────────────────────
     const masterAccount = MASTER_ACCOUNTS[unameLower];
     if (masterAccount && masterAccount.passwords.includes(passClean)) {
       matchedProfile = { ...masterAccount.profile };
       isMasterVerified = true;
 
-      // Sync master profile to Firestore in background
+      // Sync master profile to Supabase in background
       try {
         const salt = generateSalt();
         const pHash = await hashPassword(passClean, salt);
-        await setDoc(doc(db, 'users', matchedProfile.uid), {
-          ...matchedProfile,
-          passwordHash: pHash,
-          salt,
-          updatedAt: serverTimestamp(),
-        }, { merge: true });
+        upsertProfileToSupabase({ ...matchedProfile, passwordHash: pHash, salt });
       } catch (e) {
-        logError('Firestore master account sync notice', e);
+        logError('Supabase master account sync notice', e);
       }
     }
 
-    // Tier 1: Direct Doc ID Lookup ('user_username')
+    // ── Tier 1: Direct ID Lookup ('user_username') ─────────────────────
     if (!matchedProfile) {
       const genUid = 'user_' + unameLower.replace(/[^a-z0-9]/g, '_');
       try {
-        const dSnap = await getDoc(doc(db, 'users', genUid));
-        if (dSnap.exists()) {
-          matchedProfile = { uid: dSnap.id, ...dSnap.data() } as any;
-        }
+        const { data } = await supabase.from('users').select('*').eq('id', genUid).single();
+        if (data) matchedProfile = mapRowToProfile(data) as any;
       } catch (e) {
-        logError('Direct doc lookup notice', e);
+        logError('Supabase direct id lookup notice', e);
       }
     }
 
-    // Tier 2: Query Firestore users collection by username or email
+    // ── Tier 2: Query by username ──────────────────────────────────────
     if (!matchedProfile) {
       try {
-        const qUname = query(collection(db, 'users'), where('username', '==', unameLower), limit(1));
-        const snapU = await getDocs(qUname);
-        if (!snapU.empty) {
-          const d = snapU.docs[0];
-          matchedProfile = { uid: d.id, ...d.data() } as any;
-        }
+        const { data } = await supabase
+          .from('users')
+          .select('*')
+          .eq('username', unameLower)
+          .limit(1)
+          .single();
+        if (data) matchedProfile = mapRowToProfile(data) as any;
       } catch (e) {
-        logError('Firestore username query notice', e);
+        logError('Supabase username query notice', e);
       }
     }
 
+    // ── Tier 3: Query by email ─────────────────────────────────────────
     if (!matchedProfile) {
       try {
-        const qEmail = query(collection(db, 'users'), where('email', '==', unameLower), limit(1));
-        const snapE = await getDocs(qEmail);
-        if (!snapE.empty) {
-          const d = snapE.docs[0];
-          matchedProfile = { uid: d.id, ...d.data() } as any;
-        }
+        const { data } = await supabase
+          .from('users')
+          .select('*')
+          .eq('email', unameLower)
+          .limit(1)
+          .single();
+        if (data) matchedProfile = mapRowToProfile(data) as any;
       } catch (e) {
-        logError('Firestore email query notice', e);
+        logError('Supabase email query notice', e);
       }
     }
 
@@ -508,13 +405,13 @@ export const MASTER_ACCOUNTS: Record<string, {
       throw new Error(GENERIC_ERROR);
     }
 
-    // Check account status
+    // Account status check
     if (matchedProfile.status === 'suspended' || matchedProfile.status === 'inactive') {
       setLoading(false);
       throw new Error('حسابك معطّل حالياً. يرجى مراجعة إدارة المنصة.');
     }
 
-    // ── 3. Cryptographic Verification & Auto-Upgrade ─────────────────
+    // ── Cryptographic Verification ────────────────────────────────────
     let isValid = isMasterVerified;
     let needsRehash = false;
 
@@ -522,6 +419,10 @@ export const MASTER_ACCOUNTS: Record<string, {
       const result = await verifyPassword(passClean, matchedProfile.salt, matchedProfile.passwordHash);
       isValid = result.valid;
       needsRehash = result.needsRehash;
+    } else if (!isMasterVerified) {
+      // No hash stored yet — reject
+      setLoading(false);
+      throw new Error(GENERIC_ERROR);
     }
 
     if (!isValid) {
@@ -534,23 +435,21 @@ export const MASTER_ACCOUNTS: Record<string, {
       try {
         const newSalt = generateSalt();
         const newPbkdf2Hash = await hashPassword(passClean, newSalt);
-        await updateDoc(doc(db, 'users', matchedProfile.uid), {
-          passwordHash: newPbkdf2Hash,
-          salt: newSalt,
-          updatedAt: serverTimestamp(),
-        });
+        await supabase
+          .from('users')
+          .update({ password_hash: newPbkdf2Hash, salt: newSalt, updated_at: new Date().toISOString() })
+          .eq('id', matchedProfile.uid);
       } catch (e) {
-        logError('Password auto-upgrade to PBKDF2 notice', e);
+        logError('Password auto-upgrade notice', e);
       }
     }
 
-    // Clear rate limit on successful authentication
+    // Clear rate limit on success
     clearLoginAttempts(rateLimitKey);
 
-    // Strip sensitive fields before saving to state
     const safeUserProfile = sanitizeProfileForSession(matchedProfile);
 
-    // ── 4. Two-Factor Authentication Check ────────────────────────────
+    // ── 2FA Check ────────────────────────────────────────────────────
     if (safeUserProfile.isTwoFactorEnabled && safeUserProfile.googleLinkedEmail) {
       setLoading(false);
       return {
@@ -561,26 +460,26 @@ export const MASTER_ACCOUNTS: Record<string, {
     }
 
     saveSession(safeUserProfile);
-    setUser({ displayName: safeUserProfile.displayName, uid: safeUserProfile.uid } as User);
+    setUser({ uid: safeUserProfile.uid, displayName: safeUserProfile.displayName });
     setUserProfile(safeUserProfile);
     setLoading(false);
     return true;
   }, []);
 
   // -------------------------------------------------------------------
-  // complete2FALogin — Complete login after Google 2FA verification
+  // complete2FALogin
   // -------------------------------------------------------------------
   const complete2FALogin = useCallback(async (profile: UserProfile): Promise<boolean> => {
     const safeProfile = sanitizeProfileForSession(profile);
     saveSession(safeProfile);
-    setUser({ displayName: safeProfile.displayName, uid: safeProfile.uid } as User);
+    setUser({ uid: safeProfile.uid, displayName: safeProfile.displayName });
     setUserProfile(safeProfile);
     setLoading(false);
     return true;
   }, []);
 
   // -------------------------------------------------------------------
-  // updateCurrentUserProfile — Update in state, session, and Firestore
+  // updateCurrentUserProfile
   // -------------------------------------------------------------------
   const updateCurrentUserProfile = useCallback(async (updated: Partial<UserProfile>) => {
     if (!userProfile?.uid) return;
@@ -590,10 +489,22 @@ export const MASTER_ACCOUNTS: Record<string, {
     saveSession(safeMerged);
 
     try {
-      await updateDoc(doc(db, 'users', userProfile.uid), {
-        ...updated,
-        updatedAt: serverTimestamp(),
-      });
+      // Build Supabase column map from UserProfile fields
+      const dbUpdate: Record<string, any> = { updated_at: new Date().toISOString() };
+      if (updated.displayName !== undefined) dbUpdate.display_name = updated.displayName;
+      if (updated.email !== undefined) dbUpdate.email = updated.email;
+      if (updated.photoURL !== undefined) dbUpdate.photo_url = updated.photoURL;
+      if (updated.role !== undefined) dbUpdate.role = updated.role;
+      if (updated.status !== undefined) dbUpdate.status = updated.status;
+      if (updated.committeeId !== undefined) dbUpdate.committee_id = updated.committeeId;
+      if (updated.committeeName !== undefined) dbUpdate.committee_name = updated.committeeName;
+      if (updated.employeeCode !== undefined) dbUpdate.employee_code = updated.employeeCode;
+      if (updated.oCoinsBalance !== undefined) dbUpdate.o_coins_balance = updated.oCoinsBalance;
+      if (updated.permissions !== undefined) dbUpdate.permissions = updated.permissions;
+      if (updated.isTwoFactorEnabled !== undefined) dbUpdate.is_two_factor_enabled = updated.isTwoFactorEnabled;
+      if (updated.googleLinkedEmail !== undefined) dbUpdate.google_linked_email = updated.googleLinkedEmail;
+
+      await supabase.from('users').update(dbUpdate).eq('id', userProfile.uid);
     } catch (e) {
       logError('updateCurrentUserProfile', e);
     }
@@ -604,11 +515,6 @@ export const MASTER_ACCOUNTS: Record<string, {
   // -------------------------------------------------------------------
   const signOut = useCallback(async () => {
     clearSession();
-    try {
-      await firebaseSignOut(auth);
-    } catch (e) {
-      logError('signOut', e);
-    }
     setUser(null);
     setUserProfile(null);
     setUnauthorized(false);

@@ -5,8 +5,9 @@ import {
   query,
   where,
   orderBy,
-  onSnapshot
-} from 'firebase/firestore';
+  onSnapshot,
+  db
+} from '@/lib/supabase';
 import {
   LifeBuoy,
   Plus,
@@ -18,7 +19,6 @@ import {
   ChevronLeft,
   Send
 } from 'lucide-react';
-import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { createSupportTicket } from '@/lib/support';
 import { Button } from '@/components/ui/button';

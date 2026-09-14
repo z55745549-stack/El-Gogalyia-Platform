@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, orderBy, onSnapshot, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, getDocs, db } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Coins,
@@ -24,13 +24,12 @@ import {
   ShoppingBag
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import {
   manualOCoinAdjustment,
   deleteOCoinTransaction,
   clearAllOCoinTransactions
-} from '@/lib/firestore';
+} from '@/lib/database-service';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';

@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, db } from '@/lib/supabase';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { Search, Check } from 'lucide-react';
-import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
-import { createTask, logActivity } from '@/lib/firestore';
+import { createTask, logActivity } from '@/lib/database-service';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

@@ -1,14 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  collection, query, where, onSnapshot, orderBy, limit
-} from 'firebase/firestore';
+  collection, query, where, onSnapshot, orderBy, limit, db
+} from '@/lib/supabase';
 import {
   CheckSquare, Clock, Upload, CheckCircle2, AlertTriangle,
   Coins, Calendar, ChevronLeft,
   TrendingUp, Sparkles, LifeBuoy, CalendarDays
 } from 'lucide-react';
-import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { StatusBadge, PriorityBadge } from '@/components/ui/status-badge';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -17,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import {
   getGreeting, getFirstName, formatDate, formatOCoins, isOverdue, formatRelative, cn, safeDate
 } from '@/utils';
-import { getUserTaskStatus } from '@/lib/firestore';
+import { getUserTaskStatus } from '@/lib/database-service';
 import type { Task, TaskStatus, OCoinTransaction, Notification, Meeting } from '@/types';
 import type { SupportTicket } from '@/types/support';
 

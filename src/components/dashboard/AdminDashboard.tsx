@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
-import { collection, query, onSnapshot, orderBy, limit, getDocs } from 'firebase/firestore';
+import { collection, query, onSnapshot, orderBy, limit, getDocs, db } from '@/lib/supabase';
 import {
   Users, Upload, Clock, AlertTriangle, CheckCircle2,
   Coins, Activity, ArrowUpRight, Plus, Shield, Inbox, Calendar, Sparkles
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { StatCard } from '@/components/ui/stat-card';
 import { SkeletonCard } from '@/components/ui/loading-spinner';

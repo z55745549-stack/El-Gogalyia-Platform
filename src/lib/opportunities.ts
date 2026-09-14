@@ -9,9 +9,9 @@ import {
   serverTimestamp,
   getDocs,
   Timestamp,
-} from 'firebase/firestore';
-import { db } from './firebase';
-import { logActivity, createNotification } from './firestore';
+  db,
+} from './supabase';
+import { logActivity, createNotification } from './database-service';
 import { safeDate } from '@/utils';
 import type { Opportunity, OpportunityCategory, OpportunityStatus } from '@/types';
 

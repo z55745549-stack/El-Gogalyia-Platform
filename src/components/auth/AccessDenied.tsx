@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ShieldX, LogOut, KeyRound, Lock, AlertCircle } from 'lucide-react';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
-import { db } from '@/lib/firebase';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,7 +11,7 @@ import { Input } from '@/components/ui/input';
 const MASTER_OWNER_KEY = 'oPPerationGDGG2$2182026';
 
 export function AccessDenied() {
-  const { signOut, user } = useAuth();
+  const { signOut, userProfile } = useAuth();
   const navigate = useNavigate();
   const [passcode, setPasscode] = useState('');
   const [passError, setPassError] = useState<string | null>(null);
@@ -37,39 +36,38 @@ export function AccessDenied() {
       return;
     }
 
-    if (!user?.email) return;
+    if (!userProfile?.email) return;
     setInitializing(true);
 
-    const emailKey = user.email.toLowerCase();
     const adminProfile = {
-      email: emailKey,
-      displayName: user.displayName || 'System Admin',
-      photoURL: user.photoURL || '',
+      id: userProfile.uid,
+      username: userProfile.username,
+      display_name: userProfile.displayName || 'System Admin',
+      email: userProfile.email.toLowerCase(),
+      photo_url: userProfile.photoURL || null,
       role: 'admin',
+      status: 'active',
       permissions: [
         'tasks.create', 'tasks.edit', 'tasks.delete', 'tasks.assign',
         'tasks.review', 'tasks.view_all', 'employees.view', 'employees.manage',
         'ocoins.manage', 'ocoins.view_all', 'reports.view', 'reports.export',
         'access.manage', 'activity.view', 'notifications.send'
       ],
-      status: 'active',
-      uid: user.uid,
-      createdAt: new Date().toISOString(),
-      createdBy: 'owner_master_key',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     };
 
     try {
-      const authorizedRef = doc(db, 'authorizedUsers', emailKey);
-      await setDoc(authorizedRef, {
-        ...adminProfile,
-        createdAt: serverTimestamp(),
-      });
+      await supabase.from('users').upsert(adminProfile, { onConflict: 'id' });
     } catch (err) {
-      console.warn('Firestore setDoc notice:', err);
+      console.warn('Supabase upsert notice:', err);
     }
 
-    // Save local session override so admin access works immediately 100% guaranteed
-    localStorage.setItem('elgogalyia_owner_admin', JSON.stringify(adminProfile));
+    // Save local session override so admin access works immediately
+    localStorage.setItem('elgogalyia_owner_admin', JSON.stringify({
+      ...userProfile,
+      role: 'admin',
+    }));
     toast.success('تم التحقق بنجاح وتفعيل حسابك كـ Admin!');
     window.location.reload();
     setInitializing(false);
@@ -94,10 +92,10 @@ export function AccessDenied() {
           </p>
         </div>
 
-        {user?.email && (
+        {userProfile?.email && (
           <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-left">
             <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider mb-0.5">Attempted Account</span>
-            <span className="text-xs font-mono font-bold text-slate-800 break-all">{user.email}</span>
+            <span className="text-xs font-mono font-bold text-slate-800 break-all">{userProfile.email}</span>
           </div>
         )}
 

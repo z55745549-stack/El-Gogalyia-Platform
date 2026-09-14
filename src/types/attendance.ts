@@ -1,4 +1,4 @@
-import { Timestamp } from 'firebase/firestore';
+import type { Timestamp } from './index';
 
 export type AttendanceSessionStatus = 'active' | 'paused' | 'closed';
 export type AttendanceRecordStatus = 'present' | 'late' | 'excused';

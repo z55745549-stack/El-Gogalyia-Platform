@@ -1,6 +1,5 @@
 // @ts-nocheck
-import { collection, doc, setDoc, getDocs, getDoc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, serverTimestamp, writeBatch, Timestamp } from 'firebase/firestore';
-import { db } from './firebase';
+import { collection, doc, setDoc, getDocs, getDoc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, serverTimestamp, writeBatch, Timestamp, db } from './supabase';
 import type { Ban, UserProfile } from '@/types';
 import { canViewAllBans, filterBansForUser, sanitizeBansForViewer } from './security';
 import { createBanSchema, sanitizeInput } from './validation';
@@ -157,7 +156,7 @@ export async function createBan(params: {
       }
     }
     try {
-      const { createNotification } = await import('./firestore');
+      const { createNotification } = await import('./database-service');
       await createNotification({
         recipientEmail: (employee.email || employee.username || '').toLowerCase(),
         recipientUid: employee.uid,
@@ -171,7 +170,7 @@ export async function createBan(params: {
   } catch {}
 
   try {
-    const { logActivity } = await import('./firestore');
+    const { logActivity } = await import('./database-service');
     await logActivity({ actor: actor.email, actorName: actor.displayName, action: 'user.banned' as any, targetType: 'ban' as any, targetId: banId, targetName: employee.displayName, metadata: { employeeId: employee.uid, reason, penalty, endAt: endAt.toISOString() } });
   } catch {}
   logBanAccess(actor.uid, 'create', `Created ban ${banId} for ${employee.uid} penalty ${penalty}`);
@@ -210,7 +209,7 @@ export async function endBan(banId: string, actor: { uid: string; email: string;
     } catch {}
   }
   try {
-    const { logActivity, createNotification } = await import('./firestore');
+    const { logActivity, createNotification } = await import('./database-service');
     if (ban) await createNotification({ recipientEmail: (ban as any).employeeUsername?.toLowerCase() || ban.employeeId, recipientUid: ban.employeeId, type: 'ban.lifted' as any, title: 'Suspension lifted', message: 'Your suspension has been lifted. You may resume work.', taskId: null });
     await logActivity({ actor: actor.email, actorName: actor.displayName, action: 'user.unbanned' as any, targetType: 'ban' as any, targetId: banId, targetName: ban?.employeeName || banId, metadata: {} });
   } catch {}
@@ -255,7 +254,7 @@ export async function deleteBan(banId: string, actor: { uid: string; email: stri
 
   // 4. Activity log & audit
   try {
-    const { logActivity } = await import('./firestore');
+    const { logActivity } = await import('./database-service');
     await logActivity({
       actor: actor.email,
       actorName: actor.displayName,
@@ -288,7 +287,7 @@ export async function clearAllBans(actor: { uid: string; email: string; displayN
   window.dispatchEvent(new Event('elgogalyia_data_change'));
 
   try {
-    const { logActivity } = await import('./firestore');
+    const { logActivity } = await import('./database-service');
     await logActivity({
       actor: actor.email,
       actorName: actor.displayName,

@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
-import { collection, query, orderBy, onSnapshot, limit } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, limit, db } from '@/lib/supabase';
 import { Search, ClipboardList, Shield, Filter } from 'lucide-react';
-import { db } from '@/lib/firebase';
 import { Avatar } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { EmptyState } from '@/components/ui/empty-state';

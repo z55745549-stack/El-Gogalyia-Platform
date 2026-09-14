@@ -7,8 +7,9 @@ import {
   orderBy,
   onSnapshot,
   getDocs,
-  where
-} from 'firebase/firestore';
+  where,
+  db
+} from '@/lib/supabase';
 import {
   LifeBuoy,
   Search,
@@ -26,7 +27,6 @@ import {
   Layers,
   Sparkles
 } from 'lucide-react';
-import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';

@@ -6,8 +6,9 @@ import {
   collection,
   query,
   where,
-  onSnapshot
-} from 'firebase/firestore';
+  onSnapshot,
+  db
+} from '@/lib/supabase';
 import {
   LifeBuoy,
   ChevronRight,
@@ -30,7 +31,6 @@ import {
   XCircle,
   ArrowRight
 } from 'lucide-react';
-import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { addTicketReply, updateTicketStatus } from '@/lib/support';
 import { Button } from '@/components/ui/button';

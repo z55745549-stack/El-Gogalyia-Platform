@@ -15,9 +15,9 @@ import {
   where,
   getDocs,
   Timestamp,
-} from 'firebase/firestore';
-import { db } from './firebase';
-import { logActivity } from './firestore';
+  db,
+} from './supabase';
+import { logActivity } from './database-service';
 import { logAudit } from './audit';
 import type { UserProfile } from '@/types';
 
