@@ -8,7 +8,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
-  Lock, User, Shield, ShieldAlert, Sun, Moon, ArrowRight, KeyRound, Sparkles
+  Lock, User, Shield, ShieldAlert, Sun, Moon, ArrowRight, KeyRound
 } from 'lucide-react';
 import type { UserProfile } from '@/types';
 
@@ -77,25 +77,6 @@ export function LoginPage() {
     setErrorMsg(null);
     const u = username.trim(), p = password.trim();
     if (!u || !p) { toast.error('يرجى إدخال اسم المستخدم وكلمة المرور.'); return; }
-    setLoading(true);
-    try {
-      const res = await signInWithUsername(u, p);
-      if (typeof res === 'object' && res.requires2FA) {
-        setPending2FA({ profile: res.profile, linkedEmail: res.linkedEmail });
-        toast.info('حسابك محمي بالتحقق الثنائي. يرجى تأكيد الهوية عبر Google.');
-        return;
-      }
-      toast.success('تم تسجيل الدخول بنجاح!');
-      navigate('/dashboard');
-    } catch (err: any) {
-      setErrorMsg(err?.message || 'اسم المستخدم أو كلمة المرور غير صحيحة.');
-    } finally { setLoading(false); }
-  };
-
-  const handleQuickLogin = async (u: string, p: string) => {
-    setUsername(u);
-    setPassword(p);
-    setErrorMsg(null);
     setLoading(true);
     try {
       const res = await signInWithUsername(u, p);
@@ -454,50 +435,7 @@ export function LoginPage() {
                         تسجيل الدخول للمنصة
                       </Button>
 
-                      {/* Quick Login / Demo Credentials Card */}
-                      <div className="pt-2">
-                        <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/10 space-y-2.5">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                              <Sparkles className="h-3.5 w-3.5 text-[var(--brand-accent)]" />
-                              <span>حسابات جاهزة للدخول الفوري:</span>
-                            </span>
-                            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] dark:text-[var(--brand-accent)]">
-                              تجربة سريعة
-                            </span>
-                          </div>
 
-                          <div className="grid grid-cols-2 gap-2 text-xs">
-                            <button
-                              type="button"
-                              onClick={() => handleQuickLogin('admin', 'admin123')}
-                              disabled={loading}
-                              className="p-2.5 rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:border-[var(--brand-primary)] text-right transition-all group cursor-pointer shadow-xs"
-                            >
-                              <div className="flex items-center justify-between">
-                                <span className="font-bold text-slate-900 dark:text-white group-hover:text-[var(--brand-primary)]">
-                                  👑 Super Admin
-                                </span>
-                              </div>
-                              <p className="text-[10px] text-slate-400 font-mono mt-0.5">admin / admin123</p>
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => handleQuickLogin('member', 'member123')}
-                              disabled={loading}
-                              className="p-2.5 rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:border-[var(--brand-accent)] text-right transition-all group cursor-pointer shadow-xs"
-                            >
-                              <div className="flex items-center justify-between">
-                                <span className="font-bold text-slate-900 dark:text-white group-hover:text-[var(--brand-accent)]">
-                                  👤 عضو / طالب
-                                </span>
-                              </div>
-                              <p className="text-[10px] text-slate-400 font-mono mt-0.5">member / member123</p>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
                     </motion.form>
                   )}
 
@@ -524,22 +462,11 @@ export function LoginPage() {
                         </h3>
                         <p className="text-xs mt-1 max-w-xs mx-auto leading-relaxed"
                           style={{ color: 'var(--text-secondary)' }}>
-                          يمكنك الدخول السريع كمسؤول عام بكلمة المرور، أو المتابعة بحساب Google المصرح له.
+                          يمكنك المتابعة بحساب Google المصرح له من قِبَل مسؤول النظام.
                         </p>
                       </div>
 
                       <div className="space-y-3">
-                        <Button
-                          type="button"
-                          onClick={() => handleQuickLogin('admin', 'admin123')}
-                          variant="default"
-                          size="lg"
-                          className="w-full btn-primary font-black gap-2"
-                          loading={loading}
-                        >
-                          <Shield className="h-4 w-4" />
-                          دخول فوري كمسؤول عام (Super Admin)
-                        </Button>
 
                         <div className="relative flex items-center justify-center">
                           <div className="border-t border-slate-200 dark:border-white/10 w-full" />

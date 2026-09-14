@@ -124,7 +124,7 @@ function mapRowToProfile(row: any): UserProfile {
     committeeId: row.committee_id ?? undefined,
     committeeName: row.committee_name ?? undefined,
     employeeCode: row.employee_code ?? undefined,
-    oCoinsBalance: row.o_coins_balance ?? 0,
+    oCoinsBalance: row.ocoins_balance ?? 0,
     permissions: row.permissions ?? [],
     isTwoFactorEnabled: row.is_two_factor_enabled ?? false,
     googleLinkedEmail: row.google_linked_email ?? undefined,
@@ -150,7 +150,7 @@ async function upsertProfileToSupabase(profile: UserProfile & { passwordHash?: s
       committee_id: profile.committeeId || null,
       committee_name: profile.committeeName || null,
       employee_code: profile.employeeCode || null,
-      o_coins_balance: profile.oCoinsBalance ?? 0,
+      ocoins_balance: profile.oCoinsBalance ?? 0,
       permissions: profile.permissions ?? [],
       is_two_factor_enabled: profile.isTwoFactorEnabled ?? false,
       google_linked_email: profile.googleLinkedEmail || null,
@@ -499,7 +499,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (updated.committeeId !== undefined) dbUpdate.committee_id = updated.committeeId;
       if (updated.committeeName !== undefined) dbUpdate.committee_name = updated.committeeName;
       if (updated.employeeCode !== undefined) dbUpdate.employee_code = updated.employeeCode;
-      if (updated.oCoinsBalance !== undefined) dbUpdate.o_coins_balance = updated.oCoinsBalance;
+      if (updated.oCoinsBalance !== undefined) dbUpdate.ocoins_balance = updated.oCoinsBalance;
       if (updated.permissions !== undefined) dbUpdate.permissions = updated.permissions;
       if (updated.isTwoFactorEnabled !== undefined) dbUpdate.is_two_factor_enabled = updated.isTwoFactorEnabled;
       if (updated.googleLinkedEmail !== undefined) dbUpdate.google_linked_email = updated.googleLinkedEmail;
