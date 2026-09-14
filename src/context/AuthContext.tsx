@@ -98,13 +98,17 @@ async function fetchProfileFromSupabase(uid: string): Promise<UserProfile | null
       .from('users')
       .select('*')
       .eq('id', uid)
-      .single();
+      .maybeSingle();
 
-    if (error || !data) return null;
+    if (error || !data) {
+      clearSession();
+      return null;
+    }
 
     return mapRowToProfile(data);
   } catch (err) {
     logError('fetchProfileFromSupabase', err);
+    clearSession();
     return null;
   }
 }
@@ -363,7 +367,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!matchedProfile) {
       const genUid = 'user_' + unameLower.replace(/[^a-z0-9]/g, '_');
       try {
-        const { data } = await supabase.from('users').select('*').eq('id', genUid).single();
+        const { data } = await supabase.from('users').select('*').eq('id', genUid).maybeSingle();
         if (data) matchedProfile = mapRowToProfile(data) as any;
       } catch (e) {
         logError('Supabase direct id lookup notice', e);
@@ -378,7 +382,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .select('*')
           .eq('username', unameLower)
           .limit(1)
-          .single();
+          .maybeSingle();
         if (data) matchedProfile = mapRowToProfile(data) as any;
       } catch (e) {
         logError('Supabase username query notice', e);
@@ -393,7 +397,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .select('*')
           .eq('email', unameLower)
           .limit(1)
-          .single();
+          .maybeSingle();
         if (data) matchedProfile = mapRowToProfile(data) as any;
       } catch (e) {
         logError('Supabase email query notice', e);
