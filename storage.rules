@@ -1,0 +1,49 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Size limit: 15MB
+    function isValidSize() {
+      return request.resource.size < 15 * 1024 * 1024;
+    }
+
+    // Disallow dangerous executables and scripts
+    function isSafeFileType() {
+      return !request.resource.contentType.matches('application/x-msdownload|application/x-executable|application/x-sh|application/x-bat|application/javascript|text/javascript|text/html');
+    }
+
+    // Task submissions storage
+    match /tasks/{taskId}/submissions/{userId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId) && isValidSize() && isSafeFileType();
+      allow delete: if isOwner(userId);
+    }
+
+    // Support ticket attachments
+    match /support/{ticketId}/{userId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId) && isValidSize() && isSafeFileType();
+    }
+
+    // User profile pictures
+    match /avatars/{userId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId) && request.resource.size < 5 * 1024 * 1024 && request.resource.contentType.matches('image/.*');
+    }
+
+    // Default: Authenticated safe uploads
+    match /{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isValidSize() && isSafeFileType();
+    }
+  }
+}
