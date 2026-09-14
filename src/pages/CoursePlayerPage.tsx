@@ -140,7 +140,7 @@ export function CoursePlayerPage() {
         setActiveLessonId(tempLesson.id);
       }
 
-      // Ensure persistence in Firestore in background
+      // Ensure persistence in Supabase in background
       autoEnsureCourseLessons(course, userProfile).then((ensured) => {
         if (ensured.length > 0) {
           setLessons(ensured);

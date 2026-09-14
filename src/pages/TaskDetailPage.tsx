@@ -375,7 +375,7 @@ export function TaskDetailPage() {
   const overdue = isOverdue(task.deadline, task.status);
   const isGloballyClosed = task.status === 'completed' || task.status === 'expired' || task.status === 'archived';
 
-  // Submissions list resolution (Firestore subcollection + latestSubmission fallback)
+  // Submissions list resolution (Supabase subcollection + latestSubmission fallback)
   const allSubmissions: TaskSubmission[] = [...submissions];
   if (allSubmissions.length === 0 && task.latestSubmission) {
     allSubmissions.push(task.latestSubmission);

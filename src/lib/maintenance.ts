@@ -37,7 +37,7 @@ export function subscribeMaintenanceMode(callback: (config: MaintenanceConfig) =
   // 1. Fire immediately with local cached state
   callback(getMaintenanceState());
 
-  // 2. Listen to Firestore real-time
+  // 2. Listen to Supabase real-time
   const docRef = doc(db, 'system_settings', SETTING_DOC_ID);
   const unsub = onSnapshot(
     docRef,
@@ -63,7 +63,7 @@ export function subscribeMaintenanceMode(callback: (config: MaintenanceConfig) =
       }
     },
     (err) => {
-      console.warn('subscribeMaintenanceMode Firestore snapshot notice:', err);
+      console.warn('subscribeMaintenanceMode Supabase snapshot notice:', err);
       callback(getMaintenanceState());
     }
   );
@@ -101,7 +101,7 @@ export async function setMaintenanceMode(
   // Immediate local update
   saveMaintenanceLocally(config);
 
-  // Write to Firestore
+  // Write to Supabase
   try {
     const docRef = doc(db, 'system_settings', SETTING_DOC_ID);
     await setDoc(docRef, {
@@ -110,7 +110,7 @@ export async function setMaintenanceMode(
       enabledAt: enabled ? serverTimestamp() : null,
     }, { merge: true });
   } catch (err) {
-    console.warn('setMaintenanceMode Firestore warning:', err);
+    console.warn('setMaintenanceMode Supabase warning:', err);
   }
 
   // Audit log

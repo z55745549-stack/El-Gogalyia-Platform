@@ -77,7 +77,7 @@ export function EmployeeDashboard() {
         fsTasksById[id] = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Task));
         refreshTasks();
       }, (err) => {
-        console.warn('Firestore tasks query notice:', err);
+        console.warn('Supabase tasks query notice:', err);
         fsTasksById[id] = [];
         refreshTasks();
       });

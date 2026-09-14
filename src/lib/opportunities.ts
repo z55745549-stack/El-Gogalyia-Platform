@@ -74,13 +74,13 @@ function saveLocalOpportunities(list: Opportunity[]) {
 }
 
 export function subscribeOpportunities(callback: (opportunities: Opportunity[]) => void) {
-  let isFirestoreWorking = false;
+  let isSupabaseWorking = false;
 
   const q = query(collection(db, COLLECTION_NAME));
   const unsub = onSnapshot(
     q,
     (snapshot) => {
-      isFirestoreWorking = true;
+      isSupabaseWorking = true;
       const tombstones = getTombstones();
       const fsList: Opportunity[] = [];
 
@@ -103,21 +103,21 @@ export function subscribeOpportunities(callback: (opportunities: Opportunity[]) 
     },
     (err) => {
       console.warn('Opportunities snapshot notice:', err);
-      if (!isFirestoreWorking) {
+      if (!isSupabaseWorking) {
         callback(getLocalOpportunities());
       }
     }
   );
 
   const handleLocalChange = () => {
-    if (!isFirestoreWorking) {
+    if (!isSupabaseWorking) {
       callback(getLocalOpportunities());
     }
   };
   window.addEventListener('elgogalyia_opportunities_change', handleLocalChange);
   window.addEventListener('elgogalyia_data_change', handleLocalChange);
 
-  // Initial immediate call with local cache while Firestore connects
+  // Initial immediate call with local cache while Supabase connects
   const initialLocal = getLocalOpportunities();
   if (initialLocal.length > 0) {
     callback(initialLocal);
@@ -167,7 +167,7 @@ export async function createOpportunity(
   try {
     await setDoc(docRef, oppPayload);
   } catch (err) {
-    console.warn('Firestore setDoc opportunity warning:', err);
+    console.warn('Supabase setDoc opportunity warning:', err);
   }
 
   // Update local cache immediately
@@ -224,7 +224,7 @@ export async function updateOpportunity(
       updatedAt: serverTimestamp(),
     });
   } catch (err) {
-    console.warn('Firestore updateOpportunity notice:', err);
+    console.warn('Supabase updateOpportunity notice:', err);
   }
 
   const localList = getLocalOpportunities();
@@ -260,7 +260,7 @@ export async function deleteOpportunity(
   try {
     await deleteDoc(doc(db, COLLECTION_NAME, id));
   } catch (err) {
-    console.warn('Firestore deleteDoc opportunity notice:', err);
+    console.warn('Supabase deleteDoc opportunity notice:', err);
   }
 
   const localList = getLocalOpportunities().filter((o) => o.id !== id);

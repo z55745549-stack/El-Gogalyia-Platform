@@ -40,7 +40,7 @@ export async function ensureDefaultCommittees(createdBy = 'system'): Promise<voi
     const snap = await getDocs(collection(db, 'committees'));
     const existingMap = new Map(snap.docs.map(d => [d.id, d]));
 
-    // Delete any obsolete fake committees from Firestore
+    // Delete any obsolete fake committees from supabase
     for (const obsId of OBSOLETE_IDS) {
       if (existingMap.has(obsId)) {
         deleteDoc(doc(db, 'committees', obsId)).catch(() => {});
@@ -84,7 +84,7 @@ export async function createCommittee(data: { name: string; description?: string
   };
   try {
     await setDoc(doc(db, 'committees', id), { ...committee, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
-  } catch (e) { console.warn('createCommittee Firestore notice', e); }
+  } catch (e) { console.warn('createCommittee supabase notice', e); }
   const list = readLocal();
   if (!list.find(c => c.id === id)) {
     list.push(committee);
@@ -114,7 +114,7 @@ export async function deleteCommittee(id: string): Promise<void> {
 export async function assignUserCommittee(uid: string, committeeId: string | null, committeeName: string | null): Promise<void> {
   try {
     await updateDoc(doc(db, 'users', uid), { committeeId: committeeId || null, committeeName: committeeName || null, updatedAt: serverTimestamp() });
-  } catch (e) { console.warn('assignUserCommittee Firestore notice', e); }
+  } catch (e) { console.warn('assignUserCommittee supabase notice', e); }
   try {
     const users: any[] = JSON.parse(localStorage.getItem('elgogalyia_local_users') || '[]');
     const idx = users.findIndex((u: any) => u.uid === uid);

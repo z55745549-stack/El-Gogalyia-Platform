@@ -689,7 +689,7 @@ export async function autoEnsureCourseLessons(
           updatedAt: now,
         });
       } catch (e) {
-        console.warn('Failed to write auto-lesson doc to firestore:', e);
+        console.warn('Failed to write auto-lesson doc to Supabase:', e);
       }
 
       return [fallbackLesson];

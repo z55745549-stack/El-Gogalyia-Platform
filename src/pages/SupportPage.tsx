@@ -98,7 +98,7 @@ export function SupportPage() {
         setLoading(false);
       },
       (err) => {
-        console.warn('Firestore tickets query error:', err);
+        console.warn('Supabase tickets query error:', err);
         setLoading(false);
       }
     );

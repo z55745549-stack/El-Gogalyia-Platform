@@ -669,7 +669,7 @@ export async function signOut() {
 }
 
 export async function runTransaction<T>(
-  _firestore: any,
+  _Supabase: any,
   updateFunction: (transaction: {
     get: (ref: DocRef) => Promise<DocumentSnapshot>;
     set: (ref: DocRef, data: any, options?: { merge?: boolean }) => any;

@@ -180,7 +180,7 @@ export async function purchaseDiscount(params: {
   let resultPurchase: DiscountPurchase | null = null;
   let finalNewBalance = 0;
 
-  // Execute safe Firestore transaction
+  // Execute safe Supabase transaction
   await runTransaction(db, async (tx) => {
     // 1. Fetch discount
     const discountSnap = await tx.get(discountRef);

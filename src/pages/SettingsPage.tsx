@@ -97,7 +97,7 @@ export function SettingsPage() {
 
     setSavingCredentials(true);
     try {
-      // If username changed, check uniqueness in Firestore
+      // If username changed, check uniqueness in Supabase
       if (cleanUser !== (userProfile.username || '').toLowerCase()) {
         const q = query(collection(db, 'users'), where('username', '==', cleanUser));
         const snap = await getDocs(q);
@@ -123,7 +123,7 @@ export function SettingsPage() {
 
       await updateCurrentUserProfile(updates);
 
-      // Also update firestore doc directly
+      // Also update Supabase doc directly
       try {
         await updateDoc(doc(db, 'users', userProfile.uid), updates);
       } catch (e) {}
@@ -620,7 +620,7 @@ export function SettingsPage() {
           </h3>
           <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
             تخضع جميع العمليات والتسليمات وسجلات الدخول للتسجيل المباشر في سجل النشاطات (Activity Logs). 
-            يتم تشفير كلمات المرور باستخدام خوارزميات التشفير القياسية Salted SHA-256، ويتم حفظ بيانات الرصيد والمهام بأعلى درجات الأمان في قواعد بيانات Firestore السحابية.
+            يتم تشفير كلمات المرور باستخدام خوارزميات التشفير القياسية Salted SHA-256، ويتم حفظ بيانات الرصيد والمهام بأعلى درجات الأمان في قواعد بيانات Supabase السحابية.
           </p>
         </div>
       </div>

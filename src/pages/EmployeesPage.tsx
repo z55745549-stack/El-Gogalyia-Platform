@@ -81,7 +81,7 @@ export function EmployeesPage() {
   useEffect(() => {
     const unsubCommittees = subscribeCommittees((list) => setCommittees(list));
     const unsubBans = subscribeBans((list) => setBans(list));
-    // Real-time Firestore snapshot listener for users collection
+    // Real-time Supabase snapshot listener for users collection
     const unsubscribe = onSnapshot(
       collection(db, 'users'),
       (snapshot) => {
@@ -93,7 +93,7 @@ export function EmployeesPage() {
         setLoading(false);
       },
       (err) => {
-        console.warn('Firestore users snapshot notice:', err);
+        console.warn('Supabase users snapshot notice:', err);
         // Local storage fallback listener
         const loadLocal = () => {
           const localList: UserProfile[] = JSON.parse(localStorage.getItem('elgogalyia_local_users') || '[]');
@@ -153,7 +153,7 @@ export function EmployeesPage() {
 
     const unameLower = formUsername.trim().toLowerCase();
 
-    // 1. Check Username Uniqueness (local state + Firestore double-check for race conditions)
+    // 1. Check Username Uniqueness (local state + Supabase double-check for race conditions)
     const existingLocal = employees.find((u) => (u.username || '').toLowerCase() === unameLower);
     if (existingLocal) {
       toast.error('اسم المستخدم مستخدم بالفعل');
@@ -196,15 +196,15 @@ export function EmployeesPage() {
           createdAt: serverTimestamp(),
         };
 
-        // Save to Firestore (Primary source of truth — must succeed)
+        // Save to Supabase (Primary source of truth — must succeed)
         try {
           await setDoc(doc(db, 'users', generatedUid), newEmpDoc);
         } catch (e: any) {
           const errMsg = e?.code === 'permission-denied'
-            ? 'خطأ في الصلاحيات. تأكد من تفعيل Firestore Rules الصحيحة.'
-            : 'فشل الحفظ في Firestore. تحقق من الاتصال.';
+            ? 'خطأ في الصلاحيات. تأكد من تفعيل Supabase Rules الصحيحة.'
+            : 'فشل الحفظ في Supabase. تحقق من الاتصال.';
           toast.error(errMsg);
-          return; // Do not proceed if Firestore failed
+          return; // Do not proceed if Supabase failed
         }
 
         toast.success(`تم إضافة ${formRole === 'admin' ? 'المشرف' : 'الموظف'} (${formDisplayName}) بنجاح!`);

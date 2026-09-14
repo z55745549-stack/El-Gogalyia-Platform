@@ -51,7 +51,7 @@ export function TaskFormModal({ open, onClose }: TaskFormModalProps) {
     const loadEmployees = async () => {
       const allUsers: UserProfile[] = [];
 
-      // Load from Firestore
+      // Load from Supabase
       try {
         const snap = await getDocs(collection(db, 'users'));
         snap.docs.forEach((d) => {
@@ -59,7 +59,7 @@ export function TaskFormModal({ open, onClose }: TaskFormModalProps) {
           if (data.username && data.status === 'active') allUsers.push(data);
         });
       } catch (e) {
-        console.warn('Firestore users load notice:', e);
+        console.warn('Supabase users load notice:', e);
       }
 
       // Merge with local storage (deduplicate by uid)

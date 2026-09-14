@@ -187,7 +187,7 @@ export async function endBan(banId: string, actor: { uid: string; email: string;
   try {
     await updateDoc(doc(db, 'bans', banId), { status: 'ended_early', endedAt: serverTimestamp(), endedBy: actor.uid || actor.email, endedByName: actor.displayName });
     if (employeeId) await updateDoc(doc(db, 'users', employeeId), { status: 'active', updatedAt: serverTimestamp() });
-  } catch (e) { console.warn('endBan firestore notice', e); }
+  } catch (e) { console.warn('endBan supabase notice', e); }
   const updated = readLocal().map(b => b.id === banId ? { ...b, status: 'ended_early' as const, endedAt: new Date().toISOString() as any, endedBy: actor.uid || actor.email } : b);
   writeLocal(updated);
   if (employeeId) {
@@ -225,15 +225,15 @@ export async function deleteBan(banId: string, actor: { uid: string; email: stri
   const ban = bans.find(b => b.id === banId);
   const employeeId = ban?.employeeId;
 
-  // 1. Delete from Firestore
+  // 1. Delete from supabase
   try {
     await deleteDoc(doc(db, 'bans', banId));
-    // If the deleted ban was active, also reactivate the user in Firestore
+    // If the deleted ban was active, also reactivate the user in supabase
     if (ban && ban.status === 'active' && employeeId) {
       await updateDoc(doc(db, 'users', employeeId), { status: 'active', updatedAt: serverTimestamp() }).catch(() => {});
     }
   } catch (e) {
-    console.warn('deleteBan firestore notice', e);
+    console.warn('deleteBan supabase notice', e);
   }
 
   // 2. Remove from local storage
@@ -280,7 +280,7 @@ export async function clearAllBans(actor: { uid: string; email: string; displayN
     snap.docs.forEach((d) => batch.delete(d.ref));
     await batch.commit();
   } catch (e) {
-    console.warn('clearAllBans firestore notice', e);
+    console.warn('clearAllBans supabase notice', e);
   }
 
   writeLocal([]);

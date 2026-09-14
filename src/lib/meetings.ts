@@ -51,7 +51,7 @@ export async function createMeeting(data: Omit<Meeting, 'id' | 'createdAt' | 'up
 
   try {
     await setDoc(doc(db, 'meetings', id), { ...meeting, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
-  } catch (e) { console.warn('createMeeting firestore notice', e); }
+  } catch (e) { console.warn('createMeeting Supabase notice', e); }
 
   const localMeeting: any = { ...meeting, date: (meeting as any).date?.toDate ? (meeting as any).date.toDate().toISOString() : now };
   const existing = readLocal();
@@ -113,7 +113,7 @@ export async function deleteMeeting(id: string, title: string, actor: { email: s
   rateLimitOrThrow(`meeting_delete_${viewer?.uid || 'anon'}`, RATE_LIMITS.meetings_write);
   try {
     await deleteDoc(doc(db, 'meetings', id));
-  } catch (e) { console.warn('deleteMeeting firestore notice', e); }
+  } catch (e) { console.warn('deleteMeeting Supabase notice', e); }
   const list = readLocal().filter(m => m.id !== id);
   writeLocal(list);
   try {
@@ -135,7 +135,7 @@ export function subscribeMeetings(callback: (meetings: Meeting[]) => void): () =
     const unsub = onSnapshot(
       q,
       (snap) => {
-        // Canonical source of truth: documents currently in Firestore
+        // Canonical source of truth: documents currently in Supabase
         const fsList = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Meeting));
         fsList.sort((a, b) => new Date(b.date as any).getTime() - new Date(a.date as any).getTime());
         
