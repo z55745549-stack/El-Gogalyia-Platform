@@ -17,7 +17,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { SkeletonTable } from '@/components/ui/skeleton';
 import { formatDate } from '@/utils';
 import type { AuthorizedAdmin, UserRole } from '@/types';
-import { AdminActionConfirmModal } from '@/components/auth/AdminActionConfirmModal';
+// 2-Step admin auth removed — Lead/Co-Lead act directly
 import { getRoleLabel, getRoleColor } from '@/utils/permissions';
 
 export function AccessManagementPage() {
@@ -32,7 +32,6 @@ export function AccessManagementPage() {
   const [adminName, setAdminName] = useState('');
   const [adminRole, setAdminRole] = useState<UserRole>('head');
   const [submitting, setSubmitting] = useState(false);
-  const [showAuthConfirm, setShowAuthConfirm] = useState(false);
 
   // Delete / Remove Modal State
   const [removeTarget, setRemoveTarget] = useState<AuthorizedAdmin | null>(null);
@@ -61,7 +60,8 @@ export function AccessManagementPage() {
       return;
     }
 
-    setShowAuthConfirm(true);
+    // Direct execution — no 2-step verification required
+    await executeAddAdmin();
   };
 
   const executeAddAdmin = async () => {
@@ -348,14 +348,7 @@ export function AccessManagementPage() {
         loading={removing}
       />
 
-      {/* 2-Step Authorization Modal for Adding Admin */}
-      <AdminActionConfirmModal
-        open={showAuthConfirm}
-        actionType="add_admin"
-        onClose={() => setShowAuthConfirm(false)}
-        onVerified={executeAddAdmin}
-        loading={submitting}
-      />
+      {/* 2-Step Authorization Modal removed — Lead/Co-Lead act directly */}
     </div>
   );
 }

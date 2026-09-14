@@ -40,7 +40,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { SkeletonCard } from '@/components/ui/skeleton';
 import { formatDate, cn } from '@/utils';
 import type { Opportunity, OpportunityCategory, OpportunityStatus } from '@/types';
-import { AdminActionConfirmModal } from '@/components/auth/AdminActionConfirmModal';
+// 2-Step admin auth removed — Lead/Co-Lead/Head act directly
 
 const CATEGORIES: { value: string; label: string; icon: any }[] = [
   { value: 'all', label: 'جميع الفرص والتدريبات', icon: GraduationCap },
@@ -86,7 +86,6 @@ export function OpportunitiesPage() {
   const [deleting, setDeleting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [showAuthConfirm, setShowAuthConfirm] = useState(false);
 
   // Form inputs
   const [formTitle, setFormTitle] = useState('');
@@ -202,8 +201,8 @@ export function OpportunitiesPage() {
       // Direct update for existing
       await executeSaveOpportunity();
     } else {
-      // Require 2-step verification for adding a new opportunity
-      setShowAuthConfirm(true);
+      // Direct creation — no 2-step verification required
+      await executeSaveOpportunity();
     }
   };
 
@@ -716,14 +715,7 @@ export function OpportunitiesPage() {
         loading={deleting}
       />
 
-      {/* 2-Step Authorization Modal for Adding Opportunity */}
-      <AdminActionConfirmModal
-        open={showAuthConfirm}
-        actionType="add_opportunity"
-        onClose={() => setShowAuthConfirm(false)}
-        onVerified={executeSaveOpportunity}
-        loading={submitting}
-      />
+      {/* 2-Step Authorization Modal removed — Lead/Co-Lead/Head act directly */}
     </div>
   );
 }

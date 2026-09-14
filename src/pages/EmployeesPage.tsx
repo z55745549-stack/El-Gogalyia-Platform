@@ -17,8 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import type { UserProfile, UserRole, UserStatus, Permission, Committee, Ban as BanRecord } from '@/types';
 import { subscribeCommittees, assignUserCommittee, createCommittee } from '@/lib/committees';
 import { subscribeBans, createBan, endBan, getActiveBan } from '@/lib/bans';
-import { AdminActionConfirmModal } from '@/components/auth/AdminActionConfirmModal';
-import type { AdminActionType } from '@/lib/action-auth';
+// 2-Step admin auth removed — Lead/Co-Lead and Head act directly
 import { generateEmployeeCode } from '@/lib/attendance';
 import { canManageRole, isTopTierRole, getRoleLabel, getRoleColor, isAdminRole } from '@/utils/permissions';
 
@@ -75,9 +74,10 @@ export function EmployeesPage() {
   const [banDuration, setBanDuration] = useState<string>('7');
   const [banCustomEnd, setBanCustomEnd] = useState('');
 
-  // Admin Action Authorization 2-Step Verification
-  const [authActionType, setAuthActionType] = useState<AdminActionType | null>(null);
-  const [authActionCallback, setAuthActionCallback] = useState<(() => Promise<void>) | null>(null);
+  // Top-tier check: lead & co_lead bypass all confirmations
+  const myRole = userProfile?.role ?? 'member';
+  const isTopTier = myRole === 'lead' || myRole === 'co_lead';
+  const isHeadRole = myRole === 'head';
 
   useEffect(() => {
     const unsubCommittees = subscribeCommittees((list) => setCommittees(list));
@@ -138,7 +138,8 @@ export function EmployeesPage() {
     );
   };
 
-  // Add Employee Handler (Protected by 2-Step Admin Auth)
+  // Add Member Handler — No 2-Step confirmation required
+  // Lead/Co-Lead: can add any role | Head: can only add member or vice_head
   const handleAddEmployee = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formDisplayName.trim() || !formUsername.trim() || !formPassword.trim()) {
@@ -152,9 +153,15 @@ export function EmployeesPage() {
       return;
     }
 
+    // HEAD can only add member or vice_head
+    if (isHeadRole && !['member', 'vice_head'].includes(formRole)) {
+      toast.error('صلاحيات HEAD تسمح فقط بإضافة أعضاء (MEMBER) ونواب رؤساء (VICE-HEAD).');
+      return;
+    }
+
     const unameLower = formUsername.trim().toLowerCase();
 
-    // 1. Check Username Uniqueness (local state + Supabase double-check for race conditions)
+    // Check Username Uniqueness
     const existingLocal = employees.find((u) => (u.username || '').toLowerCase() === unameLower);
     if (existingLocal) {
       toast.error('اسم المستخدم مستخدم بالفعل');
@@ -169,57 +176,50 @@ export function EmployeesPage() {
       }
     } catch {}
 
-    const targetAction: AdminActionType = isAdminRole(formRole) ? 'add_admin' : 'add_employee';
+    setSubmitting(true);
+    try {
+      // Hash Password securely — NEVER store plaintext
+      const salt = generateSalt();
+      const passwordHash = await hashPassword(formPassword.trim(), salt);
+      const generatedUid = 'user_' + unameLower.replace(/[^a-z0-9]/g, '_');
 
-    const executeAdd = async () => {
-      setSubmitting(true);
+      const committee = committees.find(c => c.id === formCommitteeId) || null;
+
+      // SECURITY: 'password' plaintext field intentionally omitted
+      const newEmpDoc = {
+        uid: generatedUid,
+        username: unameLower,
+        displayName: formDisplayName.trim(),
+        role: formRole,
+        status: formStatus,
+        committeeId: committee?.id || null,
+        committeeName: committee?.name || null,
+        permissions: formPermissions,
+        passwordHash,
+        salt,
+        oCoinsBalance: 0,
+        createdAt: serverTimestamp(),
+      };
+
+      // Save to Supabase (Primary source of truth — must succeed)
       try {
-        // 2. Hash Password securely — NEVER store plaintext
-        const salt = generateSalt();
-        const passwordHash = await hashPassword(formPassword.trim(), salt);
-        const generatedUid = 'user_' + unameLower.replace(/[^a-z0-9]/g, '_');
-
-        const committee = committees.find(c => c.id === formCommitteeId) || null;
-
-        // SECURITY: 'password' plaintext field intentionally omitted
-        const newEmpDoc = {
-          uid: generatedUid,
-          username: unameLower,
-          displayName: formDisplayName.trim(),
-          role: formRole,
-          status: formStatus,
-          committeeId: committee?.id || null,
-          committeeName: committee?.name || null,
-          permissions: formPermissions,
-          passwordHash,
-          salt,
-          oCoinsBalance: 0,
-          createdAt: serverTimestamp(),
-        };
-
-        // Save to Supabase (Primary source of truth — must succeed)
-        try {
-          await setDoc(doc(db, 'users', generatedUid), newEmpDoc);
-        } catch (e: any) {
-          const errMsg = e?.code === 'permission-denied'
-            ? 'خطأ في الصلاحيات. تأكد من تفعيل Supabase Rules الصحيحة.'
-            : 'فشل الحفظ في Supabase. تحقق من الاتصال.';
-          toast.error(errMsg);
-          return; // Do not proceed if Supabase failed
-        }
-
-        toast.success(`تم إضافة ${getRoleLabel(formRole)} (${formDisplayName}) بنجاح!`);
-        setShowAddModal(false);
-        resetForm();
-      } catch (err) {
-        toast.error('حدث خطأ أثناء إضافة الحساب.');
-      } finally {
-        setSubmitting(false);
+        await setDoc(doc(db, 'users', generatedUid), newEmpDoc);
+      } catch (e: any) {
+        const errMsg = e?.code === 'permission-denied'
+          ? 'خطأ في الصلاحيات. تأكد من تفعيل Supabase Rules الصحيحة.'
+          : 'فشل الحفظ في Supabase. تحقق من الاتصال.';
+        toast.error(errMsg);
+        return;
       }
-    };
 
-    setAuthActionCallback(() => executeAdd);
-    setAuthActionType(targetAction);
+      toast.success(`تم إضافة ${getRoleLabel(formRole)} (${formDisplayName}) بنجاح!`);
+      setShowAddModal(false);
+      resetForm();
+    } catch (err) {
+      toast.error('حدث خطأ أثناء إضافة الحساب.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   // Update Employee Handler
@@ -259,7 +259,7 @@ export function EmployeesPage() {
     }
   };
 
-  // Change Password Handler (Protected by 2-Step Admin Auth)
+  // Change Password Handler — direct execution, no 2-Step confirmation
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedUser || !newPassword.trim()) {
@@ -271,37 +271,29 @@ export function EmployeesPage() {
       return;
     }
 
-    const targetUser = selectedUser;
-    const pwd = newPassword.trim();
+    setSubmitting(true);
+    try {
+      const salt = generateSalt();
+      const passwordHash = await hashPassword(newPassword.trim(), salt);
 
-    const executeChangePassword = async () => {
-      setSubmitting(true);
-      try {
-        const salt = generateSalt();
-        const passwordHash = await hashPassword(pwd, salt);
+      // Update only hashed credentials — NEVER store plaintext password
+      await updateDoc(doc(db, 'users', selectedUser.uid), {
+        passwordHash,
+        salt,
+        updatedAt: serverTimestamp(),
+      });
 
-        // Update only hashed credentials — NEVER store plaintext password
-        await updateDoc(doc(db, 'users', targetUser.uid), {
-          passwordHash,
-          salt,
-          updatedAt: serverTimestamp(),
-        });
-
-        toast.success(`تم تغيير كلمة المرور للموظف (${targetUser.displayName}) بنجاح!`);
-        setShowPassModal(false);
-        resetForm();
-      } catch (err: any) {
-        const errMsg = err?.code === 'permission-denied'
-          ? 'ليس لديك صلاحية تغيير كلمة المرور.'
-          : 'فشل تغيير كلمة المرور.';
-        toast.error(errMsg);
-      } finally {
-        setSubmitting(false);
-      }
-    };
-
-    setAuthActionCallback(() => executeChangePassword);
-    setAuthActionType('change_user_password');
+      toast.success(`تم تغيير كلمة المرور لـ (${selectedUser.displayName}) بنجاح!`);
+      setShowPassModal(false);
+      resetForm();
+    } catch (err: any) {
+      const errMsg = err?.code === 'permission-denied'
+        ? 'ليس لديك صلاحية تغيير كلمة المرور.'
+        : 'فشل تغيير كلمة المرور.';
+      toast.error(errMsg);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   // Disable Employee Handler
@@ -365,7 +357,7 @@ export function EmployeesPage() {
     if (active) { toast.error('Employee already has an active suspension'); return; }
     setBanTarget(emp); setBanReason(''); setBanNote(''); setBanDuration('7'); setBanCustomEnd(''); setShowBanModal(true);
   };
-  // Ban confirmation handler (Protected by 2-Step Admin Auth)
+  // Ban confirmation handler — direct execution, no 2-Step confirmation
   const handleConfirmBan = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!banTarget || !banReason.trim()) { toast.error('سبب الحظر مطلوب'); return; }
@@ -379,38 +371,29 @@ export function EmployeesPage() {
     }
     if (end.getTime() <= Date.now()) { toast.error('يجب أن يكون تاريخ النهاية في المستقبل'); return; }
 
-    const targetEmp = banTarget;
-    const reasonText = banReason.trim();
-    const noteText = banNote.trim();
-
-    const executeBan = async () => {
-      setSubmitting(true);
-      try {
-        await createBan({
-          employee: targetEmp,
-          startAt: new Date(),
-          endAt: end,
-          reason: reasonText,
-          internalNote: noteText,
-          actor: {
-            uid: userProfile?.uid || '',
-            email: userProfile?.email || userProfile?.username || '',
-            displayName: userProfile?.displayName || 'Admin'
-          }
-        });
-        toast.success(`تم حظر ${targetEmp.displayName} حتى ${end.toLocaleDateString('ar-EG')} وتصفير رصيد الـ O Coins بنجاح`);
-        setShowBanModal(false);
-        setBanTarget(null);
-      } catch (err: any) {
-        console.error(err);
-        toast.error(err?.message || 'فشل تنفيذ الحظر');
-      } finally {
-        setSubmitting(false);
-      }
-    };
-
-    setAuthActionCallback(() => executeBan);
-    setAuthActionType('confirm_ban');
+    setSubmitting(true);
+    try {
+      await createBan({
+        employee: banTarget,
+        startAt: new Date(),
+        endAt: end,
+        reason: banReason.trim(),
+        internalNote: banNote.trim(),
+        actor: {
+          uid: userProfile?.uid || '',
+          email: userProfile?.email || userProfile?.username || '',
+          displayName: userProfile?.displayName || 'Admin'
+        }
+      });
+      toast.success(`تم حظر ${banTarget.displayName} حتى ${end.toLocaleDateString('ar-EG')} وتصفير رصيد الـ O Coins بنجاح`);
+      setShowBanModal(false);
+      setBanTarget(null);
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message || 'فشل تنفيذ الحظر');
+    } finally {
+      setSubmitting(false);
+    }
   };
   const handleEndBan = async (emp: UserProfile) => {
     const active = getActiveBan(bans, emp.uid);
@@ -912,21 +895,7 @@ export function EmployeesPage() {
         </div>
       </Modal>
 
-      {/* 2-Step Admin Action Authorization Modal */}
-      <AdminActionConfirmModal
-        open={Boolean(authActionType)}
-        actionType={authActionType}
-        onClose={() => {
-          setAuthActionType(null);
-          setAuthActionCallback(null);
-        }}
-        onVerified={async () => {
-          if (authActionCallback) {
-            await authActionCallback();
-          }
-        }}
-        loading={submitting}
-      />
+      {/* 2-Step Admin Action Authorization Modal removed — Lead/Co-Lead/Head act directly */}
     </div>
   );
 }

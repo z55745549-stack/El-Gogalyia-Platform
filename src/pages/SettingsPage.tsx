@@ -11,7 +11,7 @@ import { getRoleLabel, getRoleColor, isAdminRole } from '@/utils/permissions';
 import { formatOCoins, cn } from '@/utils';
 import { generateSalt, hashPassword } from '@/lib/auth-security';
 import { useMaintenance } from '@/hooks/useMaintenance';
-import { AdminActionConfirmModal } from '@/components/auth/AdminActionConfirmModal';
+// 2-Step admin auth removed — Lead/Co-Lead act directly
 import {
   Coins, Mail, Shield, User, Info, Users, KeyRound,
   Lock, CheckCircle2, AlertTriangle, Sparkles, RefreshCw,
@@ -39,7 +39,6 @@ export function SettingsPage() {
   // Maintenance Mode Hook
   const { isMaintenanceActive, maintenance, toggleMaintenance } = useMaintenance();
   const [togglingMaintenance, setTogglingMaintenance] = useState(false);
-  const [showMaintenanceAuthModal, setShowMaintenanceAuthModal] = useState(false);
   const [customMaintenanceMsg, setCustomMaintenanceMsg] = useState('');
 
   if (!userProfile) return null;
@@ -576,8 +575,16 @@ export function SettingsPage() {
                     setTogglingMaintenance(false);
                   }
                 } else {
-                  // Enable maintenance mode (requires admin action verification)
-                  setShowMaintenanceAuthModal(true);
+                  // Enable maintenance mode — direct execution, no 2-Step
+                  setTogglingMaintenance(true);
+                  try {
+                    await toggleMaintenance(true, customMaintenanceMsg || undefined);
+                    toast.warning('تم تشغيل وضعية الصيانة الفورية! تم حجب المنصة عن الأعضاء.');
+                  } catch {
+                    toast.error('حدث خطأ أثناء تفعيل وضع الصيانة.');
+                  } finally {
+                    setTogglingMaintenance(false);
+                  }
                 }
               }}
               className="font-black text-xs gap-2 shrink-0"
@@ -657,25 +664,7 @@ export function SettingsPage() {
         </div>
       </Modal>
 
-      {/* Modal: 2-Step Verification for Maintenance Mode */}
-      <AdminActionConfirmModal
-        open={showMaintenanceAuthModal}
-        actionType="enable_maintenance"
-        onClose={() => setShowMaintenanceAuthModal(false)}
-        loading={togglingMaintenance}
-        onVerified={async () => {
-          setTogglingMaintenance(true);
-          try {
-            await toggleMaintenance(true, customMaintenanceMsg || undefined);
-            toast.warning('تم تشغيل وضعية الصيانة الفورية! تم حجب المنصة عن الموظفين.');
-            setShowMaintenanceAuthModal(false);
-          } catch {
-            toast.error('حدث خطأ أثناء تفعيل وضع الصيانة.');
-          } finally {
-            setTogglingMaintenance(false);
-          }
-        }}
-      />
+      {/* 2-Step Verification for Maintenance Mode removed — Lead/Co-Lead act directly */}
     </div>
   );
 }

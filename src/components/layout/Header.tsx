@@ -8,7 +8,7 @@ import { useMaintenance } from '@/hooks/useMaintenance';
 import { useNotifications } from '@/hooks/useNotifications';
 import { Avatar } from '@/components/ui/avatar';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { AdminActionConfirmModal } from '@/components/auth/AdminActionConfirmModal';
+// 2-Step admin auth removed — Lead/Co-Lead act directly
 import { getRoleLabel, isAdminRole } from '@/utils/permissions';
 import { formatRelative, getNotificationEmoji, cn } from '@/utils';
 import { doc, updateDoc, writeBatch, collection, query, where, getDocs, db } from '@/lib/supabase';
@@ -29,7 +29,6 @@ export function Header({ onMobileMenuClick }: HeaderProps) {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [togglingMaintenance, setTogglingMaintenance] = useState(false);
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
-  const [showAuthConfirm, setShowAuthConfirm] = useState(false);
 
   const notifRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
@@ -100,7 +99,6 @@ export function Header({ onMobileMenuClick }: HeaderProps) {
     try {
       await toggleMaintenance(true);
       toast.warning('تم تشغيل وضعية الصيانة الفورية!');
-      setShowAuthConfirm(false);
     } catch {
       toast.error('حدث خطأ أثناء تفعيل الصيانة');
     } finally {
@@ -126,7 +124,8 @@ export function Header({ onMobileMenuClick }: HeaderProps) {
       await executeDisableMaintenance();
     } else {
       setShowMaintenanceModal(false);
-      setShowAuthConfirm(true);
+      // Direct execution — no 2-step verification required
+      await executeEnableMaintenance();
     }
   };
 
@@ -410,14 +409,7 @@ export function Header({ onMobileMenuClick }: HeaderProps) {
         variant={isMaintenanceActive ? 'default' : 'danger'}
       />
 
-      {/* 2-Step Authorization Modal for Enabling Maintenance */}
-      <AdminActionConfirmModal
-        open={showAuthConfirm}
-        actionType="enable_maintenance"
-        onClose={() => setShowAuthConfirm(false)}
-        onVerified={executeEnableMaintenance}
-        loading={togglingMaintenance}
-      />
+      {/* 2-Step Authorization Modal removed — Lead/Co-Lead act directly */}
     </header>
   );
 }
