@@ -13,6 +13,7 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { toast } from 'sonner';
+import { isAdminRole } from '@/utils/permissions';
 
 interface MaintenanceScreenProps {
   message?: string;
@@ -24,8 +25,7 @@ export function MaintenanceScreen({ message, onRefresh }: MaintenanceScreenProps
   const [adminSigningIn, setAdminSigningIn] = useState(false);
   const [checking, setChecking] = useState(false);
 
-  const isCurrentAdmin =
-    userProfile?.role === 'admin' || userProfile?.role === 'superAdmin';
+  const isCurrentAdmin = userProfile ? isAdminRole(userProfile.role) : false;
 
   const handleAdminLogin = async () => {
     setAdminSigningIn(true);

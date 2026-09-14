@@ -18,6 +18,7 @@ import { SkeletonTable } from '@/components/ui/skeleton';
 import { formatDate } from '@/utils';
 import type { AuthorizedAdmin, UserRole } from '@/types';
 import { AdminActionConfirmModal } from '@/components/auth/AdminActionConfirmModal';
+import { getRoleLabel, getRoleColor } from '@/utils/permissions';
 
 export function AccessManagementPage() {
   const { userProfile } = useAuth();
@@ -29,7 +30,7 @@ export function AccessManagementPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [googleEmail, setGoogleEmail] = useState('');
   const [adminName, setAdminName] = useState('');
-  const [adminRole, setAdminRole] = useState<'superAdmin' | 'admin'>('admin');
+  const [adminRole, setAdminRole] = useState<UserRole>('admin');
   const [submitting, setSubmitting] = useState(false);
   const [showAuthConfirm, setShowAuthConfirm] = useState(false);
 
@@ -222,12 +223,8 @@ export function AccessManagementPage() {
                       {admin.displayName || '—'}
                     </td>
                     <td className="p-4">
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md font-bold text-[11px] ${
-                        admin.role === 'superAdmin'
-                          ? 'bg-[var(--brand-accent)]/20 text-slate-900 dark:text-[var(--brand-accent)] border border-[var(--brand-accent)]/50'
-                          : 'bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800'
-                      }`}>
-                        {admin.role === 'superAdmin' ? '⭐ Super Admin (أدمن عام)' : '🛡️ Admin (مشرف)'}
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md font-bold text-[11px] ${getRoleColor(admin.role)}`}>
+                        {getRoleLabel(admin.role)}
                       </span>
                     </td>
                     <td className="p-4">
@@ -309,11 +306,14 @@ export function AccessManagementPage() {
             <label className="form-label">مستوى الصلاحية الإدارية</label>
             <Select
               options={[
-                { value: 'admin', label: 'Admin (مشرف مهام وإدارة)' },
-                { value: 'superAdmin', label: 'Super Admin (أدمن عام - صلاحيات كاملة)' },
+                { value: 'admin', label: '🛡️ Admin (مشرف مهام وإدارة)' },
+                { value: 'head', label: '👑 HEAD (رئيس لجنة)' },
+                { value: 'superAdmin', label: '⭐ Super Admin (أدمن عام - صلاحيات كاملة)' },
+                { value: 'co_lead', label: '🌟 CO-LEAD (نائب القائد)' },
+                { value: 'lead', label: '🏆 LEAD (قائد المنصة)' },
               ]}
               value={adminRole}
-              onChange={(e) => setAdminRole(e.target.value as 'superAdmin' | 'admin')}
+              onChange={(e) => setAdminRole(e.target.value as UserRole)}
             />
           </div>
 

@@ -1173,7 +1173,7 @@ export async function addAuthorizedAdmin(
   adminData: {
     email: string;
     displayName?: string;
-    role: 'superAdmin' | 'admin';
+    role: UserRole;
   },
   actor: { email: string; displayName: string }
 ) {

@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
+import { isAdminRole } from '@/utils/permissions';
 import {
   subscribeOpportunities,
   createOpportunity,
@@ -69,7 +70,7 @@ const getCategoryBadge = (category: OpportunityCategory) => {
 
 export function OpportunitiesPage() {
   const { userProfile } = useAuth();
-  const isAdmin = userProfile?.role === 'admin' || userProfile?.role === 'superAdmin';
+  const isAdmin = userProfile ? isAdminRole(userProfile.role) : false;
 
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [loading, setLoading] = useState(true);

@@ -11,6 +11,7 @@ import { SkeletonRow } from '@/components/ui/loading-spinner';
 import { formatRelative, getNotificationEmoji, cn } from '@/utils';
 import { toast } from 'sonner';
 import type { Notification } from '@/types';
+import { isAdminRole } from '@/utils/permissions';
 
 type NotificationTab = 'all' | 'unread' | 'tasks' | 'support' | 'meetings' | 'system';
 
@@ -60,7 +61,7 @@ export function NotificationsPage() {
     }
 
     // Determine target URL
-    const isAdmin = userProfile?.role === 'admin' || userProfile?.role === 'superAdmin';
+    const isAdmin = userProfile ? isAdminRole(userProfile.role) : false;
     if (notif.actionUrl) {
       navigate(notif.actionUrl);
     } else if (notif.ticketId) {

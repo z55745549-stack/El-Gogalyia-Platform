@@ -7,7 +7,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
-import { getRoleLabel, getRoleColor } from '@/utils/permissions';
+import { getRoleLabel, getRoleColor, isAdminRole } from '@/utils/permissions';
 import { formatOCoins, cn } from '@/utils';
 import { generateSalt, hashPassword } from '@/lib/auth-security';
 import { useMaintenance } from '@/hooks/useMaintenance';
@@ -44,7 +44,7 @@ export function SettingsPage() {
 
   if (!userProfile) return null;
 
-  const isAdmin = userProfile.role === 'admin' || userProfile.role === 'superAdmin';
+  const isAdmin = isAdminRole(userProfile.role);
   const is2FAActive = Boolean(userProfile.isTwoFactorEnabled && userProfile.googleLinkedEmail);
 
   // ─── 1. Update Display Name ───────────────────────────────────────────────

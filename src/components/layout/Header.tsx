@@ -9,7 +9,7 @@ import { useNotifications } from '@/hooks/useNotifications';
 import { Avatar } from '@/components/ui/avatar';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { AdminActionConfirmModal } from '@/components/auth/AdminActionConfirmModal';
-import { getRoleLabel } from '@/utils/permissions';
+import { getRoleLabel, isAdminRole } from '@/utils/permissions';
 import { formatRelative, getNotificationEmoji, cn } from '@/utils';
 import { doc, updateDoc, writeBatch, collection, query, where, getDocs, db } from '@/lib/supabase';
 import { toast } from 'sonner';
@@ -34,7 +34,7 @@ export function Header({ onMobileMenuClick }: HeaderProps) {
   const notifRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
 
-  const isAdmin = userProfile && (userProfile.role === 'admin' || userProfile.role === 'superAdmin');
+  const isAdmin = userProfile ? isAdminRole(userProfile.role) : false;
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   useEffect(() => {

@@ -21,35 +21,39 @@ interface NavItem {
   category: 'main' | 'work' | 'development' | 'rewards' | 'content' | 'team' | 'help' | 'system';
 }
 
+const ALL_ADMIN_ROLES: UserRole[] = ['lead', 'co_lead', 'superAdmin', 'head', 'vice_head', 'admin'];
+const MEMBER_ROLES: UserRole[] = ['member', 'employee', 'vice_head'];
+const ALL_ROLES: UserRole[] = ['lead', 'co_lead', 'superAdmin', 'head', 'vice_head', 'admin', 'member', 'employee'];
+
 const navItems: NavItem[] = [
-  { label: 'لوحة التحكم', path: '/dashboard', icon: <LayoutDashboard className="h-4 w-4" />, roles: ['superAdmin', 'admin', 'employee'], category: 'main' },
-  { label: 'مهامي وتكليفاتي', path: '/my-tasks', icon: <ListTodo className="h-4 w-4" />, roles: ['employee'], category: 'work' },
-  { label: 'سجل حضوري', path: '/my-attendance', icon: <CalendarCheck className="h-4 w-4" />, roles: ['employee'], category: 'work' },
-  { label: 'الاجتماعات واللقاءات', path: '/meetings', icon: <CalendarDays className="h-4 w-4" />, roles: ['employee'], category: 'work' },
-  { label: 'المهام والتكليفات', path: '/tasks', icon: <CheckSquare className="h-4 w-4" />, roles: ['superAdmin', 'admin'], category: 'work' },
-  { label: 'تسليمات المهام', path: '/submitted-tasks', icon: <Inbox className="h-4 w-4" />, roles: ['superAdmin', 'admin'], category: 'work' },
-  { label: 'فريق العمل والطلاب', path: '/employees', icon: <Users className="h-4 w-4" />, roles: ['superAdmin', 'admin'], category: 'team' },
-  { label: 'نظام الحضور (QR)', path: '/attendance', icon: <QrCode className="h-4 w-4" />, roles: ['superAdmin', 'admin'], category: 'team' },
-  { label: 'الاجتماعات واللقاءات', path: '/meetings', icon: <CalendarDays className="h-4 w-4" />, roles: ['superAdmin', 'admin'], category: 'team' },
-  { label: 'الحظر والعقوبات', path: '/bans', icon: <Ban className="h-4 w-4" />, roles: ['superAdmin', 'admin'], category: 'team' },
-  { label: 'الدورات التعليمية', path: '/courses', icon: <BookOpen className="h-4 w-4" />, roles: ['employee'], category: 'development' },
-  { label: 'الفرص والتدريبات', path: '/opportunities', icon: <GraduationCap className="h-4 w-4" />, roles: ['employee'], category: 'development' },
-  { label: 'الدورات التعليمية', path: '/courses', icon: <BookOpen className="h-4 w-4" />, roles: ['superAdmin', 'admin'], category: 'content' },
-  { label: 'إدارة الدورات', path: '/admin/courses', icon: <GraduationCap className="h-4 w-4" />, roles: ['superAdmin', 'admin'], category: 'content' },
-  { label: 'الفرص والتدريبات', path: '/opportunities', icon: <GraduationCap className="h-4 w-4" />, roles: ['superAdmin', 'admin'], category: 'content' },
-  { label: 'إدارة الخصومات', path: '/admin/discounts', icon: <Tag className="h-4 w-4" />, roles: ['superAdmin', 'admin'], category: 'content' },
-  { label: 'محفظة O Coins', path: '/ocoins', icon: <Coins className="h-4 w-4" />, roles: ['employee'], category: 'rewards' },
-  { label: 'متجر الخصومات', path: '/discounts', icon: <Tag className="h-4 w-4" />, roles: ['employee'], category: 'rewards' },
-  { label: 'مشترياتي', path: '/my-discounts', icon: <ShoppingBag className="h-4 w-4" />, roles: ['employee'], category: 'rewards' },
-  { label: 'محفظة O Coins', path: '/ocoins', icon: <Coins className="h-4 w-4" />, roles: ['superAdmin', 'admin'], category: 'rewards' },
-  { label: 'متجر الخصومات', path: '/discounts', icon: <Tag className="h-4 w-4" />, roles: ['superAdmin', 'admin'], category: 'rewards' },
-  { label: 'مركز المساعدة', path: '/support', icon: <LifeBuoy className="h-4 w-4" />, roles: ['employee'], category: 'help' },
-  { label: 'إدارة التذاكر', path: '/admin/support', icon: <LifeBuoy className="h-4 w-4" />, roles: ['superAdmin', 'admin'], category: 'help' },
-  { label: 'إدارة الوصول', path: '/access-management', icon: <Shield className="h-4 w-4" />, roles: ['superAdmin', 'admin'], category: 'system' },
-  { label: 'التقارير والإحصائيات', path: '/reports', icon: <BarChart3 className="h-4 w-4" />, roles: ['superAdmin', 'admin'], category: 'system' },
-  { label: 'سجل العمليات', path: '/activity-logs', icon: <ClipboardList className="h-4 w-4" />, roles: ['superAdmin', 'admin'], category: 'system' },
-  { label: 'مركز التنبيهات', path: '/notifications', icon: <Bell className="h-4 w-4" />, roles: ['superAdmin', 'admin', 'employee'], category: 'system' },
-  { label: 'الإعدادات والأمان', path: '/settings', icon: <Settings className="h-4 w-4" />, roles: ['superAdmin', 'admin', 'employee'], category: 'system' },
+  { label: 'لوحة التحكم', path: '/dashboard', icon: <LayoutDashboard className="h-4 w-4" />, roles: ALL_ROLES, category: 'main' },
+  { label: 'مهامي وتكليفاتي', path: '/my-tasks', icon: <ListTodo className="h-4 w-4" />, roles: MEMBER_ROLES, category: 'work' },
+  { label: 'سجل حضوري', path: '/my-attendance', icon: <CalendarCheck className="h-4 w-4" />, roles: MEMBER_ROLES, category: 'work' },
+  { label: 'الاجتماعات واللقاءات', path: '/meetings', icon: <CalendarDays className="h-4 w-4" />, roles: MEMBER_ROLES, category: 'work' },
+  { label: 'المهام والتكليفات', path: '/tasks', icon: <CheckSquare className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'work' },
+  { label: 'تسليمات المهام', path: '/submitted-tasks', icon: <Inbox className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'work' },
+  { label: 'فريق العمل والطلاب', path: '/employees', icon: <Users className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'team' },
+  { label: 'نظام الحضور (QR)', path: '/attendance', icon: <QrCode className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'team' },
+  { label: 'الاجتماعات واللقاءات', path: '/meetings', icon: <CalendarDays className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'team' },
+  { label: 'الحظر والعقوبات', path: '/bans', icon: <Ban className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'team' },
+  { label: 'الدورات التعليمية', path: '/courses', icon: <BookOpen className="h-4 w-4" />, roles: MEMBER_ROLES, category: 'development' },
+  { label: 'الفرص والتدريبات', path: '/opportunities', icon: <GraduationCap className="h-4 w-4" />, roles: MEMBER_ROLES, category: 'development' },
+  { label: 'الدورات التعليمية', path: '/courses', icon: <BookOpen className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'content' },
+  { label: 'إدارة الدورات', path: '/admin/courses', icon: <GraduationCap className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'content' },
+  { label: 'الفرص والتدريبات', path: '/opportunities', icon: <GraduationCap className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'content' },
+  { label: 'إدارة الخصومات', path: '/admin/discounts', icon: <Tag className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'content' },
+  { label: 'محفظة O Coins', path: '/ocoins', icon: <Coins className="h-4 w-4" />, roles: MEMBER_ROLES, category: 'rewards' },
+  { label: 'متجر الخصومات', path: '/discounts', icon: <Tag className="h-4 w-4" />, roles: MEMBER_ROLES, category: 'rewards' },
+  { label: 'مشترياتي', path: '/my-discounts', icon: <ShoppingBag className="h-4 w-4" />, roles: MEMBER_ROLES, category: 'rewards' },
+  { label: 'محفظة O Coins', path: '/ocoins', icon: <Coins className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'rewards' },
+  { label: 'متجر الخصومات', path: '/discounts', icon: <Tag className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'rewards' },
+  { label: 'مركز المساعدة', path: '/support', icon: <LifeBuoy className="h-4 w-4" />, roles: MEMBER_ROLES, category: 'help' },
+  { label: 'إدارة التذاكر', path: '/admin/support', icon: <LifeBuoy className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'help' },
+  { label: 'إدارة الوصول', path: '/access-management', icon: <Shield className="h-4 w-4" />, roles: ['lead', 'co_lead', 'superAdmin', 'admin'], category: 'system' },
+  { label: 'التقارير والإحصائيات', path: '/reports', icon: <BarChart3 className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'system' },
+  { label: 'سجل العمليات', path: '/activity-logs', icon: <ClipboardList className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'system' },
+  { label: 'مركز التنبيهات', path: '/notifications', icon: <Bell className="h-4 w-4" />, roles: ALL_ROLES, category: 'system' },
+  { label: 'الإعدادات والأمان', path: '/settings', icon: <Settings className="h-4 w-4" />, roles: ALL_ROLES, category: 'system' },
 ];
 
 const categoryLabels: Record<string, string> = {
@@ -88,7 +92,7 @@ function GDGLogoMark() {
 export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   const { userProfile, signOut } = useAuth();
   const navigate = useNavigate();
-  const role = userProfile?.role ?? 'employee';
+  const role = userProfile?.role ?? 'member';
 
   const visibleItems = navItems.filter((item) => item.roles.includes(role));
 

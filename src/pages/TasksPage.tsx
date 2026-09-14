@@ -23,6 +23,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { SkeletonTable } from '@/components/ui/skeleton';
 import { Avatar } from '@/components/ui/avatar';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { isAdminRole } from '@/utils/permissions';
 import { TaskFormModal } from '@/components/tasks/TaskFormModal';
 import { formatDate, safeDate, isOverdue, cn } from '@/utils';
 import type { Task } from '@/types';
@@ -179,7 +180,7 @@ export function TasksPage() {
     return matchSearch && matchTab && matchPriority;
   });
 
-  const canCreate = userProfile?.role === 'superAdmin' || userProfile?.role === 'admin';
+  const canCreate = userProfile ? isAdminRole(userProfile.role) : false;
 
   return (
     <div className="space-y-6 font-sans text-right dir-rtl">

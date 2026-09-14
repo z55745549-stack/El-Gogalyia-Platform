@@ -540,13 +540,7 @@ export function EmployeesPage() {
                   </td>
 
                   <td className="p-4">
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold ${
-                      emp.role === 'superAdmin'
-                        ? 'bg-purple-100 text-purple-700'
-                        : emp.role === 'admin'
-                        ? 'bg-blue-100 text-blue-700'
-                        : 'bg-slate-100 text-slate-700'
-                    }`}>
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold ${getRoleColor(emp.role)}`}>
                       {getRoleLabel(emp.role)}
                     </span>
                   </td>
@@ -610,7 +604,7 @@ export function EmployeesPage() {
               <span className="text-xs font-black px-2 py-1 rounded-lg bg-amber-50 text-amber-700 border border-amber-200">🪙 {emp.oCoinsBalance ?? 0}</span>
             </div>
             <div className="flex items-center gap-2 mt-3 flex-wrap">
-              <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${emp.role === 'superAdmin' ? 'bg-[#7C00FE]/10 text-[#7C00FE]' : emp.role === 'admin' ? 'bg-[#F5004F]/10 text-[#F5004F]' : 'bg-slate-100 text-slate-600'}`}>{emp.role}</span>
+              <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${getRoleColor(emp.role)}`}>{getRoleLabel(emp.role)}</span>
               <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${emp.status === 'active' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>{emp.status}</span>
             </div>
             {canManageRole(userProfile?.role ?? 'employee', emp.role) && (

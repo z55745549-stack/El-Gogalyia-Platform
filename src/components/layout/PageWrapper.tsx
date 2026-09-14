@@ -16,6 +16,7 @@ import { useMaintenance } from '@/hooks/useMaintenance';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { toast } from 'sonner';
+import { isAdminRole } from '@/utils/permissions';
 
 const pageVariants = {
   initial: { opacity: 0, y: 6 },
@@ -32,9 +33,9 @@ export function PageWrapper({ children, unreadNotifications = 0 }: PageWrapperPr
   const [mobileOpen, setMobileOpen] = useState(false);
   const { userProfile } = useAuth();
   const { isMaintenanceActive, toggleMaintenance } = useMaintenance();
-  const role = userProfile?.role ?? 'employee';
-  const isEmployee = role === 'employee';
-  const isAdmin = role === 'admin' || role === 'superAdmin';
+  const role = userProfile?.role ?? 'member';
+  const isAdmin = isAdminRole(role);
+  const isEmployee = !isAdmin;
 
   const handleDisableMaintenance = async () => {
     try {

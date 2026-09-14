@@ -26,6 +26,7 @@ import { SkeletonCard } from '@/components/ui/skeleton';
 import { formatDate, cn } from '@/utils';
 import type { Meeting, MeetingType, MeetingStatus } from '@/types';
 import { Timestamp } from '@/lib/supabase';
+import { isAdminRole } from '@/utils/permissions';
 
 const TYPE_OPTIONS: { value: MeetingType; label: string }[] = [
   { value: 'general', label: 'اجتماع عام (General)' },
@@ -66,7 +67,7 @@ const getStatusBadge = (status: MeetingStatus) => {
 
 export function MeetingsPage() {
   const { userProfile } = useAuth();
-  const isAdmin = userProfile?.role === 'admin' || userProfile?.role === 'superAdmin';
+  const isAdmin = userProfile ? isAdminRole(userProfile.role) : false;
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);

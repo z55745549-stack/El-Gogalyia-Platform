@@ -25,6 +25,7 @@ import type {
   TicketAttachment
 } from '@/types/support';
 import type { UserProfile } from '@/types';
+import { isAdminRole } from '@/utils/permissions';
 
 // Generate short readable ticket numbers e.g. #TK-1042
 function generateTicketNumber(): string {
@@ -146,8 +147,8 @@ export async function addTicketReply(params: {
   const ticket = ticketSnap.data() as SupportTicket;
   const now = serverTimestamp();
 
-  // If internal note, verify sender is admin or superAdmin
-  const isAdmin = sender.role === 'admin' || sender.role === 'superAdmin';
+  // If internal note, verify sender is admin or superAdmin/lead/head
+  const isAdmin = isAdminRole(sender.role);
   const effectiveInternal = isInternalNote && isAdmin;
 
   // Insert message into messages collection

@@ -27,14 +27,15 @@ import { Avatar } from '@/components/ui/avatar';
 import { formatDate, isOverdue, cn, safeDate } from '@/utils';
 import type { Task, TaskSubmission, UserTaskStatus } from '@/types';
 import { uploadTaskAttachment, type UploadedFile } from '@/lib/storage';
+import { isAdminRole } from '@/utils/permissions';
 
 export function TaskDetailPage() {
   const { taskId } = useParams<{ taskId: string }>();
   const { userProfile } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const isEmployee = userProfile?.role === 'employee';
-  const isAdmin = userProfile?.role === 'superAdmin' || userProfile?.role === 'admin';
+  const isAdmin = userProfile ? isAdminRole(userProfile.role) : false;
+  const isEmployee = !isAdmin;
 
   const [task, setTask] = useState<Task | null>(null);
   const [submissions, setSubmissions] = useState<TaskSubmission[]>([]);

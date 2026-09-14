@@ -14,6 +14,7 @@ import { supabase } from '@/lib/supabase';
 import { verifyPassword, generateSalt, hashPassword } from '@/lib/auth-security';
 import { parseErrorMessage, logError } from '@/lib/errors';
 import type { UserProfile, Permission } from '@/types';
+import { isAdminRole } from '@/utils/permissions';
 
 // -------------------------------------------------------------------
 // Login Rate Limiter (In-memory + Session scoped protection)
@@ -530,7 +531,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const hasPermission = useCallback(
     (perm: Permission) => {
       if (!userProfile) return false;
-      if (userProfile.role === 'superAdmin') return true;
+      if (isAdminRole(userProfile.role)) return true;
       return userProfile.permissions?.includes(perm) ?? false;
     },
     [userProfile]

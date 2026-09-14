@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
+import { isAdminRole } from '@/utils/permissions';
 import {
   manualOCoinAdjustment,
   deleteOCoinTransaction,
@@ -119,7 +120,7 @@ const TRANSACTION_TYPE_CONFIG: Record<
 
 export function OCoinsPage() {
   const { userProfile } = useAuth();
-  const canManage = userProfile?.role === 'superAdmin' || userProfile?.role === 'admin';
+  const canManage = userProfile ? isAdminRole(userProfile.role) : false;
 
   const [allTransactions, setAllTransactions] = useState<OCoinTransaction[]>([]);
   const [loading, setLoading] = useState(true);

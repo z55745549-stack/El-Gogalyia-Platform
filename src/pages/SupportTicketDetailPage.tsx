@@ -38,6 +38,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { SkeletonCard } from '@/components/ui/skeleton';
 import { formatDate, formatRelative, cn } from '@/utils';
 import { toast } from 'sonner';
+import { isAdminRole } from '@/utils/permissions';
 import {
   TICKET_CATEGORY_CONFIG,
   TICKET_STATUS_CONFIG,
@@ -63,7 +64,7 @@ export function SupportTicketDetailPage() {
   const [statusUpdating, setStatusUpdating] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const isAdmin = userProfile?.role === 'admin' || userProfile?.role === 'superAdmin';
+  const isAdmin = userProfile ? isAdminRole(userProfile.role) : false;
 
   // 1. Subscribe to ticket document
   useEffect(() => {
