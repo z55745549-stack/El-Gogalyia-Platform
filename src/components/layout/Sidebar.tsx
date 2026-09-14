@@ -21,9 +21,9 @@ interface NavItem {
   category: 'main' | 'work' | 'development' | 'rewards' | 'content' | 'team' | 'help' | 'system';
 }
 
-const ALL_ADMIN_ROLES: UserRole[] = ['lead', 'co_lead', 'superAdmin', 'head', 'vice_head', 'admin'];
-const MEMBER_ROLES: UserRole[] = ['member', 'employee', 'vice_head'];
-const ALL_ROLES: UserRole[] = ['lead', 'co_lead', 'superAdmin', 'head', 'vice_head', 'admin', 'member', 'employee'];
+const ALL_ADMIN_ROLES: UserRole[] = ['lead', 'co_lead', 'head', 'superAdmin', 'admin'];
+const MEMBER_ROLES: UserRole[] = ['member', 'vice_head', 'employee'];
+const ALL_ROLES: UserRole[] = ['lead', 'co_lead', 'head', 'vice_head', 'member', 'superAdmin', 'admin', 'employee'];
 
 const navItems: NavItem[] = [
   { label: 'لوحة التحكم', path: '/dashboard', icon: <LayoutDashboard className="h-4 w-4" />, roles: ALL_ROLES, category: 'main' },
@@ -49,7 +49,7 @@ const navItems: NavItem[] = [
   { label: 'متجر الخصومات', path: '/discounts', icon: <Tag className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'rewards' },
   { label: 'مركز المساعدة', path: '/support', icon: <LifeBuoy className="h-4 w-4" />, roles: MEMBER_ROLES, category: 'help' },
   { label: 'إدارة التذاكر', path: '/admin/support', icon: <LifeBuoy className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'help' },
-  { label: 'إدارة الوصول', path: '/access-management', icon: <Shield className="h-4 w-4" />, roles: ['lead', 'co_lead', 'superAdmin', 'admin'], category: 'system' },
+  { label: 'إدارة الوصول', path: '/access-management', icon: <Shield className="h-4 w-4" />, roles: ['lead', 'co_lead', 'head', 'superAdmin', 'admin'], category: 'system' },
   { label: 'التقارير والإحصائيات', path: '/reports', icon: <BarChart3 className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'system' },
   { label: 'سجل العمليات', path: '/activity-logs', icon: <ClipboardList className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'system' },
   { label: 'مركز التنبيهات', path: '/notifications', icon: <Bell className="h-4 w-4" />, roles: ALL_ROLES, category: 'system' },

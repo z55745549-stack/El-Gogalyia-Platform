@@ -30,7 +30,7 @@ export function AccessManagementPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [googleEmail, setGoogleEmail] = useState('');
   const [adminName, setAdminName] = useState('');
-  const [adminRole, setAdminRole] = useState<UserRole>('admin');
+  const [adminRole, setAdminRole] = useState<UserRole>('head');
   const [submitting, setSubmitting] = useState(false);
   const [showAuthConfirm, setShowAuthConfirm] = useState(false);
 
@@ -306,11 +306,9 @@ export function AccessManagementPage() {
             <label className="form-label">مستوى الصلاحية الإدارية</label>
             <Select
               options={[
-                { value: 'admin', label: '🛡️ Admin (مشرف مهام وإدارة)' },
-                { value: 'head', label: '👑 HEAD (رئيس لجنة)' },
-                { value: 'superAdmin', label: '⭐ Super Admin (أدمن عام - صلاحيات كاملة)' },
-                { value: 'co_lead', label: '🌟 CO-LEAD (نائب القائد)' },
-                { value: 'lead', label: '🏆 LEAD (قائد المنصة)' },
+                { value: 'head', label: '👑 HEAD (رئيس لجنة - إدارة وصلاحيات إشرافية)' },
+                { value: 'co_lead', label: '🌟 CO-LEAD (نائب القائد - صلاحيات قيادية عليا)' },
+                ...(userProfile?.role === 'lead' ? [{ value: 'lead', label: '🏆 LEAD (قائد المنصة - أعلى صلاحية)' }] : []),
               ]}
               value={adminRole}
               onChange={(e) => setAdminRole(e.target.value as UserRole)}

@@ -2,16 +2,16 @@ import type { Permission, UserRole } from '@/types';
 import { ROLE_PERMISSIONS } from '@/types';
 
 // ─── Role Hierarchy ────────────────────────────────────────────────────────────
-// lead > co_lead > superAdmin > head > vice_head > admin > member = employee
+// LEAD (100) > CO-LEAD (90) > HEAD (80) > VICE-HEAD (20) > MEMBER (10)
 export const ROLE_HIERARCHY: Record<UserRole, number> = {
-  lead:      100,
-  co_lead:   90,
-  superAdmin: 80,
-  head:      70,
-  vice_head: 60,
-  admin:     50,
-  member:    10,
-  employee:  10,
+  lead:       100, // أعلى رتبة وسلطة كاملة
+  co_lead:    90,  // نائب القائد - سلطة عليا فوق الجميع
+  head:       80,  // رئيس لجنة - بديل السوبر أدمن (إدارة المنصة واللجان والمهام)
+  superAdmin: 75,  // Legacy fallback
+  admin:      50,  // Legacy fallback
+  vice_head:  20,  // نائب رئيس لجنة - مثل الموظف في المهام والتسليم والحضور
+  member:     10,  // عضو - بديل رتبة الموظف
+  employee:   10,  // Legacy fallback
 };
 
 export function getRoleRank(role: UserRole): number {
@@ -23,14 +23,17 @@ export function canManageRole(actorRole: UserRole, targetRole: UserRole): boolea
   return getRoleRank(actorRole) > getRoleRank(targetRole);
 }
 
-/** True if actor can view/edit ALL users including superAdmins */
+/** True if actor can view/edit ALL users including any management/superAdmin accounts */
 export function isTopTierRole(role: UserRole): boolean {
   return role === 'lead' || role === 'co_lead';
 }
 
-/** True if role has admin-level access or above (can use admin pages) */
+/** 
+ * True if role has management/administrative access to the platform 
+ * LEAD, CO-LEAD, and HEAD (which replaces Super Admin)
+ */
 export function isAdminRole(role: UserRole): boolean {
-  return getRoleRank(role) >= ROLE_HIERARCHY['admin'];
+  return role === 'lead' || role === 'co_lead' || role === 'head' || role === 'superAdmin' || role === 'admin';
 }
 
 export function hasPermission(
@@ -38,10 +41,10 @@ export function hasPermission(
   userRole: UserRole,
   permission: Permission
 ): boolean {
-  // lead, co_lead, superAdmin, head have all permissions
+  // lead, co_lead, head have all administrative permissions
   if (isAdminRole(userRole)) return true;
-  // Check explicit permissions first
-  if (userPermissions.includes(permission)) return true;
+  // Check explicit user permissions
+  if (userPermissions?.includes(permission)) return true;
   // Check role default permissions
   return ROLE_PERMISSIONS[userRole]?.includes(permission) ?? false;
 }
@@ -49,26 +52,10 @@ export function hasPermission(
 export function canAccessPage(role: UserRole, page: string): boolean {
   const adminPages = [
     '/employees', '/reports', '/access-management', '/activity-logs',
-    '/tasks', '/submitted-tasks', '/ocoins',
+    '/tasks', '/submitted-tasks', '/attendance', '/bans',
   ];
-  const allPages = ['/dashboard', '/notifications', '/settings', '/my-tasks', '/meetings'];
-
   if (adminPages.includes(page)) return isAdminRole(role);
-  if (allPages.includes(page)) return true;
-
-  const pagePermissions: Record<string, UserRole[]> = {
-    '/dashboard':          ['lead', 'co_lead', 'superAdmin', 'head', 'vice_head', 'admin', 'member', 'employee'],
-    '/tasks':              ['lead', 'co_lead', 'superAdmin', 'head', 'vice_head', 'admin', 'member', 'employee'],
-    '/my-tasks':           ['member', 'employee', 'vice_head'],
-    '/employees':          ['lead', 'co_lead', 'superAdmin', 'head', 'admin'],
-    '/ocoins':             ['lead', 'co_lead', 'superAdmin', 'head', 'admin', 'vice_head', 'member', 'employee'],
-    '/reports':            ['lead', 'co_lead', 'superAdmin', 'head', 'admin'],
-    '/access-management':  ['lead', 'co_lead', 'superAdmin', 'admin'],
-    '/activity-logs':      ['lead', 'co_lead', 'superAdmin', 'head', 'admin'],
-    '/notifications':      ['lead', 'co_lead', 'superAdmin', 'head', 'vice_head', 'admin', 'member', 'employee'],
-    '/settings':           ['lead', 'co_lead', 'superAdmin', 'head', 'vice_head', 'admin', 'member', 'employee'],
-  };
-  return pagePermissions[page]?.includes(role) ?? false;
+  return true;
 }
 
 export function getDefaultRoute(role: UserRole): string {
@@ -77,28 +64,28 @@ export function getDefaultRoute(role: UserRole): string {
 
 export function getRoleLabel(role: UserRole): string {
   const labels: Record<UserRole, string> = {
-    lead:      'LEAD',
-    co_lead:   'CO-LEAD',
-    superAdmin: 'Super Admin',
-    head:      'HEAD',
-    vice_head: 'VICE-HEAD',
-    admin:     'Admin',
-    member:    'MEMBER',
-    employee:  'MEMBER',
+    lead:       '🏆 LEAD',
+    co_lead:    '🌟 CO-LEAD',
+    head:       '👑 HEAD',
+    vice_head:  '🔹 VICE-HEAD',
+    member:     '👤 MEMBER',
+    superAdmin: '⭐ Super Admin',
+    admin:      '🛡️ Admin',
+    employee:   '👤 MEMBER',
   };
-  return labels[role] || 'MEMBER';
+  return labels[role] || '👤 MEMBER';
 }
 
 export function getRoleColor(role: UserRole): string {
   const colors: Record<UserRole, string> = {
-    lead:       'bg-[#FFD700]/20 text-[#7a5900] ring-1 ring-[#FFD700]/50',
-    co_lead:    'bg-[#C0A000]/15 text-[#5c4300] ring-1 ring-[#C0A000]/40',
-    superAdmin: 'bg-[#7C00FE]/10 text-[#7C00FE] ring-1 ring-[#7C00FE]/20',
-    head:       'bg-[#F5004F]/10 text-[#F5004F] ring-1 ring-[#F5004F]/20',
-    vice_head:  'bg-[#FF7A00]/10 text-[#a35000] ring-1 ring-[#FF7A00]/20',
-    admin:      'bg-blue-100 text-blue-700 ring-1 ring-blue-200',
-    member:     'bg-[#FFAF00]/15 text-[#8a5a00] ring-1 ring-[#FFAF00]/30',
-    employee:   'bg-[#FFAF00]/15 text-[#8a5a00] ring-1 ring-[#FFAF00]/30',
+    lead:       'bg-amber-500/15 text-amber-800 dark:text-amber-200 border border-amber-500/40 ring-1 ring-amber-500/20',
+    co_lead:    'bg-purple-500/15 text-purple-800 dark:text-purple-200 border border-purple-500/40 ring-1 ring-purple-500/20',
+    head:       'bg-blue-500/15 text-blue-800 dark:text-blue-200 border border-blue-500/40 ring-1 ring-blue-500/20',
+    vice_head:  'bg-emerald-500/15 text-emerald-800 dark:text-emerald-200 border border-emerald-500/40 ring-1 ring-emerald-500/20',
+    member:     'bg-slate-500/15 text-slate-800 dark:text-slate-200 border border-slate-500/30',
+    superAdmin: 'bg-purple-500/15 text-purple-800 dark:text-purple-200 border border-purple-500/40',
+    admin:      'bg-blue-500/15 text-blue-800 dark:text-blue-200 border border-blue-500/40',
+    employee:   'bg-slate-500/15 text-slate-800 dark:text-slate-200 border border-slate-500/30',
   };
-  return colors[role] || 'bg-slate-100 text-slate-700';
+  return colors[role] || 'bg-slate-500/15 text-slate-800 dark:text-slate-200 border border-slate-500/30';
 }

@@ -663,13 +663,11 @@ export function EmployeesPage() {
               onChange={(e) => setFormRole(e.target.value as UserRole)}
               options={[
                 { value: 'member', label: '👤 MEMBER (عضو)' },
-                { value: 'vice_head', label: '🔹 VICE-HEAD (نائب رئيس لجنة)' },
-                { value: 'head', label: '🔸 HEAD (رئيس لجنة)' },
-                { value: 'admin', label: '🛡️ Admin (مدير نظام - Legacy)' },
+                { value: 'vice_head', label: '🔹 VICE-HEAD / CO-HEAD (نائب رئيس لجنة)' },
+                { value: 'head', label: '👑 HEAD (رئيس لجنة - إدارة وصلاحيات)' },
                 ...(isTopTierRole(userProfile?.role ?? 'member') ? [
-                  { value: 'superAdmin', label: '⭐ Super Admin' },
-                  { value: 'co_lead', label: '🥈 CO-LEAD' },
-                  { value: 'lead', label: '👑 LEAD' },
+                  { value: 'co_lead', label: '🌟 CO-LEAD (نائب القائد)' },
+                  ...(userProfile?.role === 'lead' ? [{ value: 'lead', label: '🏆 LEAD (قائد المنصة)' }] : []),
                 ] : []),
               ]}
             />
@@ -742,13 +740,11 @@ export function EmployeesPage() {
               onChange={(e) => setFormRole(e.target.value as UserRole)}
               options={[
                 { value: 'member', label: '👤 MEMBER (عضو)' },
-                { value: 'vice_head', label: '🔹 VICE-HEAD (نائب رئيس لجنة)' },
-                { value: 'head', label: '🔸 HEAD (رئيس لجنة)' },
-                { value: 'admin', label: '🛡️ Admin (مدير نظام - Legacy)' },
+                { value: 'vice_head', label: '🔹 VICE-HEAD / CO-HEAD (نائب رئيس لجنة)' },
+                { value: 'head', label: '👑 HEAD (رئيس لجنة - إدارة وصلاحيات)' },
                 ...(isTopTierRole(userProfile?.role ?? 'member') ? [
-                  { value: 'superAdmin', label: '⭐ Super Admin' },
-                  { value: 'co_lead', label: '🥈 CO-LEAD' },
-                  { value: 'lead', label: '👑 LEAD' },
+                  { value: 'co_lead', label: '🌟 CO-LEAD (نائب القائد)' },
+                  ...(userProfile?.role === 'lead' ? [{ value: 'lead', label: '🏆 LEAD (قائد المنصة)' }] : []),
                 ] : []),
               ]}
             />

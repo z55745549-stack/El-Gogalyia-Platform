@@ -10,11 +10,11 @@ export interface Timestamp {
 // ─── User & Auth ────────────────────────────────────────────────────────────
 
 export type UserRole =
-  | 'lead'       // LEAD - قائد مجتمع GDG (أعلى رتبة في المنصة)
-  | 'co_lead'    // CO-LEAD - نائب قائد المجتمع (صلاحيات قيادية عليا فوق السوبر أدمن)
-  | 'head'       // HEAD - رئيس لجنة
-  | 'vice_head'  // VICE-HEAD / CO-HEAD - نائب رئيس لجنة
-  | 'member'     // MEMBER - عضو
+  | 'lead'       // LEAD - قائد المنصة (أعلى سلطة وصلاحيات كاملة على كل شيء)
+  | 'co_lead'    // CO-LEAD - نائب القائد (صلاحيات كاملة فوق السوبر أدمن)
+  | 'head'       // HEAD - رئيس لجنة (بديل السوبر أدمن - إدارة المنصة واللجان)
+  | 'vice_head'  // VICE-HEAD / CO-HEAD - نائب رئيس لجنة (مهام وحضور مثل الموظف)
+  | 'member'     // MEMBER - عضو (بديل رتبة الموظف)
   // Legacy aliases
   | 'superAdmin'
   | 'admin'
@@ -138,9 +138,10 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   head: [
     'tasks.create', 'tasks.edit', 'tasks.delete', 'tasks.assign',
     'tasks.review', 'tasks.view_all',
-    'employees.view',
+    'employees.view', 'employees.manage',
     'ocoins.manage', 'ocoins.view_all',
-    'reports.view',
+    'reports.view', 'reports.export',
+    'access.manage',
     'activity.view',
     'notifications.send',
   ],

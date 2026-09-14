@@ -5,6 +5,7 @@ import { AccessDenied } from '@/components/auth/AccessDenied';
 import { MaintenanceScreen } from '@/components/maintenance/MaintenanceScreen';
 import { useMaintenance } from '@/hooks/useMaintenance';
 import type { UserRole } from '@/types';
+import { isAdminRole } from '@/utils/permissions';
 
 interface ProtectedRouteProps {
   allowedRoles?: UserRole[];
@@ -30,8 +31,8 @@ export function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
     return <Navigate to="/" replace />;
   }
 
-  // If maintenance mode is active, only Admins & SuperAdmins are allowed through
-  const isAdmin = ['lead','co_lead','superAdmin','head','vice_head','admin'].includes(userProfile.role);
+  // If maintenance mode is active, only management roles (lead, co_lead, head) are allowed through
+  const isAdmin = isAdminRole(userProfile.role);
   if (isMaintenanceActive && !isAdmin) {
     return <MaintenanceScreen message={maintenance.message} />;
   }
