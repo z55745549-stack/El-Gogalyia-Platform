@@ -1036,7 +1036,7 @@ export async function addAuthorizedUser(
     username: userData.username || emailKey,
     displayName: userData.displayName || emailKey.split('@')[0],
     photoURL: userData.photoURL || '',
-    role: userData.role || 'employee',
+    role: userData.role || 'member',
     permissions: userData.permissions || [],
     status: userData.status || 'active',
     oCoinsBalance: 0,

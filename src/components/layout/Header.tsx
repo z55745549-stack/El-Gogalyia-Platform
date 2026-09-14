@@ -328,7 +328,7 @@ export function Header({ onMobileMenuClick }: HeaderProps) {
                 {userProfile?.displayName || 'عضو الفريق'}
               </p>
               <span className="text-[10px] font-semibold" style={{ color: '#A78BFA' }}>
-                {getRoleLabel(userProfile?.role || 'employee')}
+                {getRoleLabel(userProfile?.role || 'member')}
               </span>
             </div>
             <ChevronDown className="h-3 w-3 hidden sm:block" style={{ color: 'var(--text-muted)' }} />

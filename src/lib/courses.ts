@@ -646,7 +646,7 @@ export async function autoEnsureCourseLessons(
       uid: course.createdBy || 'system',
       displayName: course.createdByName || 'WorkHub System',
       email: '',
-      role: 'admin',
+      role: 'head',
     } as any);
 
     const playlistId = extractYouTubePlaylistId(url);

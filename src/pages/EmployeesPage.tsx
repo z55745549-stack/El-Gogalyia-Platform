@@ -54,7 +54,7 @@ export function EmployeesPage() {
   const [formDisplayName, setFormDisplayName] = useState('');
   const [formUsername, setFormUsername] = useState('');
   const [formPassword, setFormPassword] = useState('');
-  const [formRole, setFormRole] = useState<UserRole>('employee');
+  const [formRole, setFormRole] = useState<UserRole>('member');
   const [formStatus, setFormStatus] = useState<UserStatus>('active');
   const [formCommitteeId, setFormCommitteeId] = useState<string>('');
   const [formPermissions, setFormPermissions] = useState<Permission[]>([]);
@@ -113,7 +113,7 @@ export function EmployeesPage() {
     setFormDisplayName('');
     setFormUsername('');
     setFormPassword('');
-    setFormRole('employee');
+    setFormRole('member');
     setFormStatus('active');
     setFormCommitteeId('');
     setFormPermissions([]);
@@ -169,7 +169,7 @@ export function EmployeesPage() {
       }
     } catch {}
 
-    const targetAction: AdminActionType = formRole === 'admin' ? 'add_admin' : 'add_employee';
+    const targetAction: AdminActionType = isAdminRole(formRole) ? 'add_admin' : 'add_employee';
 
     const executeAdd = async () => {
       setSubmitting(true);
@@ -208,7 +208,7 @@ export function EmployeesPage() {
           return; // Do not proceed if Supabase failed
         }
 
-        toast.success(`تم إضافة ${formRole === 'admin' ? 'المشرف' : 'الموظف'} (${formDisplayName}) بنجاح!`);
+        toast.success(`تم إضافة ${getRoleLabel(formRole)} (${formDisplayName}) بنجاح!`);
         setShowAddModal(false);
         resetForm();
       } catch (err) {
@@ -561,7 +561,7 @@ export function EmployeesPage() {
                   </td>
 
                   <td className="p-4 text-left">
-                    {canManageRole(userProfile?.role ?? 'employee', emp.role) && (
+                    {canManageRole(userProfile?.role ?? 'member', emp.role) && (
                       <div className="flex items-center justify-end gap-1">
                         <button onClick={() => handleOpenEdit(emp)} title="تعديل" className="p-2 hover:bg-slate-100 rounded-lg text-slate-600"><Edit3 className="h-4 w-4" /></button>
                         <button onClick={() => { setSelectedUser(emp); setShowPassModal(true); }} title="كلمة المرور" className="p-2 hover:bg-amber-50 rounded-lg text-amber-600"><KeyRound className="h-4 w-4" /></button>
@@ -607,7 +607,7 @@ export function EmployeesPage() {
               <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${getRoleColor(emp.role)}`}>{getRoleLabel(emp.role)}</span>
               <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${emp.status === 'active' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>{emp.status}</span>
             </div>
-            {canManageRole(userProfile?.role ?? 'employee', emp.role) && (
+            {canManageRole(userProfile?.role ?? 'member', emp.role) && (
               <div className="grid grid-cols-5 gap-1.5 mt-3">
                 <button onClick={() => handleOpenEdit(emp)} className="py-2 rounded-xl bg-slate-50 hover:bg-[#7C00FE]/10 text-slate-700 flex flex-col items-center gap-1 text-[10px] font-bold"><Edit3 className="h-4 w-4" /> Edit</button>
                 <button onClick={() => { setSelectedUser(emp); setShowPassModal(true); }} className="py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 flex flex-col items-center gap-1 text-[10px] font-bold"><KeyRound className="h-4 w-4" /> Pass</button>

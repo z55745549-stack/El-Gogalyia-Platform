@@ -20,6 +20,7 @@ import {
 import { logActivity } from './database-service';
 import { logAudit } from './audit';
 import type { UserProfile } from '@/types';
+import { isAdminRole } from '@/utils/permissions';
 
 export type ArchivableCollection =
   | 'tasks'
@@ -147,7 +148,7 @@ export async function restoreRecord(params: {
 }
 
 /**
- * Permanently deletes a record — strictly restricted to superAdmin with confirmation
+ * Permanently deletes a record — strictly restricted to Leadership & Head (LEAD / CO-LEAD / HEAD)
  */
 export async function permanentlyDeleteRecord(params: {
   collectionName: ArchivableCollection;
@@ -157,8 +158,8 @@ export async function permanentlyDeleteRecord(params: {
 }): Promise<void> {
   const { collectionName, docId, title, actor } = params;
 
-  if (actor.role !== 'superAdmin') {
-    throw new Error('الحذف النهائي مقصور فقط على المشرف العام للنظام (Super Admin).');
+  if (!isAdminRole(actor.role)) {
+    throw new Error('الحذف النهائي مقصور فقط على قيادة المنصة ورؤساء اللجان (LEAD / CO-LEAD / HEAD).');
   }
 
   const docRef = doc(db, collectionName, docId);

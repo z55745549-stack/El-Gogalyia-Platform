@@ -1,4 +1,4 @@
-import type { Timestamp } from './index';
+import type { Timestamp, UserRole } from './index';
 
 export type TicketCategory =
   | 'technical'      // مشاكل تقنية ونظام
@@ -30,7 +30,7 @@ export interface TicketMessage {
   senderId: string;
   senderName: string;
   senderPhoto?: string;
-  senderRole: 'superAdmin' | 'admin' | 'employee';
+  senderRole: UserRole;
   message: string;
   attachments?: TicketAttachment[];
   isInternalNote: boolean; // strictly visible to admins only

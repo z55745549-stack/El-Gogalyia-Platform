@@ -80,7 +80,7 @@ export async function createSupportTicket(params: {
     senderId: creator.uid,
     senderName: creator.displayName || creator.username || 'عضو الفريق',
     senderPhoto: creator.photoURL || '',
-    senderRole: creator.role || 'employee',
+    senderRole: creator.role || 'member',
     message: description.trim(),
     attachments,
     isInternalNote: false,
@@ -102,7 +102,7 @@ export async function createSupportTicket(params: {
   // Notify Admins about new ticket
   try {
     const adminSnap = await getDocs(
-      query(collection(db, 'users'), where('role', 'in', ['admin', 'superAdmin']))
+      query(collection(db, 'users'), where('role', 'in', ['lead', 'co_lead', 'head']))
     );
     for (const adminDoc of adminSnap.docs) {
       const adminData = adminDoc.data();
@@ -147,7 +147,7 @@ export async function addTicketReply(params: {
   const ticket = ticketSnap.data() as SupportTicket;
   const now = serverTimestamp();
 
-  // If internal note, verify sender is admin or superAdmin/lead/head
+  // If internal note, verify sender has management role (lead, co_lead, head)
   const isAdmin = isAdminRole(sender.role);
   const effectiveInternal = isInternalNote && isAdmin;
 
@@ -157,7 +157,7 @@ export async function addTicketReply(params: {
     senderId: sender.uid,
     senderName: sender.displayName || sender.username || 'مستخدم',
     senderPhoto: sender.photoURL || '',
-    senderRole: sender.role || 'employee',
+    senderRole: sender.role || 'member',
     message: message.trim(),
     attachments,
     isInternalNote: effectiveInternal,

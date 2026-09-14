@@ -45,7 +45,7 @@ export function AccessDenied() {
       display_name: userProfile.displayName || 'System Admin',
       email: userProfile.email.toLowerCase(),
       photo_url: userProfile.photoURL || null,
-      role: 'admin',
+      role: 'lead',
       status: 'active',
       permissions: [
         'tasks.create', 'tasks.edit', 'tasks.delete', 'tasks.assign',
@@ -66,9 +66,9 @@ export function AccessDenied() {
     // Save local session override so admin access works immediately
     localStorage.setItem('elgogalyia_owner_admin', JSON.stringify({
       ...userProfile,
-      role: 'admin',
+      role: 'lead',
     }));
-    toast.success('تم التحقق بنجاح وتفعيل حسابك كـ Admin!');
+    toast.success('تم التحقق بنجاح وتفعيل حسابك كـ LEAD!');
     window.location.reload();
     setInitializing(false);
   };

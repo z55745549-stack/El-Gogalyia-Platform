@@ -2,38 +2,41 @@ import type { Permission, UserRole } from '@/types';
 import { ROLE_PERMISSIONS } from '@/types';
 
 // ─── Role Hierarchy ────────────────────────────────────────────────────────────
-// LEAD (100) > CO-LEAD (90) > HEAD (80) > VICE-HEAD (20) > MEMBER (10)
+// LEAD (100) = CO-LEAD (100) > HEAD (80) > VICE-HEAD (10) = MEMBER (10)
 export const ROLE_HIERARCHY: Record<UserRole, number> = {
-  lead:       100, // أعلى رتبة وسلطة كاملة
-  co_lead:    90,  // نائب القائد - سلطة عليا فوق الجميع
-  head:       80,  // رئيس لجنة - بديل السوبر أدمن (إدارة المنصة واللجان والمهام)
-  superAdmin: 75,  // Legacy fallback
-  admin:      50,  // Legacy fallback
-  vice_head:  20,  // نائب رئيس لجنة - مثل الموظف في المهام والتسليم والحضور
-  member:     10,  // عضو - بديل رتبة الموظف
-  employee:   10,  // Legacy fallback
+  lead:       100, // قائد المنصة (متساوي مع الكو ليد 100٪ فوق الجميع)
+  co_lead:    100, // نائب القائد (متساوي مع الليد 100٪ فوق الجميع)
+  head:        80, // رئيس لجنة (مثل السوبر أدمن سابقاً - صلاحيات كاملة في كل شيء أسفله)
+  vice_head:   10, // نائب رئيس لجنة (متساوي تماماً مع الميمبر مثل صلاحيات الموظف)
+  member:      10, // عضو (متساوي تماماً مع الفايس هيد مثل صلاحيات الموظف)
 };
 
 export function getRoleRank(role: UserRole): number {
   return ROLE_HIERARCHY[role] ?? 0;
 }
 
-/** True if actorRole is strictly above targetRole in the hierarchy */
+/** 
+ * True if actorRole can manage targetRole:
+ * - LEAD and CO-LEAD are equal and have supreme authority over all roles
+ * - HEAD can manage everything below it (vice_head and member)
+ * - VICE-HEAD and MEMBER cannot manage others
+ */
 export function canManageRole(actorRole: UserRole, targetRole: UserRole): boolean {
+  if (actorRole === 'lead' || actorRole === 'co_lead') return true;
   return getRoleRank(actorRole) > getRoleRank(targetRole);
 }
 
-/** True if actor can view/edit ALL users including any management/superAdmin accounts */
+/** True if actor is top tier leadership (LEAD or CO-LEAD) */
 export function isTopTierRole(role: UserRole): boolean {
   return role === 'lead' || role === 'co_lead';
 }
 
 /** 
- * True if role has management/administrative access to the platform 
+ * True if role has management/administrative access:
  * LEAD, CO-LEAD, and HEAD (which replaces Super Admin)
  */
 export function isAdminRole(role: UserRole): boolean {
-  return role === 'lead' || role === 'co_lead' || role === 'head' || role === 'superAdmin' || role === 'admin';
+  return role === 'lead' || role === 'co_lead' || role === 'head';
 }
 
 export function hasPermission(
@@ -69,9 +72,6 @@ export function getRoleLabel(role: UserRole): string {
     head:       '👑 HEAD',
     vice_head:  '🔹 VICE-HEAD',
     member:     '👤 MEMBER',
-    superAdmin: '⭐ Super Admin',
-    admin:      '🛡️ Admin',
-    employee:   '👤 MEMBER',
   };
   return labels[role] || '👤 MEMBER';
 }
@@ -83,9 +83,6 @@ export function getRoleColor(role: UserRole): string {
     head:       'bg-blue-500/15 text-blue-800 dark:text-blue-200 border border-blue-500/40 ring-1 ring-blue-500/20',
     vice_head:  'bg-emerald-500/15 text-emerald-800 dark:text-emerald-200 border border-emerald-500/40 ring-1 ring-emerald-500/20',
     member:     'bg-slate-500/15 text-slate-800 dark:text-slate-200 border border-slate-500/30',
-    superAdmin: 'bg-purple-500/15 text-purple-800 dark:text-purple-200 border border-purple-500/40',
-    admin:      'bg-blue-500/15 text-blue-800 dark:text-blue-200 border border-blue-500/40',
-    employee:   'bg-slate-500/15 text-slate-800 dark:text-slate-200 border border-slate-500/30',
   };
   return colors[role] || 'bg-slate-500/15 text-slate-800 dark:text-slate-200 border border-slate-500/30';
 }

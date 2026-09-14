@@ -296,7 +296,7 @@ export function SupportTicketDetailPage() {
         {/* Message Thread Container */}
         <div className="space-y-3.5">
           {messages.map((msg, index) => {
-            const isMsgAdmin = msg.senderRole === 'admin' || msg.senderRole === 'superAdmin';
+            const isMsgAdmin = isAdminRole(msg.senderRole as UserRole);
             const isMyMsg = msg.senderId === userProfile?.uid;
 
             // Internal note styling (strictly visible to admins)
@@ -309,7 +309,7 @@ export function SupportTicketDetailPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5 font-black text-amber-700 dark:text-amber-300">
                       <Lock className="h-3.5 w-3.5" />
-                      <span>ملاحظة إدارية داخلية (خاصة بالمشرفين فقط - مخفية عن الموظف)</span>
+                      <span>ملاحظة إدارية داخلية (خاصة بإدارة المنصة - مخفية عن الأعضاء)</span>
                     </div>
                     <span className="text-[10px] text-amber-600/80 dark:text-amber-400 font-mono">
                       {msg.createdAt ? formatRelative(msg.createdAt) : 'الآن'}

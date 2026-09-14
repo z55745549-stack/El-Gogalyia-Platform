@@ -62,7 +62,7 @@ export function LoginPage() {
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState<'employee' | 'admin'>('employee');
+  const [activeTab, setActiveTab] = useState<'member' | 'leader'>('member');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -72,7 +72,7 @@ export function LoginPage() {
   const [pending2FA, setPending2FA] = useState<{ profile: UserProfile; linkedEmail: string } | null>(null);
   const [twoFactorLoading, setTwoFactorLoading] = useState(false);
 
-  const handleEmployeeSignIn = async (e: React.FormEvent) => {
+  const handleMemberSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
     const u = username.trim(), p = password.trim();
@@ -375,7 +375,7 @@ export function LoginPage() {
                     background: 'var(--surface-elevated)',
                     border: '1px solid var(--border-subtle)',
                   }}>
-                  {(['employee', 'admin'] as const).map((tab) => (
+                  {(['member', 'leader'] as const).map((tab) => (
                     <button
                       key={tab}
                       type="button"
@@ -388,23 +388,23 @@ export function LoginPage() {
                         border: activeTab === tab ? '1px solid var(--border-default)' : '1px solid transparent',
                       }}
                     >
-                      {tab === 'employee'
-                        ? <><User className="h-3.5 w-3.5" /> الأعضاء والطلاب</>
-                        : <><Shield className="h-3.5 w-3.5" style={{ color: '#A78BFA' }} /> بوابة المشرفين</>
+                      {tab === 'member'
+                        ? <><User className="h-3.5 w-3.5" /> الأعضاء ونواب اللجان</>
+                        : <><Shield className="h-3.5 w-3.5" style={{ color: '#A78BFA' }} /> بوابة القيادة والرؤساء</>
                       }
                     </button>
                   ))}
                 </div>
 
-                {/* Employee / Member & Admin Password form */}
+                {/* Member / Leadership Password form */}
                 <AnimatePresence mode="wait">
-                  {activeTab === 'employee' && (
+                  {activeTab === 'member' && (
                     <motion.form
-                      key="emp"
+                      key="member"
                       initial={{ opacity: 0, y: 6 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -6 }}
-                      onSubmit={handleEmployeeSignIn}
+                      onSubmit={handleMemberSignIn}
                       className="space-y-4"
                     >
                       <div>
@@ -440,7 +440,7 @@ export function LoginPage() {
                   )}
 
                   {/* Admin form */}
-                  {activeTab === 'admin' && (
+                  {activeTab === 'leader' && (
                     <motion.div
                       key="adm"
                       initial={{ opacity: 0, y: 6 }}

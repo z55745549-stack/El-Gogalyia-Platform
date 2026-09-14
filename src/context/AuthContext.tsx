@@ -180,10 +180,10 @@ export const MASTER_ACCOUNTS: Record<string, {
     profile: {
       uid: 'user_admin',
       username: 'admin',
-      displayName: 'قائد مجتمع GDG HITU (Super Admin)',
-      email: 'admin@gdg-hitu.org',
+      displayName: 'قائد المنصة (LEAD)',
+      email: 'lead@gdg-hitu.org',
       photoURL: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-      role: 'superAdmin',
+      role: 'lead',
       permissions: [
         'tasks.create', 'tasks.edit', 'tasks.delete', 'tasks.assign',
         'tasks.review', 'tasks.view_all',
@@ -207,10 +207,10 @@ export const MASTER_ACCOUNTS: Record<string, {
     profile: {
       uid: 'user_gdg_admin',
       username: 'gdg_admin',
-      displayName: 'مدير منصة GDG HITU',
-      email: 'leader@gdg-hitu.org',
+      displayName: 'نائب القائد (CO-LEAD)',
+      email: 'colead@gdg-hitu.org',
       photoURL: '',
-      role: 'superAdmin',
+      role: 'co_lead',
       permissions: [
         'tasks.create', 'tasks.edit', 'tasks.delete', 'tasks.assign',
         'tasks.review', 'tasks.view_all',
@@ -234,11 +234,11 @@ export const MASTER_ACCOUNTS: Record<string, {
     profile: {
       uid: 'user_member',
       username: 'member',
-      displayName: 'أحمد علي (عضو تقني GDG)',
+      displayName: 'أحمد علي (عضو GDG)',
       email: 'member@gdg-hitu.org',
       photoURL: '',
-      role: 'employee',
-      permissions: ['tasks.view_all', 'reports.view'],
+      role: 'member',
+      permissions: [],
       status: 'active',
       committeeId: 'tech-dev',
       committeeName: 'Tech Dev',

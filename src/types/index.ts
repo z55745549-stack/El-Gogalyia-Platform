@@ -10,15 +10,11 @@ export interface Timestamp {
 // ─── User & Auth ────────────────────────────────────────────────────────────
 
 export type UserRole =
-  | 'lead'       // LEAD - قائد المنصة (أعلى سلطة وصلاحيات كاملة على كل شيء)
-  | 'co_lead'    // CO-LEAD - نائب القائد (صلاحيات كاملة فوق السوبر أدمن)
-  | 'head'       // HEAD - رئيس لجنة (بديل السوبر أدمن - إدارة المنصة واللجان)
-  | 'vice_head'  // VICE-HEAD / CO-HEAD - نائب رئيس لجنة (مهام وحضور مثل الموظف)
-  | 'member'     // MEMBER - عضو (بديل رتبة الموظف)
-  // Legacy aliases
-  | 'superAdmin'
-  | 'admin'
-  | 'employee';
+  | 'lead'       // LEAD - قائد المنصة (متساوي مع الكو ليد 100٪ فوق الجميع)
+  | 'co_lead'    // CO-LEAD - نائب القائد (متساوي مع الليد 100٪ فوق الجميع)
+  | 'head'       // HEAD - رئيس لجنة (مثل السوبر أدمن سابقاً - إدارة كل شيء أسفله)
+  | 'vice_head'  // VICE-HEAD - نائب رئيس لجنة (متساوي مع العضو تماماً مثل صلاحيات الموظف)
+  | 'member';    // MEMBER - عضو (البديل الفعلي للموظف)
 export type UserStatus = 'active' | 'inactive' | 'suspended';
 
 export interface AuthorizedUser {
@@ -125,16 +121,6 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'activity.view',
     'notifications.send',
   ],
-  superAdmin: [
-    'tasks.create', 'tasks.edit', 'tasks.delete', 'tasks.assign',
-    'tasks.review', 'tasks.view_all',
-    'employees.view', 'employees.manage',
-    'ocoins.manage', 'ocoins.view_all',
-    'reports.view', 'reports.export',
-    'access.manage',
-    'activity.view',
-    'notifications.send',
-  ],
   head: [
     'tasks.create', 'tasks.edit', 'tasks.delete', 'tasks.assign',
     'tasks.review', 'tasks.view_all',
@@ -145,24 +131,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'activity.view',
     'notifications.send',
   ],
-  vice_head: [
-    'tasks.create', 'tasks.edit', 'tasks.assign',
-    'tasks.review', 'tasks.view_all',
-    'employees.view',
-    'notifications.send',
-  ],
-  admin: [
-    'tasks.create', 'tasks.edit', 'tasks.delete', 'tasks.assign',
-    'tasks.review', 'tasks.view_all',
-    'employees.view', 'employees.manage',
-    'ocoins.manage', 'ocoins.view_all',
-    'reports.view', 'reports.export',
-    'access.manage',
-    'activity.view',
-    'notifications.send',
-  ],
+  vice_head: [],
   member: [],
-  employee: [],
 };
 
 export interface AuthorizedAdmin {

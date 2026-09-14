@@ -81,11 +81,11 @@ export function AccessManagementPage() {
         }
       );
 
-      toast.success(`تم تفويض حساب Google (${emailClean}) كـ ${adminRole === 'superAdmin' ? 'Super Admin' : 'Admin'} بنجاح!`);
+      toast.success(`تم تفويض حساب Google (${emailClean}) برتبة ${getRoleLabel(adminRole)} بنجاح!`);
       setShowAddModal(false);
       setGoogleEmail('');
       setAdminName('');
-      setAdminRole('admin');
+      setAdminRole('head');
       setShowAuthConfirm(false);
     } catch (err: any) {
       toast.error(err?.message || 'فشل إضافة المشرف.');

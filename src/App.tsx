@@ -85,7 +85,7 @@ export default function App() {
               <Route path="/attendance/check" element={<AttendanceCheckInPage />} />
 
               {/* Member & Vice-Head routes (like employee) */}
-              <Route element={<ProtectedRoute allowedRoles={['member', 'vice_head', 'employee']} />}>
+              <Route element={<ProtectedRoute allowedRoles={['member', 'vice_head']} />}>
                 <Route path="/my-tasks" element={<MyTasksPage />} />
                 <Route path="/my-tasks/:taskId" element={<TaskDetailPage />} />
                 <Route path="/my-attendance" element={<MyAttendancePage />} />
@@ -93,7 +93,7 @@ export default function App() {
               </Route>
 
               {/* Leadership & Head routes (replaces Super Admin & Admin) */}
-              <Route element={<ProtectedRoute allowedRoles={['lead', 'co_lead', 'head', 'superAdmin', 'admin']} />}>
+              <Route element={<ProtectedRoute allowedRoles={['lead', 'co_lead', 'head']} />}>
                 <Route path="/tasks" element={<TasksPage />} />
                 <Route path="/tasks/:taskId" element={<TaskDetailPage />} />
                 <Route path="/submitted-tasks" element={<SubmittedTasksPage />} />
