@@ -20,6 +20,7 @@ import { subscribeBans, createBan, endBan, getActiveBan } from '@/lib/bans';
 import { AdminActionConfirmModal } from '@/components/auth/AdminActionConfirmModal';
 import type { AdminActionType } from '@/lib/action-auth';
 import { generateEmployeeCode } from '@/lib/attendance';
+import { canManageRole, isTopTierRole, getRoleLabel, getRoleColor } from '@/utils/permissions';
 
 const AVAILABLE_PERMISSIONS: { key: Permission; label: string }[] = [
   { key: 'employees.manage' as Permission, label: 'إدارة الموظفين (manageEmployees)' },
@@ -546,7 +547,7 @@ export function EmployeesPage() {
                         ? 'bg-blue-100 text-blue-700'
                         : 'bg-slate-100 text-slate-700'
                     }`}>
-                      {emp.role === 'superAdmin' ? 'Super Admin' : emp.role === 'admin' ? 'Admin' : 'Employee'}
+                      {getRoleLabel(emp.role)}
                     </span>
                   </td>
 
@@ -566,7 +567,7 @@ export function EmployeesPage() {
                   </td>
 
                   <td className="p-4 text-left">
-                    {emp.role !== 'superAdmin' && (
+                    {canManageRole(userProfile?.role ?? 'employee', emp.role) && (
                       <div className="flex items-center justify-end gap-1">
                         <button onClick={() => handleOpenEdit(emp)} title="تعديل" className="p-2 hover:bg-slate-100 rounded-lg text-slate-600"><Edit3 className="h-4 w-4" /></button>
                         <button onClick={() => { setSelectedUser(emp); setShowPassModal(true); }} title="كلمة المرور" className="p-2 hover:bg-amber-50 rounded-lg text-amber-600"><KeyRound className="h-4 w-4" /></button>
@@ -612,7 +613,7 @@ export function EmployeesPage() {
               <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${emp.role === 'superAdmin' ? 'bg-[#7C00FE]/10 text-[#7C00FE]' : emp.role === 'admin' ? 'bg-[#F5004F]/10 text-[#F5004F]' : 'bg-slate-100 text-slate-600'}`}>{emp.role}</span>
               <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${emp.status === 'active' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>{emp.status}</span>
             </div>
-            {emp.role !== 'superAdmin' && (
+            {canManageRole(userProfile?.role ?? 'employee', emp.role) && (
               <div className="grid grid-cols-5 gap-1.5 mt-3">
                 <button onClick={() => handleOpenEdit(emp)} className="py-2 rounded-xl bg-slate-50 hover:bg-[#7C00FE]/10 text-slate-700 flex flex-col items-center gap-1 text-[10px] font-bold"><Edit3 className="h-4 w-4" /> Edit</button>
                 <button onClick={() => { setSelectedUser(emp); setShowPassModal(true); }} className="py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 flex flex-col items-center gap-1 text-[10px] font-bold"><KeyRound className="h-4 w-4" /> Pass</button>
@@ -667,8 +668,15 @@ export function EmployeesPage() {
               value={formRole}
               onChange={(e) => setFormRole(e.target.value as UserRole)}
               options={[
-                { value: 'employee', label: 'موظف عادي (Employee)' },
-                { value: 'admin', label: 'مدير نظام (Admin)' },
+                { value: 'member', label: '👤 MEMBER (عضو)' },
+                { value: 'vice_head', label: '🔹 VICE-HEAD (نائب رئيس لجنة)' },
+                { value: 'head', label: '🔸 HEAD (رئيس لجنة)' },
+                { value: 'admin', label: '🛡️ Admin (مدير نظام - Legacy)' },
+                ...(isTopTierRole(userProfile?.role ?? 'member') ? [
+                  { value: 'superAdmin', label: '⭐ Super Admin' },
+                  { value: 'co_lead', label: '🥈 CO-LEAD' },
+                  { value: 'lead', label: '👑 LEAD' },
+                ] : []),
               ]}
             />
 
@@ -739,8 +747,15 @@ export function EmployeesPage() {
               value={formRole}
               onChange={(e) => setFormRole(e.target.value as UserRole)}
               options={[
-                { value: 'employee', label: 'موظف عادي (Employee)' },
-                { value: 'admin', label: 'مدير نظام (Admin)' },
+                { value: 'member', label: '👤 MEMBER (عضو)' },
+                { value: 'vice_head', label: '🔹 VICE-HEAD (نائب رئيس لجنة)' },
+                { value: 'head', label: '🔸 HEAD (رئيس لجنة)' },
+                { value: 'admin', label: '🛡️ Admin (مدير نظام - Legacy)' },
+                ...(isTopTierRole(userProfile?.role ?? 'member') ? [
+                  { value: 'superAdmin', label: '⭐ Super Admin' },
+                  { value: 'co_lead', label: '🥈 CO-LEAD' },
+                  { value: 'lead', label: '👑 LEAD' },
+                ] : []),
               ]}
             />
 

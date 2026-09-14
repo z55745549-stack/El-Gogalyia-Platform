@@ -4,17 +4,15 @@
  */
 import type { Ban, UserProfile } from '@/types';
 import { logBanAccess } from './audit';
+import { isAdminRole } from '@/utils/permissions';
 
 /**
- * RBAC: Only admin, super_admin, or privileged committee roles can view all bans
- * Regular employees can NEVER view other users' bans
+ * RBAC: Only admin-tier roles (head and above) can view all bans
+ * Regular members/employees can NEVER view other users' bans
  */
 export function canViewAllBans(user: UserProfile | null): boolean {
   if (!user) return false;
-  if (user.role === 'superAdmin' || user.role === 'admin') return true;
-  // Committee-based privileged roles (e.g., tech, hr) - check committee
-  const privilegedCommittees = ['tech', 'hr', 'operations'];
-  if (user.committeeId && privilegedCommittees.includes(user.committeeId)) return true;
+  if (isAdminRole(user.role)) return true;
   // Also check permissions
   if (user.permissions?.includes('employees.manage' as any) || user.permissions?.includes('access.manage' as any)) return true;
   return false;

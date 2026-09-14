@@ -9,7 +9,16 @@ export interface Timestamp {
 
 // ─── User & Auth ────────────────────────────────────────────────────────────
 
-export type UserRole = 'superAdmin' | 'admin' | 'employee';
+export type UserRole =
+  | 'lead'       // LEAD - قائد مجتمع GDG (أعلى رتبة في المنصة)
+  | 'co_lead'    // CO-LEAD - نائب قائد المجتمع (صلاحيات قيادية عليا فوق السوبر أدمن)
+  | 'head'       // HEAD - رئيس لجنة
+  | 'vice_head'  // VICE-HEAD / CO-HEAD - نائب رئيس لجنة
+  | 'member'     // MEMBER - عضو
+  // Legacy aliases
+  | 'superAdmin'
+  | 'admin'
+  | 'employee';
 export type UserStatus = 'active' | 'inactive' | 'suspended';
 
 export interface AuthorizedUser {
@@ -96,6 +105,26 @@ export type Permission =
   | 'notifications.send';
 
 export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
+  lead: [
+    'tasks.create', 'tasks.edit', 'tasks.delete', 'tasks.assign',
+    'tasks.review', 'tasks.view_all',
+    'employees.view', 'employees.manage',
+    'ocoins.manage', 'ocoins.view_all',
+    'reports.view', 'reports.export',
+    'access.manage',
+    'activity.view',
+    'notifications.send',
+  ],
+  co_lead: [
+    'tasks.create', 'tasks.edit', 'tasks.delete', 'tasks.assign',
+    'tasks.review', 'tasks.view_all',
+    'employees.view', 'employees.manage',
+    'ocoins.manage', 'ocoins.view_all',
+    'reports.view', 'reports.export',
+    'access.manage',
+    'activity.view',
+    'notifications.send',
+  ],
   superAdmin: [
     'tasks.create', 'tasks.edit', 'tasks.delete', 'tasks.assign',
     'tasks.review', 'tasks.view_all',
@@ -104,6 +133,21 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'reports.view', 'reports.export',
     'access.manage',
     'activity.view',
+    'notifications.send',
+  ],
+  head: [
+    'tasks.create', 'tasks.edit', 'tasks.delete', 'tasks.assign',
+    'tasks.review', 'tasks.view_all',
+    'employees.view',
+    'ocoins.manage', 'ocoins.view_all',
+    'reports.view',
+    'activity.view',
+    'notifications.send',
+  ],
+  vice_head: [
+    'tasks.create', 'tasks.edit', 'tasks.assign',
+    'tasks.review', 'tasks.view_all',
+    'employees.view',
     'notifications.send',
   ],
   admin: [
@@ -116,6 +160,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'activity.view',
     'notifications.send',
   ],
+  member: [],
   employee: [],
 };
 
@@ -123,7 +168,7 @@ export interface AuthorizedAdmin {
   id: string; // doc id (usually email normalized)
   email: string;
   displayName?: string;
-  role: 'superAdmin' | 'admin';
+  role: UserRole;
   status: 'active' | 'inactive';
   createdAt: Timestamp | string;
   createdBy?: string;

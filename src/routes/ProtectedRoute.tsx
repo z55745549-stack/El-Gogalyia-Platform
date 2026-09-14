@@ -31,7 +31,7 @@ export function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
   }
 
   // If maintenance mode is active, only Admins & SuperAdmins are allowed through
-  const isAdmin = userProfile.role === 'admin' || userProfile.role === 'superAdmin';
+  const isAdmin = ['lead','co_lead','superAdmin','head','vice_head','admin'].includes(userProfile.role);
   if (isMaintenanceActive && !isAdmin) {
     return <MaintenanceScreen message={maintenance.message} />;
   }
