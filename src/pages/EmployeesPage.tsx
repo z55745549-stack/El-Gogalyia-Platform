@@ -13,7 +13,7 @@ import { Select } from '@/components/ui/select';
 import { Modal } from '@/components/ui/modal';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Avatar } from '@/components/ui/avatar';
-import { DEFAULT_COMMITTEES, type UserProfile, type UserRole, type UserStatus, type Permission, type Committee, type Ban as BanRecord } from '@/types';
+import { DEFAULT_COMMITTEES, ROLE_PERMISSIONS, type UserProfile, type UserRole, type UserStatus, type Permission, type Committee, type Ban as BanRecord } from '@/types';
 import { subscribeCommittees, assignUserCommittee, createCommittee } from '@/lib/committees';
 import { subscribeBans, createBan, endBan, getActiveBan } from '@/lib/bans';
 // 2-Step admin auth removed — Lead/Co-Lead and Head act directly
@@ -21,17 +21,7 @@ import { generateEmployeeCode } from '@/lib/attendance';
 import { canManageRole, isTopTierRole, getRoleLabel, getRoleColor, isAdminRole } from '@/utils/permissions';
 import { formatFullName, hasArabic, hasUnlimitedCoins } from '@/utils';
 
-const AVAILABLE_PERMISSIONS: { key: Permission; label: string }[] = [
-  { key: 'employees.manage' as Permission, label: 'إدارة الموظفين (manageEmployees)' },
-  { key: 'tasks.create' as Permission, label: 'إنشاء المهام (createTasks)' },
-  { key: 'tasks.edit' as Permission, label: 'تعديل المهام (editTasks)' },
-  { key: 'tasks.delete' as Permission, label: 'حذف المهام (deleteTasks)' },
-  { key: 'tasks.review' as Permission, label: 'مراجعة وتسليمات المهام (reviewSubmissions)' },
-  { key: 'ocoins.manage' as Permission, label: 'إدارة الـ O Coins (manageOCoin)' },
-  { key: 'activity.view' as Permission, label: 'عرض سجل النشاطات (viewActivityLogs)' },
-  { key: 'notifications.send' as Permission, label: 'إرسال الإشعارات (manageNotifications)' },
-  { key: 'tasks.view_all' as Permission, label: 'عرض جميع المهام (viewAllTasks)' },
-];
+
 
 export function EmployeesPage() {
   const { userProfile } = useAuth();
@@ -59,7 +49,6 @@ export function EmployeesPage() {
   const [formRole, setFormRole] = useState<UserRole>('member');
   const [formStatus, setFormStatus] = useState<UserStatus>('active');
   const [formCommitteeId, setFormCommitteeId] = useState<string>('');
-  const [formPermissions, setFormPermissions] = useState<Permission[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
   // Password reset state
@@ -128,7 +117,6 @@ export function EmployeesPage() {
     setFormRole('member');
     setFormStatus('active');
     setFormCommitteeId('');
-    setFormPermissions([]);
     setSelectedUser(null);
     setNewPassword('');
   };
@@ -144,14 +132,7 @@ export function EmployeesPage() {
     setFormRole(user.role);
     setFormStatus(user.status);
     setFormCommitteeId(user.committeeId || '');
-    setFormPermissions(user.permissions || []);
     setShowEditModal(true);
-  };
-
-  const handleTogglePermission = (perm: Permission) => {
-    setFormPermissions((prev) =>
-      prev.includes(perm) ? prev.filter((p) => p !== perm) : [...prev, perm]
-    );
   };
 
   // Add Member Handler — No 2-Step confirmation required
@@ -220,8 +201,8 @@ export function EmployeesPage() {
         role: formRole,
         status: formStatus,
         committeeId: isTopLeadership ? null : (committee?.id || null),
-        committeeName: isTopLeadership ? null : (committee?.name || null),
-        permissions: formPermissions,
+        committeeName: isTopLeadership ? 'بدون لجنة' : (committee?.name || 'بدون لجنة'),
+        permissions: ROLE_PERMISSIONS[formRole] || [],
         passwordHash,
         salt,
         oCoinsBalance: 0,
@@ -263,8 +244,8 @@ export function EmployeesPage() {
         role: formRole,
         status: formStatus,
         committeeId: isTopLeadership ? null : (committee?.id || null),
-        committeeName: isTopLeadership ? null : (committee?.name || null),
-        permissions: formPermissions,
+        committeeName: isTopLeadership ? 'بدون لجنة' : (committee?.name || 'بدون لجنة'),
+        permissions: ROLE_PERMISSIONS[formRole] || [],
         updatedAt: new Date().toISOString(),
       };
 
@@ -930,7 +911,7 @@ export function EmployeesPage() {
         open={showAddModal}
         onClose={() => { setShowAddModal(false); resetForm(); }}
         title="إضافة موظف جديد"
-        description="أدخل البيانات واسم المستخدم وكلمة المرور وحدد الصلاحيات الدقيقة"
+        description="أدخل البيانات واسم المستخدم وكلمة المرور وحدد الرتبة واللجنة"
         size="lg"
       >
         <form onSubmit={handleAddEmployee} className="space-y-4 text-right dir-rtl">
@@ -1001,22 +982,15 @@ export function EmployeesPage() {
             />
           )}
 
-          {/* Permissions Checkboxes */}
-          <div className="pt-3 border-t border-[var(--border-subtle)] space-y-2">
-            <label className="form-label text-xs font-bold text-[var(--text-secondary)]">الصلاحيات التفصيلية (Permissions)</label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-1 border border-[var(--border-subtle)] rounded-xl bg-[var(--surface-elevated)]">
-              {AVAILABLE_PERMISSIONS.map((p) => (
-                <label key={p.key} className="flex items-center gap-2 p-2 rounded-lg bg-[var(--surface)] border border-[var(--border-subtle)] cursor-pointer hover:bg-[var(--brand-primary)]/5 text-xs">
-                  <input
-                    type="checkbox"
-                    checked={formPermissions.includes(p.key)}
-                    onChange={() => handleTogglePermission(p.key)}
-                    className="rounded border-[var(--border-subtle)] text-[var(--brand-primary)] focus:ring-[var(--brand-primary)] h-4 w-4"
-                  />
-                  <span className="font-semibold text-[var(--text-primary)]">{p.label}</span>
-                </label>
-              ))}
+          {/* Automated Role Permissions Notice */}
+          <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-xs space-y-1 text-right">
+            <div className="flex items-center gap-2 font-bold text-purple-600 dark:text-purple-400">
+              <Shield className="h-4 w-4 shrink-0" />
+              <span>الصلاحيات والحوكمة القيادية:</span>
             </div>
+            <p className="text-slate-500 dark:text-slate-400 text-[11px] leading-relaxed">
+              تُمنح كافة الصلاحيات آلياً وبأعلى معايير الأمان وفق هرمية الرتب المعتمدة لرتبة ({getRoleLabel(formRole)}).
+            </p>
           </div>
 
           <div className="pt-4 flex justify-end gap-2">
@@ -1030,7 +1004,7 @@ export function EmployeesPage() {
       <Modal
         open={showEditModal}
         onClose={() => { setShowEditModal(false); resetForm(); }}
-        title="تعديل بيانات الموظف والصلاحيات"
+        title="تعديل بيانات الموظف والرتبة"
         size="lg"
       >
         <form onSubmit={handleUpdateEmployee} className="space-y-4 text-right dir-rtl">
@@ -1085,21 +1059,15 @@ export function EmployeesPage() {
             />
           )}
 
-          <div className="pt-3 border-t border-[var(--border-subtle)] space-y-2">
-            <label className="form-label text-xs font-bold text-[var(--text-secondary)]">الصلاحيات التفصيلية (Permissions)</label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-1 border border-[var(--border-subtle)] rounded-xl bg-[var(--surface-elevated)]">
-              {AVAILABLE_PERMISSIONS.map((p) => (
-                <label key={p.key} className="flex items-center gap-2 p-2 rounded-lg bg-[var(--surface)] border border-[var(--border-subtle)] cursor-pointer hover:bg-[var(--brand-primary)]/5 text-xs">
-                  <input
-                    type="checkbox"
-                    checked={formPermissions.includes(p.key)}
-                    onChange={() => handleTogglePermission(p.key)}
-                    className="rounded border-[var(--border-subtle)] text-[var(--brand-primary)] focus:ring-[var(--brand-primary)] h-4 w-4"
-                  />
-                  <span className="font-semibold text-[var(--text-primary)]">{p.label}</span>
-                </label>
-              ))}
+          {/* Automated Role Permissions Notice */}
+          <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-xs space-y-1 text-right">
+            <div className="flex items-center gap-2 font-bold text-purple-600 dark:text-purple-400">
+              <Shield className="h-4 w-4 shrink-0" />
+              <span>الصلاحيات والحوكمة القيادية:</span>
             </div>
+            <p className="text-slate-500 dark:text-slate-400 text-[11px] leading-relaxed">
+              تُمنح كافة الصلاحيات آلياً وبأعلى معايير الأمان وفق هرمية الرتب المعتمدة لرتبة ({getRoleLabel(formRole)}).
+            </p>
           </div>
 
           <div className="pt-4 flex justify-end gap-2">
