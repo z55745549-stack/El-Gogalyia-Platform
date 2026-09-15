@@ -484,6 +484,7 @@ export function LoginPage() {
       return;
     }
 
+    const isNoCommittee = regCommittee === 'none';
     const selectedComm = DEFAULT_COMMITTEES.find((c) => c.id === regCommittee);
     setRegSubmitting(true);
     try {
@@ -492,8 +493,8 @@ export function LoginPage() {
         username:      uname,
         email,
         password:      pass,
-        committeeId:   regCommittee,
-        committeeName: selectedComm?.name ?? 'Tech Dev',
+        committeeId:   isNoCommittee ? null : regCommittee,
+        committeeName: isNoCommittee ? 'بدون لجنة' : (selectedComm?.name ?? 'Tech Dev'),
       });
       setMode('success');
       toast.success('تم إرسال طلب انضمامك بنجاح');
@@ -755,6 +756,12 @@ export function LoginPage() {
                           'focus:ring-2 focus:ring-indigo-500/15',
                         ].join(' ')}
                       >
+                        <option
+                          value="none"
+                          style={{ background: isDark ? '#0F0F1A' : '#FFFFFF' }}
+                        >
+                          بدون لجنة (قيادة / إدارة عامة)
+                        </option>
                         {DEFAULT_COMMITTEES.map((c) => (
                           <option
                             key={c.id}

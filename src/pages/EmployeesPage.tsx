@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { collection, onSnapshot, doc, setDoc, updateDoc, deleteDoc, getDocs, query, where, serverTimestamp, db } from '@/lib/supabase';
 import { motion } from 'framer-motion';
 import {
@@ -44,6 +44,7 @@ export function EmployeesPage() {
   const [search, setSearch] = useState('');
   const [viewTab, setViewTab] = useState<'approved' | 'pending'>('approved');
   const [pendingRoles, setPendingRoles] = useState<Record<string, UserRole>>({});
+  const [pendingCommittees, setPendingCommittees] = useState<Record<string, string>>({});
 
   // Modals
   const [showAddModal, setShowAddModal] = useState(false);
@@ -444,14 +445,32 @@ export function EmployeesPage() {
   // Pending Approval Handlers
   const handleApprovePending = async (emp: UserProfile) => {
     const assignedRole = pendingRoles[emp.uid] || emp.role || 'member';
+    const isLeader = assignedRole === 'lead' || assignedRole === 'co_lead';
+    const chosenCommId = pendingCommittees[emp.uid] !== undefined
+      ? pendingCommittees[emp.uid]
+      : (isLeader ? 'none' : (emp.committeeId || (emp.committeeName === 'بدون لجنة' ? 'none' : 'none')));
+
+    let commId: string | null = null;
+    let commName: string = 'بدون لجنة';
+
+    if (chosenCommId && chosenCommId !== 'none') {
+      const c = committees.find((item) => item.id === chosenCommId) || DEFAULT_COMMITTEES.find((item) => item.id === chosenCommId);
+      if (c) {
+        commId = c.id;
+        commName = c.name;
+      }
+    }
+
     try {
       await updateDoc(doc(db, 'users', emp.uid), {
         status: 'active',
         role: assignedRole,
+        committeeId: commId,
+        committeeName: commName,
         ocoins_balance: emp.oCoinsBalance ?? 0,
         updated_at: new Date().toISOString(),
       });
-      toast.success(`تم قبول واعتماد ${emp.displayName} كـ ${getRoleLabel(assignedRole)} بنجاح! 🎉`);
+      toast.success(`تم قبول واعتماد ${emp.displayName} كـ (${getRoleLabel(assignedRole)}) في (${commName}) بنجاح! 🎉`);
     } catch (err: any) {
       toast.error('حدث خطأ أثناء اعتماد الحساب.');
     }
@@ -590,79 +609,129 @@ export function EmployeesPage() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredEmployees.map((emp) => (
-                <div
-                  key={emp.uid}
-                  className="bg-white dark:bg-[var(--surface)] rounded-2xl border-2 border-amber-300 dark:border-amber-500/30 p-5 shadow-sm space-y-4 hover:shadow-md transition-shadow relative overflow-hidden text-right"
-                >
-                  <div className="absolute top-0 right-0 w-2 h-full bg-amber-400" />
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+              {filteredEmployees.map((emp) => {
+                const currentRole = pendingRoles[emp.uid] || emp.role || 'member';
+                const isLeaderRole = currentRole === 'lead' || currentRole === 'co_lead';
+                const selectedComm = pendingCommittees[emp.uid] !== undefined
+                  ? pendingCommittees[emp.uid]
+                  : (isLeaderRole ? 'none' : (emp.committeeId || (emp.committeeName === 'بدون لجنة' ? 'none' : (emp.committeeName ? emp.committeeId || 'none' : 'none'))));
 
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <Avatar name={formatFullName(emp.displayName)} size="md" />
-                      <div>
-                        <h4 className="font-bold text-slate-900 dark:text-white text-sm sm:text-base">
-                          {formatFullName(emp.displayName)}
-                        </h4>
-                        <div className="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
-                          <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">@{emp.username}</span>
-                          {emp.email && <span>• {emp.email}</span>}
+                return (
+                  <div
+                    key={emp.uid}
+                    className="bg-white dark:bg-[var(--surface)] rounded-2xl border-2 border-amber-300/80 dark:border-amber-500/30 p-5 shadow-sm space-y-4 hover:shadow-md transition-all relative text-right"
+                  >
+                    {/* Top status bar accent */}
+                    <div className="absolute top-0 right-0 left-0 h-1.5 bg-gradient-to-l from-amber-400 via-amber-500 to-orange-400 rounded-t-2xl" />
+
+                    {/* Member Info Header */}
+                    <div className="flex items-start justify-between gap-3 pt-1">
+                      <div className="flex items-center gap-3">
+                        <Avatar name={formatFullName(emp.displayName)} size="md" />
+                        <div>
+                          <h4 className="font-extrabold text-slate-900 dark:text-white text-sm sm:text-base">
+                            {formatFullName(emp.displayName)}
+                          </h4>
+                          <div className="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
+                            <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">@{emp.username}</span>
+                            {emp.email && <span className="truncate max-w-[180px] sm:max-w-[240px]">• {emp.email}</span>}
+                          </div>
+                        </div>
+                      </div>
+                      <span className="shrink-0 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-500/20">
+                        طلب انضمام جديد ⏳
+                      </span>
+                    </div>
+
+                    {/* Committee and Code Control Box */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 rounded-xl bg-slate-50 dark:bg-black/30 border border-slate-200/70 dark:border-white/10 text-xs">
+                      {/* Committee Selection */}
+                      <div className="space-y-1">
+                        <label className="text-slate-500 dark:text-slate-400 block text-[11px] font-bold">
+                          اللجنة المخصصة:
+                        </label>
+                        <select
+                          value={selectedComm}
+                          onChange={(e) => setPendingCommittees({ ...pendingCommittees, [emp.uid]: e.target.value })}
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/15 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 cursor-pointer focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        >
+                          <option value="none">بدون لجنة (قيادة / عام)</option>
+                          {committees.length > 0
+                            ? committees.map((c) => (
+                                <option key={c.id} value={c.id}>
+                                  {c.name}
+                                </option>
+                              ))
+                            : DEFAULT_COMMITTEES.map((c) => (
+                                <option key={c.id} value={c.id}>
+                                  {c.name}
+                                </option>
+                              ))}
+                        </select>
+                      </div>
+
+                      {/* Membership Code */}
+                      <div className="space-y-1">
+                        <span className="text-slate-500 dark:text-slate-400 block text-[11px] font-bold">
+                          كود العضوية المقترح:
+                        </span>
+                        <div className="h-[31px] flex items-center px-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/15 font-mono font-bold text-purple-700 dark:text-purple-300 text-xs">
+                          {emp.employeeCode || generateEmployeeCode(emp.username || emp.uid)}
                         </div>
                       </div>
                     </div>
-                    <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-500/20">
-                      طلب انضمام جديد ⏳
-                    </span>
-                  </div>
 
-                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-black/30 border border-slate-200/60 dark:border-white/10 flex items-center justify-between text-xs">
-                    <div>
-                      <span className="text-slate-400 block text-[10px]">اللجنة المطلوبة:</span>
-                      <span className="font-bold text-slate-700 dark:text-slate-200">{emp.committeeName || 'Tech Dev'}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 block text-[10px]">كود العضوية المقترح:</span>
-                      <span className="font-mono font-bold text-purple-700 dark:text-purple-300">{emp.employeeCode || 'GOGA-NEW'}</span>
-                    </div>
-                  </div>
-
-                  {/* Role assignment & Actions */}
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-2 border-t border-slate-100 dark:border-white/10">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-slate-600 dark:text-slate-300 whitespace-nowrap">الرتبة:</span>
+                    {/* Role Selection Row */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                        الرتبة الممنوحة للحساب:
+                      </label>
                       <select
-                        value={pendingRoles[emp.uid] || 'member'}
-                        onChange={(e) => setPendingRoles({ ...pendingRoles, [emp.uid]: e.target.value as UserRole })}
-                        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/15 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-800 dark:text-slate-200"
+                        value={currentRole}
+                        onChange={(e) => {
+                          const newRole = e.target.value as UserRole;
+                          setPendingRoles({ ...pendingRoles, [emp.uid]: newRole });
+                          if (newRole === 'lead' || newRole === 'co_lead') {
+                            setPendingCommittees((prev) => ({ ...prev, [emp.uid]: 'none' }));
+                          }
+                        }}
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/15 rounded-xl px-3 py-2 text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                       >
-                        <option value="member">عضو (MEMBER)</option>
-                        <option value="vice_head">نائب لجنة (VICE-HEAD)</option>
-                        {isTopTier && <option value="head">رئيس لجنة (HEAD)</option>}
-                        {isTopTier && <option value="co_lead">نائب قائد (CO-LEAD)</option>}
+                        <option value="member">👤 عضو (MEMBER)</option>
+                        <option value="vice_head">🔹 نائب لجنة (VICE-HEAD)</option>
+                        {isTopTier && <option value="head">👑 رئيس لجنة (HEAD)</option>}
+                        {isTopTier && <option value="co_lead">🌟 نائب قائد (CO-LEAD)</option>}
+                        {isTopTier && <option value="lead">🏆 قائد (LEAD)</option>}
                       </select>
+                      {isLeaderRole && (
+                        <p className="text-[11px] text-amber-600 dark:text-amber-400 font-medium">
+                          🌟 رتبة قيادية عليا — تم تحديد "بدون لجنة" تلقائياً لإشراف عام فوق كافة اللجان.
+                        </p>
+                      )}
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    {/* Actions Row - Full Width with Zero Clipping */}
+                    <div className="flex items-center gap-2.5 pt-3 border-t border-slate-100 dark:border-white/10">
                       <Button
                         size="sm"
                         onClick={() => handleApprovePending(emp)}
-                        className="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm shadow-emerald-600/20 cursor-pointer"
+                        className="flex-1 h-10 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow-sm shadow-emerald-600/20 cursor-pointer flex items-center justify-center gap-1.5"
                       >
-                        <UserCheck className="h-3.5 w-3.5 ml-1" /> اعتماد وتفعيل الحساب
+                        <UserCheck className="h-4 w-4 ml-1.5" /> اعتماد وتفعيل الحساب
                       </Button>
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => handleRejectPending(emp)}
-                        className="flex-1 sm:flex-none border-rose-200 text-rose-600 hover:bg-rose-50 text-xs rounded-xl cursor-pointer"
+                        className="h-10 px-4 shrink-0 border-rose-200 dark:border-rose-900/50 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-xs sm:text-sm font-bold rounded-xl cursor-pointer flex items-center justify-center gap-1.5"
                       >
-                        <Trash2 className="h-3.5 w-3.5 ml-1" /> رفض
+                        <Trash2 className="h-4 w-4 ml-1.5" /> رفض
                       </Button>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -861,7 +930,7 @@ export function EmployeesPage() {
                 { value: 'head', label: '👑 HEAD (رئيس لجنة - إدارة وصلاحيات)' },
                 ...(isTopTierRole(userProfile?.role ?? 'member') ? [
                   { value: 'co_lead', label: '🌟 CO-LEAD (نائب القائد)' },
-                  ...(userProfile?.role === 'lead' ? [{ value: 'lead', label: '🏆 LEAD (قائد المنصة)' }] : []),
+                  { value: 'lead', label: '🏆 LEAD (قائد المنصة)' },
                 ] : []),
               ]}
             />
@@ -945,7 +1014,7 @@ export function EmployeesPage() {
                 { value: 'head', label: '👑 HEAD (رئيس لجنة - إدارة وصلاحيات)' },
                 ...(isTopTierRole(userProfile?.role ?? 'member') ? [
                   { value: 'co_lead', label: '🌟 CO-LEAD (نائب القائد)' },
-                  ...(userProfile?.role === 'lead' ? [{ value: 'lead', label: '🏆 LEAD (قائد المنصة)' }] : []),
+                  { value: 'lead', label: '🏆 LEAD (قائد المنصة)' },
                 ] : []),
               ]}
             />
