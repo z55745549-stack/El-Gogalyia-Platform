@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { toast } from 'sonner';
 import { doc, updateDoc, query, collection, where, getDocs, serverTimestamp, db } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
@@ -8,10 +8,10 @@ import { Input } from '@/components/ui/input';
 import { getRoleLabel, getRoleColor } from '@/utils/permissions';
 import { formatOCoins, cn, formatFullName, formatTitleCaseLive, hasUnlimitedCoins } from '@/utils';
 import { generateSalt, hashPassword } from '@/lib/auth-security';
-import { DeviceIdentitySection } from '@/components/settings/DeviceIdentitySection';
 import {
   Coins, Shield, User, Info, Users, KeyRound,
-  Lock, AtSign, Eye, EyeOff, Bell, CheckCircle2, Sparkles, Infinity
+  Lock, AtSign, Eye, EyeOff, CheckCircle2, Sparkles, Infinity,
+  Camera, Upload, Trash2, Check, RefreshCw
 } from 'lucide-react';
 
 export function SettingsPage() {
@@ -20,6 +20,11 @@ export function SettingsPage() {
   // Profile Edit State
   const [displayName, setDisplayName] = useState(userProfile?.displayName || '');
   const [savingProfile, setSavingProfile] = useState(false);
+
+  // Avatar Upload State
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(userProfile?.photoURL || null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Username & Password Change State
   const [newUsername, setNewUsername] = useState(userProfile?.username || '');
@@ -32,7 +37,109 @@ export function SettingsPage() {
 
   const isUnlimited = hasUnlimitedCoins(userProfile.role);
 
-  // ─── 1. Update Display Name ───────────────────────────────────────────────
+  // ─── 1. Image Upload & Resize Handler ──────────────────────────────────────
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('يرجى اختيار ملف صورة صالح (PNG, JPG, WEBP).');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('حجم الصورة كبير جداً. يرجى اختيار صورة أقل من 5 ميجابايت.');
+      return;
+    }
+
+    setUploadingAvatar(true);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        // Resize to maximum 256x256 for fast local & db storage
+        const canvas = document.createElement('canvas');
+        const maxSize = 256;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxSize) {
+            height = Math.round((height * maxSize) / width);
+            width = maxSize;
+          }
+        } else {
+          if (height > maxSize) {
+            width = Math.round((width * maxSize) / height);
+            height = maxSize;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          setAvatarPreview(dataUrl);
+          saveAvatar(dataUrl);
+        } else {
+          setUploadingAvatar(false);
+        }
+      };
+      img.onerror = () => {
+        toast.error('فشل في معالجة ملف الصورة.');
+        setUploadingAvatar(false);
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.onerror = () => {
+      toast.error('فشل في قراءة الملف.');
+      setUploadingAvatar(false);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const saveAvatar = async (photoUrl: string) => {
+    try {
+      await updateCurrentUserProfile({ photoURL: photoUrl });
+      try {
+        await updateDoc(doc(db, 'users', userProfile.uid), {
+          photoURL: photoUrl,
+          updatedAt: serverTimestamp(),
+        });
+      } catch (e) {
+        // Fallback handled by updateCurrentUserProfile in AuthContext
+      }
+      toast.success('تم تحديث وحفظ صورة البروفايل بنجاح! 📸');
+    } catch (err: any) {
+      toast.error(err?.message || 'فشل حفظ صورة البروفايل.');
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    setUploadingAvatar(true);
+    try {
+      await updateCurrentUserProfile({ photoURL: '' });
+      try {
+        await updateDoc(doc(db, 'users', userProfile.uid), {
+          photoURL: '',
+          updatedAt: serverTimestamp(),
+        });
+      } catch (e) {}
+      setAvatarPreview(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      toast.success('تمت إزالة صورة البروفايل.');
+    } catch (err: any) {
+      toast.error('فشل إزالة الصورة.');
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  // ─── 2. Update Display Name ───────────────────────────────────────────────
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanName = formatFullName(displayName.trim());
@@ -44,6 +151,12 @@ export function SettingsPage() {
     setSavingProfile(true);
     try {
       await updateCurrentUserProfile({ displayName: cleanName });
+      try {
+        await updateDoc(doc(db, 'users', userProfile.uid), {
+          displayName: cleanName,
+          updatedAt: serverTimestamp(),
+        });
+      } catch (e) {}
       toast.success('تم تحديث الاسم الظاهر بنجاح!');
     } catch (err: any) {
       toast.error(err?.message || 'فشل حفظ البيانات.');
@@ -52,7 +165,7 @@ export function SettingsPage() {
     }
   };
 
-  // ─── 2. Update Username & Password ─────────────────────────────────────────
+  // ─── 3. Update Username & Password ─────────────────────────────────────────
   const handleSaveCredentials = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanUser = newUsername.trim().toLowerCase();
@@ -120,93 +233,148 @@ export function SettingsPage() {
   };
 
   return (
-    <div className="space-y-5 max-w-3xl mx-auto font-sans text-right dir-rtl pb-14">
-
+    <div className="space-y-6 max-w-4xl mx-auto font-sans text-right dir-rtl pb-16">
       {/* ── Page Header ──────────────────────────────────────────────────────── */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="page-title">الإعدادات والأمان</h1>
-          <p className="page-subtitle mt-1">
-            إدارة بيانات ملفك الشخصي، تحديث بيانات الدخول، وهوية الجهاز البيومترية.
+          <h1 className="text-xl sm:text-2xl font-black text-[var(--text-primary)] flex items-center gap-2.5">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[var(--brand-primary)] via-indigo-600 to-cyan-500 text-white flex items-center justify-center shadow-lg shadow-indigo-500/20">
+              <Shield className="h-5 w-5" />
+            </div>
+            <span>إعدادات الحساب والأمان</span>
+          </h1>
+          <p className="text-xs sm:text-sm text-[var(--text-muted)] mt-1">
+            إدارة الهوية الرقمية، الصورة الشخصية، وبيانات المصادقة الخاصة بحسابك في منصة الجوجالية.
           </p>
         </div>
       </div>
 
-      {/* ── Section 1: Profile Card ───────────────────────────────────────────── */}
-      <div className="card rounded-3xl overflow-hidden">
-        {/* Gradient banner */}
-        <div
-          className="h-20 relative"
-          style={{
-            background: 'linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-accent) 100%)',
-            opacity: 0.85,
-          }}
-        />
+      {/* ── Section 1: Ultra-Premium Masculine Profile Card ───────────────────── */}
+      <div className="rounded-3xl overflow-hidden border border-[var(--border-subtle)] bg-[var(--surface)] shadow-xl relative">
+        {/* Ambient Glowing Header Banner */}
+        <div className="h-28 sm:h-32 relative overflow-hidden bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-950 p-6 flex items-start justify-between">
+          {/* Subtle Cyber Grid & Light Bleed */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-500/20 via-transparent to-transparent opacity-60 pointer-events-none" />
+          <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-[var(--brand-primary)]/20 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -left-10 -top-10 w-48 h-48 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none" />
 
-        {/* Profile details */}
-        <div className="px-6 pb-6 -mt-10 space-y-5">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div className="relative z-10 flex items-center gap-2">
+            <span className="px-3 py-1 rounded-full text-[10px] font-mono font-black uppercase tracking-wider bg-white/10 text-white/90 border border-white/15 backdrop-blur-md">
+              PROFILE IDENTITY · 2026
+            </span>
+          </div>
+
+          {/* O Coins Chip */}
+          <div className="relative z-10 flex items-center gap-2.5 px-3.5 py-1.5 rounded-2xl bg-black/40 border border-amber-500/30 backdrop-blur-md shadow-lg">
+            {isUnlimited ? (
+              <Infinity className="h-4 w-4 text-amber-400 shrink-0" />
+            ) : (
+              <Coins className="h-4 w-4 text-amber-400 shrink-0" />
+            )}
+            <div className="text-right">
+              <span className="text-[11px] font-black text-amber-300 font-mono">
+                {isUnlimited ? '∞ لا محدود' : `${formatOCoins(userProfile.oCoinsBalance ?? 0)} OC`}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Profile Details & Avatar Upload Area */}
+        <div className="px-6 sm:px-8 pb-8 -mt-12 sm:-mt-14 relative z-10 space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-5">
+            {/* Avatar & Interactive Upload Badge */}
             <div className="flex items-end gap-4">
-              <div className="relative">
-                <Avatar
-                  src={userProfile.photoURL}
-                  name={userProfile.displayName || userProfile.username || 'User'}
-                  size="xl"
-                  className="ring-4 ring-[var(--surface)] shadow-xl"
+              <div className="relative group">
+                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl overflow-hidden ring-4 ring-[var(--surface)] shadow-2xl bg-[var(--surface-elevated)] relative flex items-center justify-center">
+                  <Avatar
+                    src={avatarPreview || userProfile.photoURL}
+                    name={userProfile.displayName || userProfile.username || 'User'}
+                    size="xl"
+                    className="w-full h-full rounded-none"
+                  />
+
+                  {/* Upload Overlay on Hover */}
+                  <label
+                    htmlFor="avatar-file-input"
+                    className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer text-white gap-1"
+                    title="تغيير الصورة الشخصية"
+                  >
+                    <Camera className="h-6 w-6" />
+                    <span className="text-[10px] font-bold">رفع صورة</span>
+                  </label>
+                </div>
+
+                {/* Floating Quick Upload Button */}
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingAvatar}
+                  className="absolute -bottom-1 -left-1 p-2 rounded-xl bg-[var(--brand-primary)] text-white shadow-lg hover:scale-105 active:scale-95 transition-transform cursor-pointer border-2 border-[var(--surface)]"
+                  title="رفع صورة جديدة"
+                >
+                  {uploadingAvatar ? (
+                    <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Camera className="h-3.5 w-3.5" />
+                  )}
+                </button>
+
+                {/* Hidden File Input */}
+                <input
+                  ref={fileInputRef}
+                  id="avatar-file-input"
+                  type="file"
+                  accept="image/png, image/jpeg, image/webp"
+                  onChange={handleFileChange}
+                  className="hidden"
                 />
-                <span className="absolute bottom-1 right-1 w-3.5 h-3.5 bg-emerald-500 border-2 border-[var(--surface)] rounded-full" />
               </div>
-              <div className="mb-1 space-y-1">
-                <h2 className="text-xl font-black text-[var(--text-primary)]">
-                  {userProfile.displayName || 'عضو الفريق'}
-                </h2>
-                <p className="text-xs font-bold text-[var(--text-muted)] font-mono">
+
+              {/* User Identity Info */}
+              <div className="space-y-1 pb-1">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl sm:text-2xl font-black text-[var(--text-primary)]">
+                    {userProfile.displayName || 'عضو الفريق'}
+                  </h2>
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm" title="متصل الآن" />
+                </div>
+                <p className="text-xs font-mono font-bold text-[var(--text-muted)]">
                   @{userProfile.username || userProfile.email}
                 </p>
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-2 flex-wrap pt-1">
                   <span className={`badge text-xs font-black uppercase ${getRoleColor(userProfile.role)}`}>
                     {getRoleLabel(userProfile.role)}
                   </span>
-                  <span className={cn(
-                    'badge text-xs font-bold',
-                    userProfile.status === 'active'
-                      ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
-                      : 'bg-rose-50 text-rose-700'
-                  )}>
-                    {userProfile.status === 'active' ? 'حساب نشط' : 'معلّق'}
+                  <span className="badge text-xs font-bold bg-[var(--surface-elevated)] border border-[var(--border-subtle)] text-[var(--text-secondary)]">
+                    {userProfile.committeeName || 'عضو عام بالمنصة'}
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* O Coins chip */}
-            <div
-              className="flex items-center gap-3 px-4 py-3 rounded-2xl shrink-0"
-              style={{
-                background: 'rgba(245,158,11,0.1)',
-                border: '1px solid rgba(245,158,11,0.3)',
-              }}
-            >
-              {isUnlimited
-                ? <Infinity className="h-6 w-6 shrink-0" style={{ color: 'var(--brand-warm)' }} />
-                : <Coins className="h-6 w-6 shrink-0" style={{ color: 'var(--brand-warm)' }} />
-              }
-              <div className="text-right">
-                <span className="text-[10px] uppercase font-bold block" style={{ color: 'var(--brand-warm)', opacity: 0.8 }}>
-                  رصيد المكافآت
-                </span>
-                <span className="text-sm font-black" style={{ color: 'var(--brand-warm)' }}>
-                  {isUnlimited ? '∞ لا محدود' : `${formatOCoins(userProfile.oCoinsBalance ?? 0)} O Coins`}
-                </span>
-              </div>
-            </div>
+            {/* Avatar Actions (Remove button if present) */}
+            {(avatarPreview || userProfile.photoURL) && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleRemoveAvatar}
+                disabled={uploadingAvatar}
+                className="text-xs text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 border-rose-500/30 gap-1.5 self-start sm:self-auto cursor-pointer"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                <span>حذف الصورة</span>
+              </Button>
+            )}
           </div>
 
           {/* Edit Display Name Form */}
-          <form onSubmit={handleSaveProfile} className="space-y-4 pt-2">
+          <form onSubmit={handleSaveProfile} className="pt-4 border-t border-[var(--border-subtle)] space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="form-label">الاسم الكامل (الظاهر في المنصة)</label>
+                <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5">
+                  الاسم الكامل (الظاهر في المنصة والتكليفات)
+                </label>
                 <Input
                   value={displayName}
                   onChange={(e) => setDisplayName(formatTitleCaseLive(e.target.value))}
@@ -216,46 +384,54 @@ export function SettingsPage() {
                 />
               </div>
               <div>
-                <label className="form-label">اللجنة / القسم</label>
+                <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5">
+                  اللجنة أو المسار المعتمد
+                </label>
                 <Input
-                  value={userProfile.committeeName || 'لا تنتمي للجنة محددة'}
+                  value={userProfile.committeeName || 'لا تنتمي للجنة محددة حالياً'}
                   disabled
-                  className="opacity-60 cursor-not-allowed"
+                  className="opacity-70 cursor-not-allowed bg-[var(--surface-elevated)]"
                   leftIcon={<Users className="h-4 w-4" />}
                 />
               </div>
             </div>
-            <div className="flex justify-end">
-              <Button type="submit" variant="default" loading={savingProfile} className="font-bold text-xs px-6">
-                حفظ بيانات الملف الشخصي
+
+            <div className="flex justify-end pt-1">
+              <Button
+                type="submit"
+                variant="default"
+                loading={savingProfile}
+                className="font-black text-xs px-6 gap-2 cursor-pointer shadow-md bg-gradient-to-r from-[var(--brand-primary)] to-indigo-600"
+              >
+                <Check className="h-4 w-4" />
+                <span>حفظ التعديلات على الملف الشخصي</span>
               </Button>
             </div>
           </form>
         </div>
       </div>
 
-      {/* ── Section 2: Security & Credentials ────────────────────────────────── */}
-      <div className="card p-6 rounded-3xl space-y-5">
+      {/* ── Section 2: Security & Authentication Credentials ─────────────────── */}
+      <div className="card p-6 sm:p-7 rounded-3xl space-y-6 border border-[var(--border-subtle)] shadow-xl">
         <div className="flex items-center gap-3 border-b border-[var(--border-subtle)] pb-4">
-          <div
-            className="w-10 h-10 rounded-2xl flex items-center justify-center"
-            style={{ background: 'rgba(108,99,255,0.12)', color: 'var(--brand-primary)' }}
-          >
+          <div className="w-10 h-10 rounded-2xl flex items-center justify-center bg-indigo-500/15 text-indigo-400">
             <KeyRound className="h-5 w-5" />
           </div>
           <div>
             <h2 className="text-base font-extrabold text-[var(--text-primary)]">
-              بيانات تسجيل الدخول وكلمة المرور
+              بيانات الدخول وكلمة المرور المشفرة
             </h2>
             <p className="text-xs text-[var(--text-muted)] mt-0.5">
-              تحديث اسم المستخدم أو تعيين كلمة مرور جديدة لحسابك.
+              تحديث المعرف الرقمي أو تعيين كلمة مرور قوية جديدة لحسابك.
             </p>
           </div>
         </div>
 
         <form onSubmit={handleSaveCredentials} className="space-y-4">
           <div>
-            <label className="form-label">اسم المستخدم (Username)</label>
+            <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5">
+              اسم المستخدم (Username)
+            </label>
             <Input
               value={newUsername}
               onChange={(e) => setNewUsername(e.target.value)}
@@ -263,14 +439,16 @@ export function SettingsPage() {
               leftIcon={<AtSign className="h-4 w-4" />}
               required
             />
-            <p className="text-[11px] text-[var(--text-muted)] mt-1">
-              هذا المعرف يُستخدم لتسجيل الدخول للنظام.
+            <p className="text-[11px] text-[var(--text-muted)] mt-1 font-mono">
+              هذا المعرف يُستخدم لتسجيل الدخول إلى النظام.
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="form-label">كلمة المرور الجديدة</label>
+              <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5">
+                كلمة المرور الجديدة
+              </label>
               <Input
                 type={showPassword ? 'text' : 'password'}
                 value={newPassword}
@@ -280,24 +458,25 @@ export function SettingsPage() {
               />
             </div>
             <div>
-              <label className="form-label">تأكيد كلمة المرور الجديدة</label>
+              <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5">
+                تأكيد كلمة المرور الجديدة
+              </label>
               <Input
                 type={showPassword ? 'text' : 'password'}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="أعد كتابة كلمة المرور الجديدة"
+                placeholder="أعد كتابة كلمة المرور للتأكيد"
                 leftIcon={<Lock className="h-4 w-4" />}
               />
             </div>
           </div>
 
           {newPassword && (
-            <div className="flex items-center justify-between text-xs">
+            <div className="flex items-center justify-between text-xs pt-1">
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="font-semibold flex items-center gap-1 cursor-pointer transition-colors"
-                style={{ color: 'var(--brand-primary)' }}
+                className="font-semibold flex items-center gap-1.5 cursor-pointer text-[var(--brand-primary)] hover:underline"
               >
                 {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                 <span>{showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}</span>
@@ -306,77 +485,29 @@ export function SettingsPage() {
             </div>
           )}
 
-          <div className="flex justify-end pt-1">
-            <Button type="submit" variant="default" loading={savingCredentials} className="font-bold text-xs px-6">
-              حفظ وتحديث بيانات الأمان
+          <div className="flex justify-end pt-2">
+            <Button
+              type="submit"
+              variant="default"
+              loading={savingCredentials}
+              className="font-black text-xs px-6 gap-2 cursor-pointer shadow-md bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white"
+            >
+              <Check className="h-4 w-4" />
+              <span>تأكيد وتحديث بيانات الأمان</span>
             </Button>
           </div>
         </form>
       </div>
 
-      {/* ── Section 3: Device Identity (Biometric) ───────────────────────────── */}
-      <div className="card p-6 rounded-3xl">
-        <DeviceIdentitySection />
-      </div>
-
-      {/* ── Section 4: Notification Preferences ──────────────────────────────── */}
-      <div className="card p-6 rounded-3xl space-y-5">
-        <div className="flex items-center gap-3 border-b border-[var(--border-subtle)] pb-4">
-          <div
-            className="w-10 h-10 rounded-2xl flex items-center justify-center"
-            style={{ background: 'rgba(108,99,255,0.1)', color: 'var(--brand-primary)' }}
-          >
-            <Bell className="h-5 w-5" />
-          </div>
-          <div>
-            <h2 className="text-base font-extrabold text-[var(--text-primary)]">
-              تفضيلات التنبيهات
-            </h2>
-            <p className="text-xs text-[var(--text-muted)] mt-0.5">
-              جميع الإشعارات الجوهرية مفعلة تلقائياً لضمان لا تفوتك أي تحديثات.
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {[
-            { icon: '📋', title: 'تنبيهات المهام والتكليفات', desc: 'عند إسناد تكليف جديد أو اقتراب موعد التسليم.' },
-            { icon: '🎫', title: 'تنبيهات تذاكر الدعم الفني', desc: 'عند إضافة رد جديد أو تغيير حالة التذكرة.' },
-            { icon: '🗓️', title: 'الاجتماعات واللقاءات', desc: 'دعوات وتحديثات مواعيد اللقاءات الدورية.' },
-            { icon: '🪙', title: 'مكافآت O Coins', desc: 'إشعار فوري عند إضافة عملات أو صرف مكافأة.' },
-          ].map((item) => (
-            <div
-              key={item.title}
-              className="flex items-start gap-3 p-4 rounded-2xl"
-              style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)' }}
-            >
-              <span className="text-xl mt-0.5">{item.icon}</span>
-              <div className="flex-1 min-w-0">
-                <h4 className="text-xs font-bold text-[var(--text-primary)]">{item.title}</h4>
-                <p className="text-[11px] text-[var(--text-muted)] mt-0.5 leading-relaxed">{item.desc}</p>
-              </div>
-              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0" style={{ background: 'rgba(16,185,129,0.1)', color: '#10B981', border: '1px solid rgba(16,185,129,0.2)' }}>
-                <CheckCircle2 className="h-3 w-3" />
-                دائماً
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ── Section 5: Security Policy Info ──────────────────────────────────── */}
-      <div
-        className="flex items-start gap-3.5 p-5 rounded-2xl"
-        style={{ background: 'rgba(108,99,255,0.06)', border: '1px solid rgba(108,99,255,0.15)' }}
-      >
-        <Sparkles className="h-5 w-5 shrink-0 mt-0.5" style={{ color: 'var(--brand-primary)' }} />
+      {/* ── Section 3: High-Security Compliance Banner ───────────────────────── */}
+      <div className="flex items-start gap-3.5 p-5 rounded-2xl bg-[var(--surface-elevated)] border border-[var(--border-subtle)]">
+        <Sparkles className="h-5 w-5 shrink-0 mt-0.5 text-[var(--brand-primary)]" />
         <div className="space-y-1">
-          <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--brand-primary)' }}>
-            سياسة الأمان وحماية البيانات
+          <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--brand-primary)]">
+            معايير الأمان وتشفير الحسابات
           </h3>
           <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-            جميع العمليات مسجلة في سجل النشاطات. تشفير كلمات المرور بـ Salted SHA-256.
-            بيانات الرصيد والمهام محفوظة بأعلى درجات الأمان في Supabase السحابية.
+            تخضع جميع كلمات المرور لآليات التشفير التراكمي (PBKDF2 / Salted Hash). يتم حفظ بياناتك وصورتك الشخصية بصورة مشفرة وآمنة في منصة الجوجالية السحابية.
           </p>
         </div>
       </div>

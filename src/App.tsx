@@ -13,8 +13,6 @@ import { MyTasksPage } from '@/pages/MyTasksPage';
 import { TaskDetailPage } from '@/pages/TaskDetailPage';
 import { EmployeesPage } from '@/pages/EmployeesPage';
 import { OCoinsPage } from '@/pages/OCoinsPage';
-import { ReportsPage } from '@/pages/ReportsPage';
-import { AccessManagementPage } from '@/pages/AccessManagementPage';
 import { ActivityLogsPage } from '@/pages/ActivityLogsPage';
 import { NotificationsPage } from '@/pages/NotificationsPage';
 import { SettingsPage } from '@/pages/SettingsPage';
@@ -60,7 +58,7 @@ export default function App() {
             <Route element={<AppLayout />}>
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/ocoins" element={<OCoinsPage />} />
-              <Route path="/discounts" element={<DiscountsPage />} />
+              <Route path="/discounts" element={<Navigate to="/ocoins?tab=store" replace />} />
               <Route path="/courses" element={<CoursesPage />} />
               <Route path="/courses/:courseId/learn" element={<CoursePlayerPage />} />
               <Route path="/notifications" element={<NotificationsPage />} />
@@ -76,7 +74,7 @@ export default function App() {
                 <Route path="/my-tasks" element={<MyTasksPage />} />
                 <Route path="/my-tasks/:taskId" element={<TaskDetailPage />} />
                 <Route path="/my-attendance" element={<MyAttendancePage />} />
-                <Route path="/my-discounts" element={<MyDiscountsPage />} />
+                <Route path="/my-discounts" element={<Navigate to="/ocoins?tab=purchases" replace />} />
               </Route>
 
               {/* Leadership & Head routes (replaces Super Admin & Admin) */}
@@ -87,12 +85,12 @@ export default function App() {
                 <Route path="/employees" element={<EmployeesPage />} />
                 <Route path="/attendance" element={<AttendanceAdminPage />} />
                 <Route path="/admin/discounts" element={<AdminDiscountsPage />} />
-                <Route path="/admin/courses" element={<AdminCoursesPage />} />
+                <Route path="/admin/courses" element={<Navigate to="/courses?tab=manage" replace />} />
                 <Route path="/bans" element={<BansPage />} />
                 <Route path="/admin/support" element={<AdminSupportPage />} />
-                <Route path="/reports" element={<ReportsPage />} />
                 <Route path="/activity-logs" element={<ActivityLogsPage />} />
-                <Route path="/access-management" element={<AccessManagementPage />} />
+                <Route path="/reports" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/access-management" element={<Navigate to="/dashboard" replace />} />
               </Route>
             </Route>
           </Route>

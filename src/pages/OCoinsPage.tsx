@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { collection, query, orderBy, onSnapshot, getDocs, db } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
+import { DiscountsPage } from '@/pages/DiscountsPage';
+import { MyDiscountsPage } from '@/pages/MyDiscountsPage';
 import {
   Coins,
   Plus,
@@ -124,6 +127,9 @@ export function OCoinsPage() {
   const isTopLeader = role === 'lead' || role === 'co_lead';
   const isHead = role === 'head';
   const canManage = isTopLeader || isHead;
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const currentTab = searchParams.get('tab') || 'wallet';
 
   const [allTransactions, setAllTransactions] = useState<OCoinTransaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -369,7 +375,60 @@ export function OCoinsPage() {
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto dir-rtl text-right font-sans pb-12">
-      {/* Header Banner */}
+      {/* Unified Rewards Hub Segmented Switcher */}
+      <div className="flex items-center justify-between p-2 rounded-2xl bg-[var(--surface-elevated)] border border-[var(--border-subtle)]">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <button
+            type="button"
+            onClick={() => setSearchParams({})}
+            className={cn(
+              'px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2',
+              currentTab === 'wallet'
+                ? 'bg-amber-500 text-white shadow-md'
+                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface)]'
+            )}
+          >
+            <Coins className="h-4 w-4" />
+            <span>محفظة O Coins والمعاملات</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setSearchParams({ tab: 'store' })}
+            className={cn(
+              'px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2',
+              currentTab === 'store'
+                ? 'bg-[var(--brand-primary)] text-white shadow-md'
+                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface)]'
+            )}
+          >
+            <ShoppingBag className="h-4 w-4" />
+            <span>متجر الخصومات والمكافآت</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setSearchParams({ tab: 'purchases' })}
+            className={cn(
+              'px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2',
+              currentTab === 'purchases'
+                ? 'bg-emerald-600 text-white shadow-md'
+                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface)]'
+            )}
+          >
+            <Gift className="h-4 w-4" />
+            <span>مشترياتي وقسائمي المفعّلة</span>
+          </button>
+        </div>
+      </div>
+
+      {currentTab === 'store' ? (
+        <DiscountsPage />
+      ) : currentTab === 'purchases' ? (
+        <MyDiscountsPage />
+      ) : (
+        <>
+          {/* Header Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2.5">
@@ -969,6 +1028,8 @@ export function OCoinsPage() {
         cancelLabel="إلغاء"
         variant="danger"
       />
+        </>
+      )}
     </div>
   );
 }

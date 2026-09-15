@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { AdminCoursesPage } from '@/pages/AdminCoursesPage';
 import {
   GraduationCap,
   Search,
@@ -55,6 +56,10 @@ export function CoursesPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedLevel, setSelectedLevel] = useState<string>('all');
   const [sortBy, setSortBy] = useState<SortOption>('newest');
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const canManageCourses = ['lead', 'co_lead', 'head'].includes(userProfile?.role || '');
+  const activeTab = searchParams.get('tab') === 'manage' && canManageCourses ? 'manage' : 'browse';
 
   useEffect(() => {
     let unsubProgress: (() => void) | undefined;
@@ -128,8 +133,51 @@ export function CoursesPage() {
 
   return (
     <div className="space-y-6 font-sans dir-rtl text-right animate-fadeIn">
-      {/* Hero Header */}
-      <div className="relative overflow-hidden rounded-3xl p-6 sm:p-8 text-white shadow-xl bg-gradient-to-r from-[#1E1B4B] via-[#0F172A] to-[#1E1B4B] border border-indigo-500/25">
+      {/* Management / Student Tab Switcher for Admin Roles */}
+      {canManageCourses && (
+        <div className="flex items-center justify-between p-2 rounded-2xl bg-[var(--surface-elevated)] border border-[var(--border-subtle)]">
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setSearchParams({})}
+              className={cn(
+                'px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2',
+                activeTab === 'browse'
+                  ? 'bg-[var(--brand-primary)] text-white shadow-md'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface)]'
+              )}
+            >
+              <BookOpen className="h-4 w-4" />
+              <span>استعراض وتصفح الدورات</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSearchParams({ tab: 'manage' })}
+              className={cn(
+                'px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2',
+                activeTab === 'manage'
+                  ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface)]'
+              )}
+            >
+              <GraduationCap className="h-4 w-4" />
+              <span>إدارة وتنظيم الدورات (مشرف)</span>
+            </button>
+          </div>
+
+          <span className="text-[11px] font-bold text-[var(--text-muted)] hidden sm:inline px-3">
+            صلاحيات الإشراف مفعّلة
+          </span>
+        </div>
+      )}
+
+      {activeTab === 'manage' ? (
+        <AdminCoursesPage />
+      ) : (
+        <>
+          {/* Hero Header */}
+          <div className="relative overflow-hidden rounded-3xl p-6 sm:p-8 text-white shadow-xl bg-gradient-to-r from-[#1E1B4B] via-[#0F172A] to-[#1E1B4B] border border-indigo-500/25">
         <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--brand-accent)]/20 backdrop-blur-md text-xs font-black border border-[var(--brand-accent)]/30 text-[var(--brand-accent)]">
@@ -434,6 +482,8 @@ export function CoursesPage() {
             );
           })}
         </div>
+      )}
+        </>
       )}
     </div>
   );

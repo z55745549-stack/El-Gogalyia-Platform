@@ -3,7 +3,8 @@ import { collection, query, onSnapshot, orderBy, limit, getDocs, db } from '@/li
 import {
   Users, Upload, Clock, AlertTriangle, CheckCircle2,
   Coins, Activity, ArrowUpRight, Plus, Shield, Inbox, Calendar, Sparkles, Bell,
-  Radio, Gift, Megaphone, AlertCircle, ChevronLeft
+  Radio, Gift, Megaphone, AlertCircle, ChevronLeft, Crown, Download, BarChart3, TrendingUp,
+  PieChart as PieChartIcon, Search
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -42,6 +43,10 @@ export function AdminDashboard() {
   const [rewardAmount, setRewardAmount] = useState('');
   const [rewardReason, setRewardReason] = useState('');
   const [rewarding, setRewarding] = useState(false);
+
+  // Integrated Reports & Leaderboard State
+  const [leaderboardCommitteeFilter, setLeaderboardCommitteeFilter] = useState('');
+  const [leaderboardSearch, setLeaderboardSearch] = useState('');
 
   useEffect(() => {
     const taskUnsub = onSnapshot(
@@ -132,6 +137,65 @@ export function AdminDashboard() {
       completionRate: rate,
     };
   });
+
+  // Overall completion rate for gauge
+  const overallCompletionRate = tasks.length > 0 ? (stats.approved / tasks.length) * 100 : 0;
+
+  // Employee Performance breakdown — EXCLUDES Lead and Co-Lead strictly as requested
+  const employeeReports = allUsers
+    .filter((u) => u.role !== 'lead' && u.role !== 'co_lead')
+    .filter((u) => !leaderboardCommitteeFilter || u.committeeId === leaderboardCommitteeFilter || (u.committeeName && u.committeeName.trim().toLowerCase() === leaderboardCommitteeFilter.toLowerCase()))
+    .map((u) => {
+      const ids = [u.uid, u.username || '', u.email || ''].filter(Boolean).map((v) => v.toLowerCase());
+      const userTasks = tasks.filter((t) => {
+        const assigned = (t.assignedTo || []).map((a) => a.toLowerCase());
+        return ids.some((id) => assigned.includes(id));
+      });
+      const completed = userTasks.filter((t) => t.status === 'approved' || t.status === 'completed').length;
+      const overdue = userTasks.filter((t) => isOverdue(t.deadline, t.status)).length;
+      const rate = userTasks.length > 0 ? (completed / userTasks.length) * 100 : 0;
+      const userCoins = u.oCoinsBalance ?? 0;
+      return { user: u, total: userTasks.length, completed, overdue, rate, coins: userCoins };
+    })
+    .sort((a, b) => b.completed - a.completed || b.coins - a.coins);
+
+  const topPerformers = employeeReports.slice(0, 3);
+
+  const filteredEmployeeReports = employeeReports.filter((r) => {
+    if (!leaderboardSearch.trim()) return true;
+    const term = leaderboardSearch.toLowerCase();
+    return (
+      (r.user.displayName || '').toLowerCase().includes(term) ||
+      (r.user.username || '').toLowerCase().includes(term) ||
+      (r.user.committeeName || '').toLowerCase().includes(term)
+    );
+  });
+
+  const exportCSV = () => {
+    const rows = [
+      ['اسم الموظف / العضو', 'المعرف', 'اللجنة', 'إجمالي المهام', 'المكتملة', 'المتأخرة', 'نسبة الإنجاز', 'مجموع O Coins'],
+      ...employeeReports.map((r) => [
+        `"${r.user.displayName || ''}"`,
+        `"${r.user.email || r.user.username || ''}"`,
+        `"${r.user.committeeName || ''}"`,
+        r.total,
+        r.completed,
+        r.overdue,
+        `"${r.rate.toFixed(1)}%"`,
+        r.coins
+      ])
+    ];
+    const csvContent = '\uFEFF' + rows.map((r) => r.join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `gogalyia_performance_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('تم تصدير تقرير أداء فريق منصة الجوجالية بنجاح!');
+  };
 
   // Handlers
   const handleSendBroadcast = async (e: React.FormEvent) => {
@@ -655,6 +719,259 @@ export function AdminDashboard() {
               )}
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* ─── Integrated Reports & Team Performance Analytics ──────────────── */}
+      <div className="space-y-6 pt-2">
+        {/* Section Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-[var(--bg-elevated)]/60 border border-[var(--border-subtle)]">
+          <div>
+            <h2 className="text-base sm:text-lg font-black text-[var(--text-primary)] flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-[var(--brand-primary)]" />
+              <span>مؤشرات أداء الفرق وإحصائيات الإنجاز الشاملة</span>
+            </h2>
+            <p className="text-xs text-[var(--text-muted)] mt-1">
+              متابعة كفاءة تسليم المهام للأعضاء واللجان، ونسب الإنجاز اللحظية، وتوزيع مكافآت المنظومة.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Committee Filter */}
+            <select
+              value={leaderboardCommitteeFilter}
+              onChange={(e) => setLeaderboardCommitteeFilter(e.target.value)}
+              className="px-3 py-1.5 rounded-xl text-xs bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] cursor-pointer"
+            >
+              <option value="">جميع اللجان</option>
+              {DEFAULT_COMMITTEES.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={exportCSV}
+              className="gap-1.5 text-xs font-bold shadow-xs cursor-pointer"
+            >
+              <Download className="h-3.5 w-3.5 text-[var(--brand-primary)]" />
+              <span>تصدير CSV</span>
+            </Button>
+          </div>
+        </div>
+
+        {/* Top 3 Performers Podium */}
+        {topPerformers.length > 0 && (
+          <div className="card p-5 sm:p-6 rounded-2xl border border-[var(--border-subtle)]">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-extrabold text-[var(--text-primary)] flex items-center gap-2">
+                <Crown className="h-4 w-4 text-amber-500" />
+                <span>لوحة شرف المتميزين (Top Performers)</span>
+              </h3>
+              <span className="text-[11px] text-[var(--text-muted)] font-bold">الأعلى إنجازاً للتكليفات</span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+              {topPerformers.map((item, idx) => {
+                const medals = [
+                  { rank: 'المركز الأول 🥇', color: 'border-amber-400/50 bg-amber-500/10 text-amber-500', icon: '🏆' },
+                  { rank: 'المركز الثاني 🥈', color: 'border-slate-300 dark:border-slate-700 bg-slate-500/10 text-slate-400', icon: '🥈' },
+                  { rank: 'المركز الثالث 🥉', color: 'border-amber-700/50 bg-amber-700/10 text-amber-700 dark:text-amber-500', icon: '🥉' },
+                ];
+                const medal = medals[idx] || medals[0];
+                return (
+                  <div
+                    key={item.user.uid}
+                    className={`p-4 rounded-2xl border ${medal.color} flex items-center gap-3 transition-transform hover:-translate-y-0.5`}
+                  >
+                    <Avatar src={item.user.photoURL} name={item.user.displayName || item.user.username || 'User'} size="md" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-black">{medal.rank}</span>
+                        <span className="text-xs font-black text-amber-500 font-mono">+{formatOCoins(item.coins)} OC</span>
+                      </div>
+                      <p className="text-xs font-bold text-[var(--text-primary)] truncate mt-0.5">
+                        {formatFullName(item.user.displayName || 'عضو')}
+                      </p>
+                      <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
+                        أنجز <strong className="text-emerald-500">{item.completed}</strong> مهمة بنجاح ({Math.round(item.rate)}%)
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Visual Charts Row */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+          {/* Chart 1: Tasks Health Gauge */}
+          <div className="card p-5 sm:p-6 rounded-2xl flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-extrabold text-[var(--text-primary)] flex items-center gap-2">
+                  <PieChartIcon className="h-4 w-4 text-[var(--brand-primary)]" />
+                  <span>توزيع حالة المهام</span>
+                </h3>
+                <span className="text-xs text-[var(--text-muted)] font-mono">{tasks.length} مهمة</span>
+              </div>
+              <p className="text-xs text-[var(--text-muted)] mt-1">نسبة الإنجاز مقارنة بالمهام الجارية والمتأخرة</p>
+            </div>
+
+            <div className="my-6 flex items-center justify-center">
+              <div className="relative w-36 h-36 flex items-center justify-center">
+                <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
+                  <path
+                    className="text-[var(--bg-elevated)]"
+                    strokeWidth="3.8"
+                    stroke="currentColor"
+                    fill="none"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  />
+                  <path
+                    className="text-emerald-500 transition-all duration-1000 ease-out"
+                    strokeDasharray={`${Math.round(overallCompletionRate)}, 100`}
+                    strokeWidth="3.8"
+                    strokeLinecap="round"
+                    stroke="currentColor"
+                    fill="none"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  />
+                </svg>
+                <div className="absolute flex flex-col items-center justify-center text-center">
+                  <span className="text-2xl font-black text-[var(--text-primary)] font-mono">{Math.round(overallCompletionRate)}%</span>
+                  <span className="text-[10px] font-bold text-emerald-500">معدل الإنجاز</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 text-center text-xs pt-4 border-t border-[var(--border-subtle)]">
+              <div>
+                <p className="text-[10px] text-[var(--text-muted)] font-bold">مكتملة</p>
+                <p className="font-extrabold text-emerald-500 mt-0.5">{stats.approved}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-[var(--text-muted)] font-bold">جارية</p>
+                <p className="font-extrabold text-[var(--brand-primary)] mt-0.5">{stats.inProgress + stats.pending}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-[var(--text-muted)] font-bold">متأخرة</p>
+                <p className="font-extrabold text-rose-500 mt-0.5">{stats.overdue}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Chart 2: Committee Performance Distribution */}
+          <div className="card p-5 sm:p-6 rounded-2xl flex flex-col justify-between lg:col-span-2">
+            <div>
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-extrabold text-[var(--text-primary)] flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-cyan-500" />
+                  <span>معدل إنجاز اللجان والفرق</span>
+                </h3>
+                <span className="text-xs text-[var(--text-muted)]">{committeesStats.length} لجان نشطة</span>
+              </div>
+              <p className="text-xs text-[var(--text-muted)] mt-1">مقارنة بصرية لكفاءة وسرعة تسليم كل لجنة للتكليفات</p>
+            </div>
+
+            <div className="my-4 space-y-3">
+              {committeesStats.map((c) => (
+                <div key={c.id} className="space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-[var(--text-primary)]">{c.name}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-[var(--text-muted)]">{c.completedTasks} من {c.totalTasks} مهمة</span>
+                      <span className="font-bold text-cyan-500 font-mono">{c.completionRate}%</span>
+                    </div>
+                  </div>
+                  <div className="w-full bg-[var(--bg-elevated)] h-2 rounded-full overflow-hidden border border-[var(--border-subtle)]">
+                    <div
+                      className="bg-gradient-to-r from-cyan-500 to-[var(--brand-primary)] h-full rounded-full transition-all duration-1000"
+                      style={{ width: `${c.completionRate}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex items-center justify-between text-[11px] text-[var(--text-muted)] pt-3 border-t border-[var(--border-subtle)]">
+              <span>💡 يتم تحديث مؤشرات اللجان لحظياً بمجرد اعتماد المشرفين للتسليمات.</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Employee Performance Breakdown Table */}
+        <div className="card overflow-hidden rounded-2xl border border-[var(--border-subtle)]">
+          <div className="px-5 py-4 border-b border-[var(--border-subtle)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[var(--bg-elevated)]/40">
+            <div>
+              <h3 className="text-sm font-extrabold text-[var(--text-primary)]">تفاصيل أداء أعضاء فريق العمل</h3>
+              <p className="text-[11px] text-[var(--text-muted)]">إحصائيات إنجاز التكليفات ومجموع الرصيد (مستثنى منها القادة تلقائياً)</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <Search className="h-3.5 w-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+                <input
+                  type="text"
+                  value={leaderboardSearch}
+                  onChange={(e) => setLeaderboardSearch(e.target.value)}
+                  placeholder="بحث عن عضو..."
+                  className="pr-8 pl-3 py-1.5 rounded-xl text-xs bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]"
+                />
+              </div>
+              <span className="text-xs text-[var(--text-muted)] font-semibold shrink-0">{filteredEmployeeReports.length} عضواً</span>
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="p-12 text-center text-[var(--text-muted)] text-sm">جاري تجميع وحساب بيانات الأداء...</div>
+          ) : filteredEmployeeReports.length === 0 ? (
+            <div className="p-12 text-center text-[var(--text-muted)] text-sm">لا توجد سجلات أعضاء مطابقة.</div>
+          ) : (
+            <div className="divide-y divide-[var(--border-subtle)] overflow-x-auto">
+              {filteredEmployeeReports.map(({ user, total, completed, overdue, rate, coins }) => (
+                <div key={user.uid} className="px-5 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-[var(--bg-elevated)]/30 transition-colors min-w-[600px] sm:min-w-0">
+                  <div className="flex items-center gap-3.5 sm:w-64 min-w-0">
+                    <Avatar src={user.photoURL} name={formatFullName(user.displayName || user.username || 'User')} size="sm" />
+                    <div className="min-w-0">
+                      <p className="font-bold text-[var(--text-primary)] truncate text-xs">{formatFullName(user.displayName || 'عضو الفريق')}</p>
+                      <p className="text-[10px] text-[var(--text-muted)] truncate font-mono">@{user.username || user.email}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex-1 grid grid-cols-4 gap-2 text-center">
+                    <div>
+                      <span className="text-[9px] uppercase font-bold text-[var(--text-muted)] block">المسندة</span>
+                      <strong className="text-xs font-extrabold text-[var(--text-primary)]">{total}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[9px] uppercase font-bold text-[var(--text-muted)] block">المكتملة</span>
+                      <strong className="text-xs font-extrabold text-emerald-500">{completed}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[9px] uppercase font-bold text-[var(--text-muted)] block">نسبة الإنجاز</span>
+                      <strong className="text-xs font-extrabold text-[var(--brand-primary)]">{Math.round(rate)}%</strong>
+                    </div>
+                    <div>
+                      <span className="text-[9px] uppercase font-bold text-[var(--text-muted)] block">O Coins</span>
+                      <strong className="text-xs font-extrabold text-amber-500">{formatOCoins(coins)}</strong>
+                    </div>
+                  </div>
+
+                  {overdue > 0 && (
+                    <div className="shrink-0">
+                      <span className="badge bg-rose-500/10 text-rose-500 border border-rose-500/20 text-[10px] font-bold px-2 py-0.5 rounded-lg">
+                        <AlertTriangle className="h-3 w-3 ml-1 inline" /> {overdue} متأخرة
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
