@@ -89,10 +89,15 @@ export function EmployeesPage() {
     const unsubscribe = onSnapshot(
       collection(db, 'users'),
       (snapshot) => {
-        const list: UserProfile[] = snapshot.docs.map((docSnap) => ({
-          uid: docSnap.id,
-          ...docSnap.data(),
-        })) as UserProfile[];
+        const list: UserProfile[] = snapshot.docs.map((docSnap) => {
+          const data = docSnap.data();
+          const isLeader = data.role === 'lead' || data.role === 'co_lead';
+          return {
+            uid: docSnap.id,
+            ...data,
+            committeeName: data.committeeName || (isLeader ? 'بدون لجنة' : undefined),
+          };
+        }) as UserProfile[];
         setEmployees(list);
         setLoading(false);
       },
@@ -100,7 +105,11 @@ export function EmployeesPage() {
         console.warn('Supabase users snapshot notice:', err);
         // Local storage fallback listener
         const loadLocal = () => {
-          const localList: UserProfile[] = JSON.parse(localStorage.getItem('elgogalyia_local_users') || '[]');
+          const raw = JSON.parse(localStorage.getItem('elgogalyia_local_users') || '[]');
+          const localList: UserProfile[] = raw.map((u: any) => ({
+            ...u,
+            committeeName: u.committeeName || (u.role === 'lead' || u.role === 'co_lead' ? 'بدون لجنة' : undefined),
+          }));
           setEmployees(localList);
           setLoading(false);
         };
@@ -776,14 +785,28 @@ export function EmployeesPage() {
                       </td>
 
                       <td className="p-4 hidden md:table-cell">
-                        {emp.committeeName ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border" style={{ backgroundColor: committees.find(c=>c.id===emp.committeeId)?.color + '15' || '#f3f0ff', borderColor: committees.find(c=>c.id===emp.committeeId)?.color || '#7C00FE', color: committees.find(c=>c.id===emp.committeeId)?.color || '#7C00FE' }}>
-                            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: committees.find(c=>c.id===emp.committeeId)?.color || '#7C00FE' }} />
-                            {emp.committeeName}
-                          </span>
-                        ) : (
-                          <span className="text-[11px] text-slate-400">—</span>
-                        )}
+                        {(() => {
+                          const isLeader = emp.role === 'lead' || emp.role === 'co_lead';
+                          const displayComm = emp.committeeName || (isLeader ? 'بدون لجنة' : '');
+                          if (displayComm) {
+                            const isNoComm = displayComm === 'بدون لجنة';
+                            const commColor = isNoComm ? '#8B5CF6' : (committees.find((c: any) => c.id === emp.committeeId)?.color || '#7C00FE');
+                            return (
+                              <span
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border"
+                                style={{
+                                  backgroundColor: commColor + '15',
+                                  borderColor: commColor + '50',
+                                  color: commColor,
+                                }}
+                              >
+                                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: commColor }} />
+                                {displayComm}
+                              </span>
+                            );
+                          }
+                          return <span className="text-[11px] text-slate-400">—</span>;
+                        })()}
                       </td>
 
                       <td className="p-4">
@@ -850,10 +873,25 @@ export function EmployeesPage() {
                           {emp.employeeCode || generateEmployeeCode(emp.username || emp.uid)}
                         </span>
                       </div>
-                      <p className="text-xs font-mono text-indigo-400">@{emp.username}</p>
-                      {emp.committeeName && (
-                        <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold border" style={{ backgroundColor: committees.find(c=>c.id===emp.committeeId)?.color + '20' || '#7c3aed20', color: committees.find(c=>c.id===emp.committeeId)?.color || '#7C3AED', borderColor: committees.find(c=>c.id===emp.committeeId)?.color + '40' || '#7c3aed40' }}>{emp.committeeName}</span>
-                      )}
+                      {(() => {
+                        const isLeader = emp.role === 'lead' || emp.role === 'co_lead';
+                        const displayComm = emp.committeeName || (isLeader ? 'بدون لجنة' : '');
+                        if (!displayComm) return null;
+                        const isNoComm = displayComm === 'بدون لجنة';
+                        const commColor = isNoComm ? '#8B5CF6' : (committees.find((c: any) => c.id === emp.committeeId)?.color || '#7C3AED');
+                        return (
+                          <span
+                            className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold border"
+                            style={{
+                              backgroundColor: commColor + '20',
+                              color: commColor,
+                              borderColor: commColor + '40',
+                            }}
+                          >
+                            {displayComm}
+                          </span>
+                        );
+                      })()}
                     </div>
                   </div>
                   <span className="text-xs font-black px-2 py-1 rounded-lg bg-amber-500/15 text-amber-500 border border-amber-500/20">🪙 {hasUnlimitedCoins(emp.role) ? '∞' : (emp.oCoinsBalance ?? 0)}</span>

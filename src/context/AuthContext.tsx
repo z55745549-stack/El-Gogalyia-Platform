@@ -129,7 +129,7 @@ function mapRowToProfile(row: any): UserProfile {
     role: row.role,
     status: row.status,
     committeeId: row.committee_id ?? undefined,
-    committeeName: row.committee_name ?? undefined,
+    committeeName: row.committee_name || (row.role === 'lead' || row.role === 'co_lead' ? 'بدون لجنة' : undefined),
     employeeCode: row.employee_code ?? undefined,
     oCoinsBalance: row.ocoins_balance ?? 0,
     permissions: row.permissions ?? [],
