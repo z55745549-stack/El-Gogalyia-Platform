@@ -6,15 +6,16 @@ import {
 import {
   CheckSquare, Clock, Upload, CheckCircle2, AlertTriangle,
   Coins, Calendar, ChevronLeft,
-  TrendingUp, Sparkles, LifeBuoy, CalendarDays
+  TrendingUp, Sparkles, LifeBuoy, CalendarDays, Bell
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { useNotifications } from '@/hooks/useNotifications';
 import { StatusBadge, PriorityBadge } from '@/components/ui/status-badge';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SkeletonCard } from '@/components/ui/loading-spinner';
 import { Button } from '@/components/ui/button';
 import {
-  getGreeting, getFirstName, formatDate, formatOCoins, isOverdue, formatRelative, cn, safeDate
+  getGreeting, getFirstName, formatDate, formatOCoins, isOverdue, formatRelative, getNotificationEmoji, cn, safeDate
 } from '@/utils';
 import { getUserTaskStatus } from '@/lib/database-service';
 import { subscribeBans, getActiveBan } from '@/lib/bans';
@@ -216,6 +217,9 @@ export function EmployeeDashboard() {
     ? `🔹 VICE-HEAD · نائب رئيس لجنة ${userProfile?.committeeName || 'اللجنة'}`
     : `👤 عضو لجنة ${userProfile?.committeeName || 'المنظومة'}`;
 
+  const { notifications } = useNotifications(3);
+  const unreadNotifsCount = notifications.filter((n) => !n.read).length;
+
   return (
     <div className="space-y-5 sm:space-y-6 font-sans text-right dir-rtl">
       {/* ─── 1. Welcome & Contextual Header ────────────────────────────────────── */}
@@ -346,19 +350,19 @@ export function EmployeeDashboard() {
         </div>
       </div>
 
-      {/* ─── 3. Upcoming Meetings & Support Tickets Row ────────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4">
+      {/* ─── 3. Upcoming Meetings, Notifications & Support Tickets Row ────────────────────────── */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-4">
         {/* Upcoming Meetings */}
         <div className="card p-5 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <CalendarDays className="h-4 w-4 text-[var(--brand-accent)]" />
               <h3 className="text-xs sm:text-sm font-bold text-[var(--text-primary)]">
-                الاجتماعات واللقاءات القادمة
+                الاجتماعات واللقاءات
               </h3>
             </div>
             <Link to="/meetings" className="text-xs font-bold text-[var(--brand-primary)] hover:underline flex items-center gap-1">
-              عرض الجدول <ChevronLeft className="h-3 w-3" />
+              الجدول <ChevronLeft className="h-3 w-3" />
             </Link>
           </div>
 
@@ -384,23 +388,70 @@ export function EmployeeDashboard() {
           )}
         </div>
 
+        {/* Live Notifications Feed */}
+        <div className="card p-5 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Bell className="h-4 w-4 text-[var(--brand-primary)]" />
+              <h3 className="text-xs sm:text-sm font-bold text-[var(--text-primary)]">
+                أحدث التنبيهات
+              </h3>
+              {unreadNotifsCount > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-[var(--brand-danger)] text-white">
+                  {unreadNotifsCount}
+                </span>
+              )}
+            </div>
+            <Link to="/notifications" className="text-xs font-bold text-[var(--brand-primary)] hover:underline flex items-center gap-1">
+              الكل <ChevronLeft className="h-3 w-3" />
+            </Link>
+          </div>
+
+          {notifications.length === 0 ? (
+            <p className="text-xs text-[var(--text-muted)] py-3 text-center">لا توجد إشعارات حالياً.</p>
+          ) : (
+            <div className="space-y-2">
+              {notifications.slice(0, 3).map((n) => (
+                <Link
+                  key={n.id}
+                  to={n.actionUrl || '/notifications'}
+                  className={cn(
+                    'p-2 rounded-xl border border-[var(--border-subtle)] flex items-center gap-2 transition-colors block text-right',
+                    !n.read ? 'bg-[var(--brand-primary)]/[0.06] border-[var(--brand-primary)]/20' : 'bg-[var(--bg-elevated)]/50 hover:bg-[var(--bg-elevated)]'
+                  )}
+                >
+                  <span className="text-sm shrink-0">{getNotificationEmoji(n.type)}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className={cn('text-xs truncate', !n.read ? 'font-bold text-[var(--text-primary)]' : 'text-[var(--text-secondary)]')}>
+                      {n.title}
+                    </p>
+                    <p className="text-[10px] text-[var(--text-muted)]">
+                      {n.createdAt ? formatRelative(n.createdAt) : 'الآن'}
+                    </p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* Support Tickets Quick View */}
         <div className="card p-5 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <LifeBuoy className="h-4 w-4 text-[var(--brand-primary)]" />
+              <LifeBuoy className="h-4 w-4 text-[var(--brand-warm)]" />
               <h3 className="text-xs sm:text-sm font-bold text-[var(--text-primary)]">
-                تذاكر الدعم والاستفسارات
+                تذاكر الدعم
               </h3>
             </div>
             <Link to="/support" className="text-xs font-bold text-[var(--brand-primary)] hover:underline flex items-center gap-1">
-              مركز الدعم <ChevronLeft className="h-3 w-3" />
+              المساعدة <ChevronLeft className="h-3 w-3" />
             </Link>
           </div>
 
           {supportTickets.length === 0 ? (
             <div className="py-3 text-center space-y-1.5">
-              <p className="text-xs text-[var(--text-muted)]">ليس لديك أي تذاكر مفتوحة حالياً.</p>
+              <p className="text-xs text-[var(--text-muted)]">ليس لديك تذاكر مفتوحة.</p>
               <Link to="/support" className="inline-block text-xs font-bold text-[var(--brand-primary)] hover:underline">
                 + فتح تذكرة جديدة
               </Link>

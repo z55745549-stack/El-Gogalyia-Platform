@@ -2,16 +2,17 @@ import { useState, useEffect } from 'react';
 import { collection, query, onSnapshot, orderBy, limit, getDocs, db } from '@/lib/supabase';
 import {
   Users, Upload, Clock, AlertTriangle, CheckCircle2,
-  Coins, Activity, ArrowUpRight, Plus, Shield, Inbox, Calendar, Sparkles
+  Coins, Activity, ArrowUpRight, Plus, Shield, Inbox, Calendar, Sparkles, Bell
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { useNotifications } from '@/hooks/useNotifications';
 import { StatCard } from '@/components/ui/stat-card';
 import { SkeletonCard } from '@/components/ui/loading-spinner';
 import { StatusBadge, PriorityBadge } from '@/components/ui/status-badge';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { formatDate, formatOCoins, formatRelative, isOverdue, cn } from '@/utils';
+import { formatDate, formatOCoins, formatRelative, isOverdue, getNotificationEmoji, cn } from '@/utils';
 import type { Task, OCoinTransaction, ActivityLog } from '@/types';
 
 export function AdminDashboard() {
@@ -86,6 +87,9 @@ export function AdminDashboard() {
     : stats.submitted > 0
     ? `لديك ${stats.submitted} تسليم جديد بانتظار المراجعة والاعتماد.`
     : 'جميع تسليمات المهام مستقرة ومحدثة.';
+
+  const { notifications } = useNotifications(5);
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
     <div className="space-y-5 sm:space-y-6 font-sans text-right dir-rtl">
@@ -271,8 +275,50 @@ export function AdminDashboard() {
           </div>
         </div>
 
-        {/* Side Column: Activity & Coins Feeds */}
+        {/* Side Column: Notifications, Activity & Coins Feeds */}
         <div className="space-y-4">
+          {/* Recent Notifications Feed */}
+          <div className="card overflow-hidden">
+            <div className="p-3.5 sm:p-4 border-b border-[var(--border-subtle)] flex items-center justify-between bg-[var(--bg-elevated)]/30">
+              <h2 className="text-xs sm:text-sm font-bold text-[var(--text-primary)] flex items-center gap-2">
+                <Bell className="h-4 w-4 text-[var(--brand-primary)]" /> التنبيهات والإشعارات
+                {unreadCount > 0 && (
+                  <span className="px-1.5 py-0.5 text-[10px] font-black rounded-full bg-[var(--brand-danger)] text-white">
+                    {unreadCount} جديدة
+                  </span>
+                )}
+              </h2>
+              <Link to="/notifications" className="text-[11px] font-bold text-[var(--brand-primary)] hover:underline">
+                مركز التنبيهات
+              </Link>
+            </div>
+            <div className="p-3 space-y-2">
+              {notifications.length === 0 ? (
+                <p className="text-xs text-[var(--text-muted)] text-center py-3">لا توجد إشعارات حالياً.</p>
+              ) : (
+                notifications.slice(0, 4).map((n) => (
+                  <Link
+                    key={n.id}
+                    to={n.actionUrl || '/notifications'}
+                    className={cn(
+                      'flex items-start gap-2.5 p-2 rounded-xl transition-colors text-right block',
+                      !n.read ? 'bg-[var(--brand-primary)]/[0.06] border border-[var(--brand-primary)]/20' : 'hover:bg-[var(--bg-elevated)]/60'
+                    )}
+                  >
+                    <span className="text-sm shrink-0 mt-0.5">{getNotificationEmoji(n.type)}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className={cn('text-xs leading-snug', !n.read ? 'font-bold text-[var(--text-primary)]' : 'text-[var(--text-secondary)]')}>
+                        {n.title}
+                      </p>
+                      <p className="text-[10px] text-[var(--text-muted)] mt-0.5">
+                        {n.createdAt ? formatRelative(n.createdAt) : 'الآن'}
+                      </p>
+                    </div>
+                  </Link>
+                ))
+              )}
+            </div>
+          </div>
           {/* Live Activity Feed */}
           <div className="card overflow-hidden">
             <div className="p-3.5 sm:p-4 border-b border-[var(--border-subtle)] flex items-center justify-between bg-[var(--bg-elevated)]/30">
