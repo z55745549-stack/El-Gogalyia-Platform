@@ -19,6 +19,7 @@ import {
   ShieldCheck, Fingerprint
 } from 'lucide-react';
 import { DEFAULT_COMMITTEES } from '@/types';
+import { formatFullName, formatTitleCaseLive, hasArabic } from '@/utils';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -391,6 +392,14 @@ export function LoginPage() {
       toast.error('يرجى إدخال اسم المستخدم وكلمة المرور.');
       return;
     }
+    if (hasArabic(u)) {
+      setErrorMsg('اسم المستخدم لا يمكن أن يحتوي على حروف عربية.');
+      return;
+    }
+    if (hasArabic(p)) {
+      setErrorMsg('كلمة المرور لا يمكن أن تحتوي على حروف عربية.');
+      return;
+    }
 
     setLoading(true);
     try {
@@ -444,6 +453,14 @@ export function LoginPage() {
       setErrorMsg('يرجى ملء كافة الحقول المطلوبة.');
       return;
     }
+    if (hasArabic(uname)) {
+      setErrorMsg('اسم المستخدم لا يمكن أن يحتوي على حروف عربية — استخدم حروف إنجليزية وأرقام فقط.');
+      return;
+    }
+    if (hasArabic(pass)) {
+      setErrorMsg('كلمة المرور لا يمكن أن تحتوي على حروف عربية — استخدم حروف إنجليزية وأرقام فقط.');
+      return;
+    }
     if (pass.length < 6) {
       setErrorMsg('كلمة المرور يجب أن لا تقل عن 6 خانات.');
       return;
@@ -457,7 +474,7 @@ export function LoginPage() {
     setRegSubmitting(true);
     try {
       await registerMember({
-        fullName:      name,
+        fullName:      formatFullName(name),
         username:      uname,
         email,
         password:      pass,
@@ -572,9 +589,9 @@ export function LoginPage() {
                   <InputField
                     id="login-username"
                     label="اسم المستخدم أو البريد الإلكتروني"
-                    placeholder="مثال: eltmsah"
+                    placeholder="أدخل اسم المستخدم أو البريد"
                     value={username}
-                    onChange={setUsername}
+                    onChange={(v) => setUsername(v.replace(/[؀-ۿݐ-ݿࢠ-ࣿﭐ-﷿ﹰ-﻿]/g, ''))}
                     IconLeft={User}
                     required
                     autoFocus
@@ -587,7 +604,7 @@ export function LoginPage() {
                     type={showPassword ? 'text' : 'password'}
                     placeholder="كلمة المرور"
                     value={password}
-                    onChange={setPassword}
+                    onChange={(v) => setPassword(v.replace(/[؀-ۿݐ-ݿࢠ-ࣿﭐ-﷿ﹰ-﻿]/g, ''))}
                     IconLeft={Lock}
                     rightElement={
                       <button
@@ -688,7 +705,7 @@ export function LoginPage() {
                     label="الاسم الكامل"
                     placeholder="الاسم الثلاثي أو الرباعي"
                     value={regFullName}
-                    onChange={setRegFullName}
+                    onChange={(v) => setRegFullName(formatTitleCaseLive(v))}
                     IconLeft={User}
                     required
                     isDark={isDark}
@@ -698,7 +715,7 @@ export function LoginPage() {
                     <InputField
                       id="reg-username"
                       label="اسم المستخدم"
-                      placeholder="مثال: eltmsah"
+                      placeholder="اسم المستخدم (مثال: user_name)"
                       value={regUsername}
                       onChange={(v) => setRegUsername(v.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
                       IconLeft={User}
@@ -756,7 +773,7 @@ export function LoginPage() {
                       type={showRegPassword ? 'text' : 'password'}
                       placeholder="6 خانات كحد أدنى"
                       value={regPassword}
-                      onChange={setRegPassword}
+                      onChange={(v) => setRegPassword(v.replace(/[؀-ۿݐ-ݿࢠ-ࣿﭐ-﷿ﹰ-﻿]/g, ''))}
                       IconLeft={Lock}
                       rightElement={
                         <button
@@ -777,7 +794,7 @@ export function LoginPage() {
                       type="password"
                       placeholder="تأكيد الكلمة"
                       value={regConfirmPassword}
-                      onChange={setRegConfirmPassword}
+                      onChange={(v) => setRegConfirmPassword(v.replace(/[؀-ۿݐ-ݿࢠ-ࣿﭐ-﷿ﹰ-﻿]/g, ''))}
                       IconLeft={Lock}
                       required
                       isDark={isDark}

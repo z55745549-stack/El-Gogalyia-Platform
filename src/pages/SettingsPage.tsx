@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
 import { getRoleLabel, getRoleColor, isAdminRole } from '@/utils/permissions';
-import { formatOCoins, cn } from '@/utils';
+import { formatOCoins, cn, formatFullName, formatTitleCaseLive } from '@/utils';
 import { generateSalt, hashPassword } from '@/lib/auth-security';
 import { useMaintenance } from '@/hooks/useMaintenance';
 import { DeviceIdentitySection } from '@/components/settings/DeviceIdentitySection';
@@ -45,7 +45,7 @@ export function SettingsPage() {
   // ─── 1. Update Display Name ───────────────────────────────────────────────
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    const cleanName = displayName.trim();
+    const cleanName = formatFullName(displayName.trim());
     if (!cleanName) {
       toast.error('يرجى إدخال الاسم الظاهر.');
       return;
@@ -193,7 +193,7 @@ export function SettingsPage() {
               <label className="form-label text-slate-700 dark:text-slate-300">الاسم الكامل (الظاهر في المنصة)</label>
               <Input
                 value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
+                onChange={(e) => setDisplayName(formatTitleCaseLive(e.target.value))}
                 placeholder="الاسم الكامل..."
                 leftIcon={<User className="h-4 w-4" />}
                 required

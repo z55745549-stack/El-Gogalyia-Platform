@@ -64,23 +64,66 @@ export function AdminDashboard() {
     .filter((t) => t.amount > 0)
     .reduce((s, t) => s + t.amount, 0);
 
+  const role = userProfile?.role;
+  const isLead = role === 'lead';
+  const isCoLead = role === 'co_lead';
+  const isHead = role === 'head';
+  const isTopLeader = isLead || isCoLead;
+
+  // Role-specific badge and subtitle
+  const roleBadgeText = isLead
+    ? '🏆 LEAD · القائد العام للمنظومة'
+    : isCoLead
+    ? '🌟 CO-LEAD · نائب القائد العام'
+    : isHead
+    ? `👑 HEAD · رئيس لجنة ${userProfile?.committeeName || 'اللجنة'}`
+    : 'لوحة الإشراف والقيادة المركزية · منصة الجوجالية';
+
+  const roleSubtitle = isTopLeader
+    ? 'لوحة القيادة المركزية العليا · إشراف شامل وتنسيق كامل لكافة اللجان والفرق والمهام دون قيود.'
+    : isHead
+    ? `لوحة قيادة لجنة ${userProfile?.committeeName || ''} · إدارة مهام وتسليمات وأعضاء اللجنة واعتماد التكليفات.`
+    : stats.submitted > 0
+    ? `لديك ${stats.submitted} تسليم جديد بانتظار المراجعة والاعتماد.`
+    : 'جميع تسليمات المهام مستقرة ومحدثة.';
+
   return (
     <div className="space-y-5 sm:space-y-6 font-sans text-right dir-rtl">
       {/* Modern High-Tech Hero Header */}
       <div className="card card-glass p-5 sm:p-6 relative overflow-hidden mesh-bg">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
-          <div className="space-y-1.5">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full badge-primary text-xs font-bold">
-              <Shield className="h-3.5 w-3.5" />
-              لوحة الإشراف والقيادة المركزية · منصة الجوجالية
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className={cn(
+                "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black shadow-xs",
+                isLead
+                  ? "bg-amber-500/20 text-amber-900 dark:text-amber-200 border border-amber-500/40"
+                  : isCoLead
+                  ? "bg-purple-500/20 text-purple-900 dark:text-purple-200 border border-purple-500/40"
+                  : isHead
+                  ? "bg-blue-500/20 text-blue-900 dark:text-blue-200 border border-blue-500/40"
+                  : "badge-primary"
+              )}>
+                <Shield className="h-3.5 w-3.5 shrink-0" />
+                <span>{roleBadgeText}</span>
+              </div>
+
+              {/* Personal O-Coins Chip */}
+              <Link
+                to="/ocoins"
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-[var(--brand-warm)]/15 text-[var(--brand-warm)] border border-[var(--brand-warm)]/30 hover:bg-[var(--brand-warm)]/25 transition-colors"
+                title="محفظة O-Coins الشخصية"
+              >
+                <span>🪙</span>
+                <span>رصيدك: {formatOCoins(userProfile?.oCoinsBalance ?? 0)} OC</span>
+              </Link>
             </div>
+
             <h1 className="page-title text-xl sm:text-2xl font-extrabold text-[var(--text-primary)]">
-              مرحباً، {userProfile?.displayName?.split(' ')[0] || 'المشرف'} 👋
+              مرحباً، {userProfile?.displayName || 'المشرف'} 👋
             </h1>
-            <p className="text-xs sm:text-sm text-[var(--text-secondary)] max-w-xl leading-relaxed">
-              {stats.submitted > 0
-                ? `لديك ${stats.submitted} تسليم جديد بانتظار المراجعة والاعتماد.`
-                : 'جميع تسليمات المهام مستقرة ومحدثة.'}
+            <p className="text-xs sm:text-sm text-[var(--text-secondary)] max-w-2xl leading-relaxed">
+              {roleSubtitle}
               {stats.overdue > 0 && ` تنبيه: هناك ${stats.overdue} مهمة تجاوزت موعد التسليم.`}
             </p>
           </div>
@@ -89,16 +132,23 @@ export function AdminDashboard() {
           <div className="flex items-center gap-2 flex-wrap shrink-0">
             {stats.submitted > 0 && (
               <Link to="/submitted-tasks">
-                <Button variant="reward" size="sm" className="font-bold text-xs gap-1.5">
+                <Button variant="reward" size="sm" className="font-bold text-xs gap-1.5 shadow-sm">
                   <Inbox className="h-3.5 w-3.5" /> مراجعة التسليمات ({stats.submitted})
                 </Button>
               </Link>
             )}
             <Link to="/tasks">
-              <Button variant="primary" size="sm" className="font-bold text-xs gap-1.5">
+              <Button variant="primary" size="sm" className="font-bold text-xs gap-1.5 shadow-sm">
                 <Plus className="h-3.5 w-3.5" /> إنشاء مهمة جديدة
               </Button>
             </Link>
+            {isTopLeader && (
+              <Link to="/employees">
+                <Button variant="outline" size="sm" className="font-semibold text-xs gap-1.5">
+                  <Users className="h-3.5 w-3.5" /> إدارة الفريق
+                </Button>
+              </Link>
+            )}
             <Link to="/meetings">
               <Button variant="outline" size="sm" className="font-semibold text-xs gap-1.5">
                 <Calendar className="h-3.5 w-3.5" /> الاجتماعات

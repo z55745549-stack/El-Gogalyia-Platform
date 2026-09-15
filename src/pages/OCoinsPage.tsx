@@ -37,7 +37,7 @@ import { Modal } from '@/components/ui/modal';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Avatar } from '@/components/ui/avatar';
 import { EmptyState } from '@/components/ui/empty-state';
-import { formatOCoins, formatDate, formatRelative, cn } from '@/utils';
+import { formatOCoins, formatDate, formatRelative, cn, formatFullName } from '@/utils';
 import type { OCoinTransaction, OCoinTransactionType, UserProfile } from '@/types';
 
 const TRANSACTION_TYPE_CONFIG: Record<
@@ -457,8 +457,8 @@ export function OCoinsPage() {
                     : 'bg-[var(--bg-elevated)] text-[var(--text-secondary)] border-[var(--border-subtle)] hover:text-[var(--text-primary)]'
                 )}
               >
-                <Avatar name={u.displayName || u.username || 'User'} size="xs" />
-                <span>{u.displayName || u.username}</span>
+                <Avatar name={formatFullName(u.displayName || u.username || 'User')} size="xs" />
+                <span>{formatFullName(u.displayName || u.username || '')}</span>
                 <span className="text-[10px] font-bold text-[var(--brand-warm)]">
                   ({formatOCoins(u.oCoinsBalance ?? 0)})
                 </span>
@@ -793,10 +793,10 @@ export function OCoinsPage() {
                     )}
                   >
                     <div className="flex items-center gap-2 min-w-0">
-                      <Avatar name={u.displayName || u.username || 'User'} size="xs" />
+                      <Avatar name={formatFullName(u.displayName || u.username || 'User')} size="xs" />
                       <div className="min-w-0">
                         <p className="text-xs font-bold text-[var(--text-primary)] truncate">
-                          {u.displayName}
+                          {formatFullName(u.displayName)}
                         </p>
                         <p className="text-[10px] text-[var(--text-muted)] truncate font-mono">
                           @{u.username || u.email}
@@ -812,7 +812,7 @@ export function OCoinsPage() {
             </div>
             {adjustTarget && (
               <p className="text-xs text-[var(--brand-primary)] font-bold mt-1.5">
-                ✓ العضو المختار: {adjustTarget.displayName} (@{adjustTarget.username || adjustTarget.email})
+                ✓ العضو المختار: {formatFullName(adjustTarget.displayName)} (@{adjustTarget.username || adjustTarget.email})
               </p>
             )}
           </div>

@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { StatCard } from '@/components/ui/stat-card';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { formatOCoins, formatPercent, isOverdue, cn } from '@/utils';
+import { formatOCoins, formatPercent, isOverdue, cn, formatFullName } from '@/utils';
 import type { Task, UserProfile, OCoinTransaction } from '@/types';
 
 type DateFilter = 'all' | 'today' | 'week' | 'month';
@@ -179,9 +179,9 @@ export function ReportsPage() {
             {employeeReports.map(({ user, total, completed, overdue, rate, coins }) => (
               <div key={user.uid} className="px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/80 dark:hover:bg-white/[0.02] transition-colors min-w-[600px] sm:min-w-0">
                 <div className="flex items-center gap-3.5 sm:w-64 min-w-0">
-                  <Avatar src={user.photoURL} name={user.displayName || user.username || 'User'} size="md" />
+                  <Avatar src={user.photoURL} name={formatFullName(user.displayName || user.username || 'User')} size="md" />
                   <div className="min-w-0">
-                    <p className="font-bold text-slate-900 dark:text-white truncate text-sm">{user.displayName || 'عضو الفريق'}</p>
+                    <p className="font-bold text-slate-900 dark:text-white truncate text-sm">{formatFullName(user.displayName || 'عضو الفريق')}</p>
                     <p className="text-xs text-slate-500 dark:text-slate-400 truncate font-mono">@{user.username || user.email}</p>
                   </div>
                 </div>

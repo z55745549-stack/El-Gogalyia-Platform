@@ -16,6 +16,7 @@ import { parseErrorMessage, logError } from '@/lib/errors';
 import type { UserProfile, Permission } from '@/types';
 import { isAdminRole } from '@/utils/permissions';
 import { authenticateWithDevice } from '@/lib/webauthn';
+import { formatFullName } from '@/utils';
 
 // -------------------------------------------------------------------
 // Login Rate Limiter (In-memory + Session scoped protection)
@@ -170,53 +171,8 @@ async function upsertProfileToSupabase(profile: UserProfile & { passwordHash?: s
 }
 
 // -------------------------------------------------------------------
-// Pre-configured Master / Seed Accounts
-// -------------------------------------------------------------------
-const ELTMSAH_PROFILE: UserProfile = {
-  uid: '77940285-14ce-4f9a-b4b8-1a39a88e7b11',
-  username: 'eltmsah',
-  displayName: 'زياد محمد (LEAD)',
-  email: 'eltmsahzeyad@gmail.com',
-  photoURL: '',
-  role: 'lead',
-  permissions: [
-    'tasks.create', 'tasks.edit', 'tasks.delete', 'tasks.assign',
-    'tasks.review', 'tasks.view_all',
-    'employees.view', 'employees.manage',
-    'ocoins.manage', 'ocoins.view_all',
-    'reports.view', 'reports.export',
-    'access.manage',
-    'activity.view',
-    'notifications.send',
-  ],
-  status: 'active',
-  committeeId: 'tech-dev',
-  committeeName: 'Tech Dev',
-  employeeCode: 'JOGAL-LEAD-01',
-  oCoinsBalance: 10000,
-  createdAt: new Date().toISOString(),
-};
-
-export const MASTER_ACCOUNTS: Record<string, {
-  passwords: string[];
-  profile: UserProfile;
-}> = {
-  eltmsah: {
-    passwords: ['admin', 'admin123', 'gdg2026', '123456', 'gdghitu', 'hitu2026', 'eltmsah2026', 'eltmsah', 'zeyad2026', 'zeyad'],
-    profile: ELTMSAH_PROFILE,
-  },
-  'eltmsahzeyad@gmail.com': {
-    passwords: ['admin', 'admin123', 'gdg2026', '123456', 'gdghitu', 'hitu2026', 'eltmsah2026', 'eltmsah', 'zeyad2026', 'zeyad'],
-    profile: ELTMSAH_PROFILE,
-  },
-  zeyad: {
-    passwords: ['admin', 'admin123', 'gdg2026', '123456', 'gdghitu', 'hitu2026', 'eltmsah2026', 'eltmsah', 'zeyad2026', 'zeyad'],
-    profile: ELTMSAH_PROFILE,
-  },
-};
-
-// -------------------------------------------------------------------
 // Context Definition
+// -------------------------------------------------------------------
 // -------------------------------------------------------------------
 interface AuthContextValue {
   user: { uid: string; displayName: string | null } | null;
@@ -259,15 +215,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     (async () => {
-      // Check master accounts first (no DB call needed)
-      const masterEntry = Object.values(MASTER_ACCOUNTS).find(m => m.profile.uid === savedUid);
-      if (masterEntry) {
-        setUser({ uid: masterEntry.profile.uid, displayName: masterEntry.profile.displayName });
-        setUserProfile(masterEntry.profile);
-        setLoading(false);
-        return;
-      }
-
       const profile = await fetchProfileFromSupabase(savedUid);
 
       if (!profile) {
@@ -323,25 +270,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let matchedProfile: (UserProfile & { passwordHash?: string; salt?: string }) | null = null;
     let isMasterVerified = false;
 
-    // ── Tier 0: Master / Pre-configured Accounts ──────────────────────
-    const masterAccount = MASTER_ACCOUNTS[unameLower];
-    if (masterAccount && masterAccount.passwords.includes(passClean)) {
-      matchedProfile = { ...masterAccount.profile };
-      isMasterVerified = true;
-
-      // Sync master profile to Supabase in background
-      try {
-        const salt = generateSalt();
-        const pHash = await hashPassword(passClean, salt);
-        upsertProfileToSupabase({ ...matchedProfile, passwordHash: pHash, salt });
-      } catch (e) {
-        logError('Supabase master account sync notice', e);
-      }
-    }
-
     // ── Tier 1: Direct ID Lookup ('user_username') ─────────────────────
     if (!matchedProfile) {
-      const genUid = 'user_' + unameLower.replace(/[^a-z0-9]/g, '_');
+      const cleanId = unameLower.replace(/[^a-z0-9_-]/g, '_');
+      const genUid = 'user_' + cleanId;
       try {
         const { data } = await supabase.from('users').select('*').eq('id', genUid).maybeSingle();
         if (data) matchedProfile = mapRowToProfile(data) as any;
@@ -350,18 +282,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // ── Tier 2: Query by username ──────────────────────────────────────
+    // ── Tier 2: Query by username / variations ─────────────────────────
     if (!matchedProfile) {
       try {
+        const unameVariants = [
+          unameLower,
+          unameLower.replace(/\s+/g, '-'),
+          unameLower.replace(/\s+/g, '_'),
+          unameLower.replace(/-/g, '_'),
+          unameLower.replace(/_/g, '-'),
+          unameLower.replace(/[^a-z0-9]/g, ''),
+        ];
+        if (unameLower.includes('zeyad')) {
+          unameVariants.push('zeyad-eltmsah', 'zeyad_eltmsah');
+        }
+
         const { data } = await supabase
           .from('users')
           .select('*')
-          .eq('username', unameLower)
+          .in('username', unameVariants)
           .limit(1)
           .maybeSingle();
         if (data) matchedProfile = mapRowToProfile(data) as any;
       } catch (e) {
         logError('Supabase username query notice', e);
+      }
+    }
+
+    // ── Tier 2.5: Query by display_name (case-insensitive) ────────────
+    if (!matchedProfile) {
+      try {
+        const { data } = await supabase
+          .from('users')
+          .select('*')
+          .ilike('display_name', unameLower)
+          .limit(1)
+          .maybeSingle();
+        if (data) matchedProfile = mapRowToProfile(data) as any;
+      } catch (e) {
+        logError('Supabase display_name query notice', e);
       }
     }
 
@@ -420,7 +379,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   'reports.view', 'reports.export',
                   'access.manage', 'activity.view', 'notifications.send',
                 ],
-                oCoinsBalance: 10000,
+                oCoinsBalance: 0,
                 createdAt: new Date().toISOString(),
               } as any;
               upsertProfileToSupabase(matchedProfile!);
@@ -602,7 +561,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }): Promise<void> => {
     const unameClean = data.username.trim().toLowerCase();
     const emailClean = data.email.trim().toLowerCase();
-    const nameClean = data.fullName.trim();
+    const nameClean = formatFullName(data.fullName.trim());
     const passClean = data.password.trim();
 
     if (!unameClean || !emailClean || !nameClean || !passClean) {

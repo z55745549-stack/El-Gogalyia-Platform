@@ -172,3 +172,37 @@ export function getNotificationEmoji(type: string): string {
   };
   return emojiMap[type] || '🔔';
 }
+
+// ─── Name Formatting (Title Case for unified member lists) ────────────────────
+
+export function formatFullName(name: string): string {
+  if (!name) return '';
+  return name
+    .trim()
+    .split(/\s+/)
+    .map((word) => {
+      if (!word) return '';
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join(' ');
+}
+
+// ─── Arabic Character Detection ───────────────────────────────────────────────
+
+/**
+ * Returns true if the string contains any Arabic Unicode character.
+ * Used to block Arabic text in username / password fields.
+ */
+export function hasArabic(value: string): boolean {
+  return /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(value);
+}
+
+/**
+ * Formats title case dynamically while typing (preserving trailing spaces)
+ */
+export function formatTitleCaseLive(input: string): string {
+  if (!input) return '';
+  return input.replace(/(\b[a-zA-Z])([a-zA-Z]*)/g, (_, first, rest) => {
+    return first.toUpperCase() + rest.toLowerCase();
+  });
+}

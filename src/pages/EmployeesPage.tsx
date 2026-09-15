@@ -20,6 +20,8 @@ import { subscribeBans, createBan, endBan, getActiveBan } from '@/lib/bans';
 // 2-Step admin auth removed — Lead/Co-Lead and Head act directly
 import { generateEmployeeCode } from '@/lib/attendance';
 import { canManageRole, isTopTierRole, getRoleLabel, getRoleColor, isAdminRole } from '@/utils/permissions';
+import { formatFullName } from '@/utils';
+import { hasArabic } from '@/utils';
 
 const AVAILABLE_PERMISSIONS: { key: Permission; label: string }[] = [
   { key: 'employees.manage' as Permission, label: 'إدارة الموظفين (manageEmployees)' },
@@ -124,6 +126,10 @@ export function EmployeesPage() {
   };
 
   const handleOpenEdit = (user: UserProfile) => {
+    if (user.uid === userProfile?.uid) {
+      toast.error('لتعديل بيانات حسابك الشخصي، يرجى الانتقال إلى صفحة الإعدادات.');
+      return;
+    }
     setSelectedUser(user);
     setFormDisplayName(user.displayName);
     setFormUsername(user.username || '');
@@ -161,6 +167,16 @@ export function EmployeesPage() {
       return;
     }
 
+    // Block Arabic characters in username and password
+    if (hasArabic(formUsername.trim())) {
+      toast.error('اسم المستخدم لا يمكن أن يحتوي على حروف عربية.');
+      return;
+    }
+    if (hasArabic(formPassword.trim())) {
+      toast.error('كلمة المرور لا يمكن أن تحتوي على حروف عربية.');
+      return;
+    }
+
     const unameLower = formUsername.trim().toLowerCase();
 
     // Check Username Uniqueness
@@ -185,17 +201,18 @@ export function EmployeesPage() {
       const passwordHash = await hashPassword(formPassword.trim(), salt);
       const generatedUid = 'user_' + unameLower.replace(/[^a-z0-9]/g, '_');
 
-      const committee = committees.find(c => c.id === formCommitteeId) || null;
+      const isTopLeadership = formRole === 'lead' || formRole === 'co_lead';
+      const committee = isTopLeadership ? null : (committees.find(c => c.id === formCommitteeId) || null);
 
       // SECURITY: 'password' plaintext field intentionally omitted
       const newEmpDoc = {
         uid: generatedUid,
         username: unameLower,
-        displayName: formDisplayName.trim(),
+        displayName: formatFullName(formDisplayName.trim()),
         role: formRole,
         status: formStatus,
-        committeeId: committee?.id || null,
-        committeeName: committee?.name || null,
+        committeeId: isTopLeadership ? null : (committee?.id || null),
+        committeeName: isTopLeadership ? null : (committee?.name || null),
         permissions: formPermissions,
         passwordHash,
         salt,
@@ -231,13 +248,14 @@ export function EmployeesPage() {
 
     setSubmitting(true);
     try {
-      const committee = committees.find(c => c.id === formCommitteeId) || null;
+      const isTopLeadership = formRole === 'lead' || formRole === 'co_lead';
+      const committee = isTopLeadership ? null : (committees.find(c => c.id === formCommitteeId) || null);
       const updates = {
-        displayName: formDisplayName.trim(),
+        displayName: formatFullName(formDisplayName.trim()),
         role: formRole,
         status: formStatus,
-        committeeId: committee?.id || null,
-        committeeName: committee?.name || null,
+        committeeId: isTopLeadership ? null : (committee?.id || null),
+        committeeName: isTopLeadership ? null : (committee?.name || null),
         permissions: formPermissions,
         updatedAt: new Date().toISOString(),
       };
@@ -266,6 +284,10 @@ export function EmployeesPage() {
     e.preventDefault();
     if (!selectedUser || !newPassword.trim()) {
       toast.error('يرجى إدخال كلمة المرور الجديدة.');
+      return;
+    }
+    if (selectedUser.uid === userProfile?.uid) {
+      toast.error('لتغيير كلمة مرور حسابك، يرجى التوجه لصفحة الإعدادات.');
       return;
     }
     if (newPassword.trim().length < 8) {
@@ -300,6 +322,10 @@ export function EmployeesPage() {
 
   // Disable Employee Handler
   const handleToggleStatus = async (user: UserProfile) => {
+    if (user.uid === userProfile?.uid) {
+      toast.error('لا يمكنك تعطيل حسابك الحالي!');
+      return;
+    }
     const nextStatus: UserStatus = user.status === 'active' ? 'suspended' : 'active';
     try {
       try {
@@ -320,6 +346,10 @@ export function EmployeesPage() {
   // Delete Employee Handler (Preserves Audit History)
   const handleDeleteEmployee = async () => {
     if (!selectedUser) return;
+    if (selectedUser.uid === userProfile?.uid) {
+      toast.error('لا يمكنك حذف حسابك الحالي!');
+      return;
+    }
     setSubmitting(true);
     try {
       try {
@@ -355,6 +385,10 @@ export function EmployeesPage() {
   };
 
   const openBanModal = (emp: UserProfile) => {
+    if (emp.uid === userProfile?.uid) {
+      toast.error('لا يمكنك حظر حسابك الحالي!');
+      return;
+    }
     const active = getActiveBan(bans, emp.uid);
     if (active) { toast.error('Employee already has an active suspension'); return; }
     setBanTarget(emp); setBanReason(''); setBanNote(''); setBanDuration('7'); setBanCustomEnd(''); setShowBanModal(true);
@@ -415,7 +449,7 @@ export function EmployeesPage() {
       await updateDoc(doc(db, 'users', emp.uid), {
         status: 'active',
         role: assignedRole,
-        ocoins_balance: emp.oCoinsBalance ? emp.oCoinsBalance : 50,
+        ocoins_balance: emp.oCoinsBalance ?? 0,
         updated_at: new Date().toISOString(),
       });
       toast.success(`تم قبول واعتماد ${emp.displayName} كـ ${getRoleLabel(assignedRole)} بنجاح! 🎉`);
@@ -567,10 +601,10 @@ export function EmployeesPage() {
 
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <Avatar name={emp.displayName} size="md" />
+                      <Avatar name={formatFullName(emp.displayName)} size="md" />
                       <div>
                         <h4 className="font-bold text-slate-900 dark:text-white text-sm sm:text-base">
-                          {emp.displayName}
+                          {formatFullName(emp.displayName)}
                         </h4>
                         <div className="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
                           <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">@{emp.username}</span>
@@ -657,10 +691,10 @@ export function EmployeesPage() {
                     <tr key={emp.uid} className="hover:bg-slate-50/80 transition-colors">
                       <td className="p-4">
                         <div className="flex items-center gap-3">
-                          <Avatar name={emp.displayName} src={emp.photoURL} size="sm" />
+                          <Avatar name={formatFullName(emp.displayName)} src={emp.photoURL} size="sm" />
                           <div>
                             <div className="flex items-center gap-2">
-                              <p className="font-bold text-slate-900">{emp.displayName}</p>
+                              <p className="font-bold text-slate-900">{formatFullName(emp.displayName)}</p>
                               <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200">
                                 {emp.employeeCode || generateEmployeeCode(emp.username || emp.uid)}
                               </span>
@@ -707,7 +741,14 @@ export function EmployeesPage() {
                       </td>
 
                       <td className="p-4 text-left">
-                        {canManageRole(userProfile?.role ?? 'member', emp.role) && (
+                        {emp.uid === userProfile?.uid ? (
+                          <div className="flex items-center justify-end">
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 shadow-sm">
+                              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                              حسابك الحالي (أنت)
+                            </span>
+                          </div>
+                        ) : canManageRole(userProfile?.role ?? 'member', emp.role) ? (
                           <div className="flex items-center justify-end gap-1">
                             <button onClick={() => handleOpenEdit(emp)} title="تعديل" className="p-2 hover:bg-slate-100 rounded-lg text-slate-600 cursor-pointer"><Edit3 className="h-4 w-4" /></button>
                             <button onClick={() => { setSelectedUser(emp); setShowPassModal(true); }} title="كلمة المرور" className="p-2 hover:bg-amber-50 rounded-lg text-amber-600 cursor-pointer"><KeyRound className="h-4 w-4" /></button>
@@ -719,7 +760,7 @@ export function EmployeesPage() {
                             <button onClick={() => handleToggleStatus(emp)} title={emp.status === 'active' ? 'تعطيل' : 'تفعيل'} className={`p-2 rounded-lg cursor-pointer ${emp.status === 'active' ? 'hover:bg-rose-50 text-rose-600' : 'hover:bg-emerald-50 text-emerald-600'}`}>{emp.status === 'active' ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}</button>
                             <button onClick={() => { setSelectedUser(emp); setShowDeleteModal(true); }} title="حذف" className="p-2 hover:bg-rose-50 rounded-lg text-rose-600 cursor-pointer"><Trash2 className="h-4 w-4" /></button>
                           </div>
-                        )}
+                        ) : null}
                       </td>
                     </tr>
                   ))}
@@ -734,10 +775,10 @@ export function EmployeesPage() {
               <div key={`m-${emp.uid}`} className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm text-right">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <Avatar name={emp.displayName} src={emp.photoURL} size="sm" />
+                    <Avatar name={formatFullName(emp.displayName)} src={emp.photoURL} size="sm" />
                     <div>
                       <div className="flex items-center gap-2">
-                        <p className="font-bold text-slate-900 text-sm">{emp.displayName}</p>
+                        <p className="font-bold text-slate-900 text-sm">{formatFullName(emp.displayName)}</p>
                         <span className="font-mono text-[9px] font-bold px-1.5 py-0.2 rounded bg-purple-50 text-purple-700 border border-purple-200">
                           {emp.employeeCode || generateEmployeeCode(emp.username || emp.uid)}
                         </span>
@@ -754,7 +795,12 @@ export function EmployeesPage() {
                   <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${getRoleColor(emp.role)}`}>{getRoleLabel(emp.role)}</span>
                   <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${emp.status === 'active' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>{emp.status}</span>
                 </div>
-                {canManageRole(userProfile?.role ?? 'member', emp.role) && (
+                {emp.uid === userProfile?.uid ? (
+                  <div className="mt-3 p-2 text-center rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-xs font-bold text-blue-700 dark:text-blue-300 flex items-center justify-center gap-2 shadow-sm">
+                    <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                    <span>حسابك الحالي (أنت)</span>
+                  </div>
+                ) : canManageRole(userProfile?.role ?? 'member', emp.role) ? (
                   <div className="grid grid-cols-5 gap-1.5 mt-3">
                     <button onClick={() => handleOpenEdit(emp)} className="py-2 rounded-xl bg-slate-50 hover:bg-[#7C00FE]/10 text-slate-700 flex flex-col items-center gap-1 text-[10px] font-bold"><Edit3 className="h-4 w-4" /> تعديل</button>
                     <button onClick={() => { setSelectedUser(emp); setShowPassModal(true); }} className="py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 flex flex-col items-center gap-1 text-[10px] font-bold"><KeyRound className="h-4 w-4" /> كلمة السر</button>
@@ -766,7 +812,7 @@ export function EmployeesPage() {
                     <button onClick={() => handleToggleStatus(emp)} className={`py-2 rounded-xl flex flex-col items-center gap-1 text-[10px] font-bold ${emp.status === 'active' ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'}`}>{emp.status === 'active' ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}{emp.status === 'active' ? 'تعطيل' : 'تفعيل'}</button>
                     <button onClick={() => { setSelectedUser(emp); setShowDeleteModal(true); }} className="py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 flex flex-col items-center gap-1 text-[10px] font-bold"><Trash2 className="h-4 w-4" /> حذف</button>
                   </div>
-                )}
+                ) : null}
               </div>
             ))}
             {filteredEmployees.length === 0 && <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-400">لا يوجد أعضاء يطابقون خيارات البحث</div>}
@@ -785,16 +831,16 @@ export function EmployeesPage() {
         <form onSubmit={handleAddEmployee} className="space-y-4 text-right dir-rtl">
           <Input
             label="الاسم الكامل (Display Name) *"
-            placeholder="مثال: أحمد محمد"
+            placeholder="الاسم الأول والأخير"
             value={formDisplayName}
             onChange={(e) => setFormDisplayName(e.target.value)}
           />
 
           <Input
             label="اسم المستخدم (Username) *"
-            placeholder="مثال: ahmed01"
+            placeholder="مثال: user01"
             value={formUsername}
-            onChange={(e) => setFormUsername(e.target.value)}
+            onChange={(e) => setFormUsername(e.target.value.replace(/[؀-ۿݐ-ݿࢠ-ࣿﭐ-﷿ﹰ-﻿]/g, '').toLowerCase())}
           />
 
           <Input
@@ -802,7 +848,7 @@ export function EmployeesPage() {
             type="password"
             placeholder="••••••••"
             value={formPassword}
-            onChange={(e) => setFormPassword(e.target.value)}
+            onChange={(e) => setFormPassword(e.target.value.replace(/[؀-ۿݐ-ݿࢠ-ࣿﭐ-﷿ﹰ-﻿]/g, ''))}
           />
 
           <div className="grid grid-cols-2 gap-4">
@@ -833,15 +879,22 @@ export function EmployeesPage() {
             />
           </div>
 
-          <Select
-            label="اللجنة (Committee)"
-            value={formCommitteeId}
-            onChange={(e) => setFormCommitteeId(e.target.value)}
-            options={[
-              { value: '', label: 'بدون لجنة' },
-              ...committees.map((c) => ({ value: c.id, label: c.name })),
-            ]}
-          />
+          {formRole === 'lead' || formRole === 'co_lead' ? (
+            <div className="p-3 rounded-xl bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 text-xs text-purple-800 dark:text-purple-300 font-medium flex items-center gap-2">
+              <span>🌟</span>
+              <span>رتبة القيادة العامة ({getRoleLabel(formRole)}) فوق جميع اللجان ولا تتبع أي لجنة منفردة.</span>
+            </div>
+          ) : (
+            <Select
+              label="اللجنة (Committee)"
+              value={formCommitteeId}
+              onChange={(e) => setFormCommitteeId(e.target.value)}
+              options={[
+                { value: '', label: 'بدون لجنة' },
+                ...committees.map((c) => ({ value: c.id, label: c.name })),
+              ]}
+            />
+          )}
 
           {/* Permissions Checkboxes */}
           <div className="pt-3 border-t border-slate-100 space-y-2">
@@ -910,15 +963,22 @@ export function EmployeesPage() {
             />
           </div>
 
-          <Select
-            label="اللجنة (Committee)"
-            value={formCommitteeId}
-            onChange={(e) => setFormCommitteeId(e.target.value)}
-            options={[
-              { value: '', label: 'بدون لجنة' },
-              ...committees.map((c) => ({ value: c.id, label: c.name })),
-            ]}
-          />
+          {formRole === 'lead' || formRole === 'co_lead' ? (
+            <div className="p-3 rounded-xl bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 text-xs text-purple-800 dark:text-purple-300 font-medium flex items-center gap-2">
+              <span>🌟</span>
+              <span>رتبة القيادة العامة ({getRoleLabel(formRole)}) فوق جميع اللجان ولا تتبع أي لجنة منفردة.</span>
+            </div>
+          ) : (
+            <Select
+              label="اللجنة (Committee)"
+              value={formCommitteeId}
+              onChange={(e) => setFormCommitteeId(e.target.value)}
+              options={[
+                { value: '', label: 'بدون لجنة' },
+                ...committees.map((c) => ({ value: c.id, label: c.name })),
+              ]}
+            />
+          )}
 
           <div className="pt-3 border-t border-slate-100 space-y-2">
             <label className="form-label text-xs font-bold text-slate-700">الصلاحيات التفصيلية (Permissions)</label>

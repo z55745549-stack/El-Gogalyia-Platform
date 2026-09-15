@@ -96,6 +96,10 @@ export function AccessManagementPage() {
 
   const handleToggleStatus = async (admin: AuthorizedAdmin) => {
     if (!userProfile) return;
+    if (admin.email === userProfile.email || (userProfile.googleLinkedEmail && admin.email === userProfile.googleLinkedEmail)) {
+      toast.error('لا يمكنك تعطيل صلاحيات حسابك الحالي!');
+      return;
+    }
     try {
       await toggleAuthorizedAdminStatus(
         admin.email,
@@ -113,6 +117,10 @@ export function AccessManagementPage() {
 
   const handleRemoveAdmin = async () => {
     if (!removeTarget || !userProfile) return;
+    if (removeTarget.email === userProfile.email || (userProfile.googleLinkedEmail && removeTarget.email === userProfile.googleLinkedEmail)) {
+      toast.error('لا يمكنك حذف صلاحيات حسابك الحالي!');
+      return;
+    }
     setRemoving(true);
     try {
       await removeAuthorizedAdmin(
@@ -240,26 +248,35 @@ export function AccessManagementPage() {
                       {formatDate(admin.createdAt)}
                     </td>
                     <td className="p-4">
-                      <div className="flex items-center justify-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleToggleStatus(admin)}
-                          title={admin.status === 'active' ? 'تعطيل الحساب' : 'تفعيل الحساب'}
-                          className={admin.status === 'active' ? 'text-amber-600 hover:text-amber-700' : 'text-emerald-600 hover:text-emerald-700'}
-                        >
-                          {admin.status === 'active' ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setRemoveTarget(admin)}
-                          className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/50"
-                          title="حذف من المشرفين"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      {admin.email === userProfile?.email || (userProfile?.googleLinkedEmail && admin.email === userProfile.googleLinkedEmail) ? (
+                        <div className="flex items-center justify-center">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 shadow-sm">
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                            حسابك الحالي (أنت)
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleToggleStatus(admin)}
+                            title={admin.status === 'active' ? 'تعطيل الحساب' : 'تفعيل الحساب'}
+                            className={admin.status === 'active' ? 'text-amber-600 hover:text-amber-700' : 'text-emerald-600 hover:text-emerald-700'}
+                          >
+                            {admin.status === 'active' ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setRemoveTarget(admin)}
+                            className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/50"
+                            title="حذف من المشرفين"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}
