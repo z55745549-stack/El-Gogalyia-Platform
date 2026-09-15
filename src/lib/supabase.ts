@@ -482,9 +482,34 @@ export async function setDoc(docRef: DocRef, data: any, options?: { merge?: bool
     }
   }
 
+  // Schema-safety fallbacks for strict PostgreSQL not-null constraints
+  if (table === 'attendance_sessions') {
+    if (!payload.session_code) payload.session_code = finalData.secureToken || finalData.sessionCode || id;
+    if (payload.total_attended === undefined) payload.total_attended = Number(finalData.attendeesCount || 0);
+    if (!payload.date) payload.date = new Date().toISOString().split('T')[0];
+    if (!payload.status) payload.status = 'active';
+  } else if (table === 'tasks') {
+    if (!payload.committee_id) payload.committee_id = finalData.committeeId || finalData.committee || 'general';
+    if (!payload.committee_name) payload.committee_name = finalData.committeeName || finalData.committee || 'اللجنة العامة';
+    if (!payload.status) payload.status = 'pending';
+  } else if (table === 'ocoin_transactions') {
+    if (!payload.user_display_name) payload.user_display_name = finalData.userDisplayName || finalData.userName || finalData.userEmail || 'عضو';
+    if (payload.amount === undefined) payload.amount = Number(finalData.amount || 0);
+    if (!payload.type) payload.type = 'manual_reward';
+  } else if (table === 'discounts') {
+    if (payload.discount_value === undefined) payload.discount_value = Number(finalData.discountValue || finalData.discount || finalData.value || 0);
+    if (!payload.discount_type) payload.discount_type = finalData.discountType || 'percentage';
+    if (!payload.status) payload.status = 'active';
+  } else if (table === 'attendance_records') {
+    if (!payload.employee_name) payload.employee_name = finalData.employeeName || 'عضو';
+    if (!payload.employee_code) payload.employee_code = finalData.employeeCode || 'GOGA-33000';
+    if (!payload.status) payload.status = 'present';
+  }
+
   const { error } = await supabase.from(table).upsert(payload);
   if (error) {
-    console.warn(`Supabase setDoc error on ${table}:`, error.message);
+    console.error(`Supabase setDoc error on ${table}:`, error.message);
+    throw new Error(error.message);
   }
 }
 

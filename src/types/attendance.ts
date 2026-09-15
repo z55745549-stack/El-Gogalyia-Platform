@@ -12,6 +12,9 @@ export interface AttendanceSession {
   endTime: string;           // HH:MM e.g. "18:00"
   status: AttendanceSessionStatus;
   secureToken: string;       // Unique cryptographic token to prevent URL guess
+  sessionCode?: string;      // Compatibility for DB schema session_code
+  session_code?: string;
+  total_attended?: number;
   timeWindowMinutes?: number; // Optional check-in window
   createdBy: string;         // Admin UID/email
   createdByName: string;

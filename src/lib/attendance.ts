@@ -95,11 +95,14 @@ export async function createAttendanceSession(params: {
     endTime,
     status: 'active',
     secureToken,
+    sessionCode: secureToken,
+    session_code: secureToken,
     createdBy: creator.uid,
     createdByName: creator.displayName || creator.username || 'المشرف',
     createdAt: now as any,
     closedAt: null,
     attendeesCount: 0,
+    total_attended: 0 as any,
   };
 
   await setDoc(doc(db, 'attendance_sessions', sessionId), sessionData);
