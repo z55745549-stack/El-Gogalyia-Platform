@@ -152,6 +152,28 @@ export async function updateSessionStatus(
   });
 }
 
+// ─── 3.1. Delete Attendance Session ──────────────────────────────────────────
+export async function deleteAttendanceSession(
+  sessionId: string,
+  actor?: UserProfile
+): Promise<void> {
+  const sessionRef = doc(db, 'attendance_sessions', sessionId);
+  await deleteDoc(sessionRef);
+
+  if (actor) {
+    await logActivity({
+      actor: actor.uid,
+      actorName: actor.displayName || 'المشرف',
+      actorPhoto: actor.photoURL || '',
+      action: 'attendance.session_deleted' as any,
+      targetType: 'attendance_session' as any,
+      targetId: sessionId,
+      targetName: sessionId,
+      metadata: { deletedAt: new Date().toISOString() },
+    }).catch(() => {});
+  }
+}
+
 // ─── 4. Record Employee Attendance via QR Check-in ───────────────────────────
 export async function recordAttendance(params: {
   sessionId: string;

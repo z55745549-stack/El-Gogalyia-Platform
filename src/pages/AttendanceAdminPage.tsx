@@ -7,6 +7,7 @@ import {
   Play,
   Pause,
   StopCircle,
+  Trash2,
   Users,
   CheckCircle2,
   Clock,
@@ -28,6 +29,7 @@ import {
   subscribeAttendanceSessions,
   createAttendanceSession,
   updateSessionStatus,
+  deleteAttendanceSession,
   subscribeSessionRecords
 } from '@/lib/attendance';
 import { Button } from '@/components/ui/button';
@@ -63,6 +65,10 @@ export function AttendanceAdminPage() {
   const [sessionRecords, setSessionRecords] = useState<AttendanceRecord[]>([]);
   const [recordSearch, setRecordSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'present' | 'late'>('all');
+
+  // Delete session confirm
+  const [deleteTargetSession, setDeleteTargetSession] = useState<AttendanceSession | null>(null);
+  const [deletingSession, setDeletingSession] = useState(false);
 
   // Dynamic 60s auto-renewing QR
   const [secondsLeft, setSecondsLeft] = useState(60);
@@ -160,6 +166,20 @@ export function AttendanceAdminPage() {
       );
     } catch {
       toast.error('فشل تحديث حالة الجلسة.');
+    }
+  };
+
+  const handleDeleteSession = async () => {
+    if (!deleteTargetSession || !userProfile) return;
+    setDeletingSession(true);
+    try {
+      await deleteAttendanceSession(deleteTargetSession.id, userProfile);
+      toast.success(`تم حذف جلسة "${deleteTargetSession.title}" بنجاح.`);
+      setDeleteTargetSession(null);
+    } catch {
+      toast.error('فشل حذف الجلسة، حاول مجدداً.');
+    } finally {
+      setDeletingSession(false);
     }
   };
 
@@ -417,6 +437,15 @@ export function AttendanceAdminPage() {
                         <StopCircle className="h-4 w-4" />
                       </button>
                     )}
+
+                    {/* Delete Session */}
+                    <button
+                      onClick={() => setDeleteTargetSession(s)}
+                      title="حذف الجلسة نهائياً"
+                      className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 border border-slate-200 dark:border-[#281e4b] transition-colors"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
                 </div>
               );
@@ -741,6 +770,18 @@ export function AttendanceAdminPage() {
           </div>
         )}
       </Modal>
+
+      {/* Delete Session Confirm */}
+      <ConfirmDialog
+        open={!!deleteTargetSession}
+        onClose={() => setDeleteTargetSession(null)}
+        onConfirm={handleDeleteSession}
+        title="حذف الجلسة"
+        description={`هل متأكد إنك عايز تحذف جلسة "${deleteTargetSession?.title}"؟ كل سجلات الحضور الخاصة بيها هتتمسح بشكل نهائي.`}
+        confirmLabel="نعم، احذف الجلسة"
+        variant="danger"
+        loading={deletingSession}
+      />
     </div>
   );
 }

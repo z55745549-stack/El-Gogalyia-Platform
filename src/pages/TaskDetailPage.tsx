@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, Calendar, Coins, User, AlertTriangle, CheckCircle, CheckCircle2,
   Clock, Upload, X, Check, Trash2, Ban, Archive, FileCheck, Users,
-  Sparkles, ExternalLink, ShieldCheck, MessageSquare
+  Sparkles, ExternalLink, ShieldCheck, MessageSquare, Pencil
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
@@ -17,6 +17,7 @@ import {
   endTask,
   archiveTask,
   getUserTaskStatus,
+  updateTaskDetails,
 } from '@/lib/database-service';
 import { Button } from '@/components/ui/button';
 import { StatusBadge, PriorityBadge } from '@/components/ui/status-badge';
@@ -51,6 +52,11 @@ export function TaskDetailPage() {
   const [rejectTargetSubmission, setRejectTargetSubmission] = useState<TaskSubmission | null>(null);
   const [rejecting, setRejecting] = useState(false);
   const [approvingSubmissionId, setApprovingSubmissionId] = useState<string | null>(null);
+
+  // Edit Task Modal
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editForm, setEditForm] = useState({ title: '', description: '', requirements: '', deadline: '', oCoinsReward: 0 });
+  const [savingEdit, setSavingEdit] = useState(false);
 
   // Lifecycle Modals
   const [showEndConfirm, setShowEndConfirm] = useState(false);
@@ -340,6 +346,52 @@ export function TaskDetailPage() {
     }
   };
 
+  const handleOpenEdit = () => {
+    if (!task) return;
+    const dl = task.deadline
+      ? new Date(typeof (task.deadline as any)?.seconds !== 'undefined'
+          ? (task.deadline as any).seconds * 1000
+          : task.deadline as any)
+          .toISOString().split('T')[0]
+      : '';
+    setEditForm({
+      title: task.title || '',
+      description: task.description || '',
+      requirements: task.requirements || '',
+      deadline: dl,
+      oCoinsReward: task.oCoinsReward || 0,
+    });
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!task || !userProfile || !editForm.title.trim() || !editForm.deadline) return;
+    setSavingEdit(true);
+    try {
+      await updateTaskDetails(
+        task.id,
+        {
+          title: editForm.title,
+          description: editForm.description,
+          requirements: editForm.requirements,
+          deadline: new Date(editForm.deadline),
+          oCoinsReward: Number(editForm.oCoinsReward),
+        },
+        {
+          email: userProfile.email || userProfile.username,
+          displayName: userProfile.displayName,
+          photoURL: userProfile.photoURL || '',
+        }
+      );
+      toast.success('تم تحديث بيانات المهمة بنجاح ✨');
+      setShowEditModal(false);
+    } catch (err) {
+      toast.error('فشل تحديث المهمة.');
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="space-y-4 max-w-4xl mx-auto">
@@ -405,6 +457,17 @@ export function TaskDetailPage() {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto justify-end">
+            {isAdmin && (
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={handleOpenEdit}
+                className="gap-1.5 h-8 text-xs py-1 px-3 border border-[var(--border-default)] text-[var(--text-secondary)] bg-[var(--surface-elevated)] hover:bg-[var(--surface-overlay)] rounded-xl"
+              >
+                <Pencil className="h-3.5 w-3.5" /> تعديل المهمة
+              </Button>
+            )}
+
             {isAdmin && task.status !== 'completed' && task.status !== 'archived' && (
               <Button
                 size="sm"
@@ -875,6 +938,78 @@ export function TaskDetailPage() {
         variant="danger"
         loading={deleting}
       />
+
+      {/* Edit Task Modal */}
+      <Modal
+        open={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        title="تعديل بيانات المهمة"
+        size="md"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setShowEditModal(false)} disabled={savingEdit}>إلغاء</Button>
+            <Button
+              onClick={handleSaveEdit}
+              loading={savingEdit}
+              disabled={!editForm.title.trim() || !editForm.deadline}
+              className="btn-primary font-bold"
+            >
+              حفظ التعديلات
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4 text-right font-sans dir-rtl">
+          <div>
+            <label className="form-label">عنوان المهمة *</label>
+            <input
+              className="form-input"
+              value={editForm.title}
+              onChange={(e) => setEditForm((p) => ({ ...p, title: e.target.value }))}
+              placeholder="عنوان المهمة"
+            />
+          </div>
+          <div>
+            <label className="form-label">وصف المهمة</label>
+            <textarea
+              className="form-input min-h-[80px]"
+              value={editForm.description}
+              onChange={(e) => setEditForm((p) => ({ ...p, description: e.target.value }))}
+              placeholder="وصف مفصّل للمهمة"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="form-label">الموعد النهائي *</label>
+              <input
+                type="date"
+                className="form-input"
+                value={editForm.deadline}
+                onChange={(e) => setEditForm((p) => ({ ...p, deadline: e.target.value }))}
+              />
+            </div>
+            <div>
+              <label className="form-label">مكافأة O Coins</label>
+              <input
+                type="number"
+                className="form-input"
+                value={editForm.oCoinsReward}
+                onChange={(e) => setEditForm((p) => ({ ...p, oCoinsReward: Number(e.target.value) }))}
+                min={0}
+              />
+            </div>
+          </div>
+          <div>
+            <label className="form-label">متطلبات إضافية</label>
+            <textarea
+              className="form-input min-h-[60px]"
+              value={editForm.requirements}
+              onChange={(e) => setEditForm((p) => ({ ...p, requirements: e.target.value }))}
+              placeholder="متطلبات أو تعليمات إضافية للمهمة"
+            />
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

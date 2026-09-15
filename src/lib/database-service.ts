@@ -304,6 +304,69 @@ export async function updateTaskStatus(
   }).catch(() => {});
 }
 
+export async function extendTaskDeadline(
+  taskId: string,
+  newDeadline: Date,
+  actor: { email: string; displayName: string; photoURL?: string }
+) {
+  const isoDeadline = newDeadline.toISOString();
+  await updateDoc(doc(db, 'tasks', taskId), {
+    deadline: Timestamp.fromDate(newDeadline),
+    status: 'pending', // reactivate if expired
+    updatedAt: serverTimestamp(),
+  });
+
+  patchLocalTask(taskId, (t) => ({
+    ...t,
+    deadline: isoDeadline as any,
+    status: t.status === 'expired' ? 'pending' : t.status,
+    updatedAt: new Date().toISOString() as any,
+  }));
+
+  logActivity({
+    actor: actor.email,
+    actorName: actor.displayName,
+    actorPhoto: actor.photoURL || '',
+    action: 'task.deadline_extended' as any,
+    targetType: 'task',
+    targetId: taskId,
+    targetName: taskId,
+    metadata: { newDeadline: isoDeadline },
+  }).catch(() => {});
+}
+
+export async function updateTaskDetails(
+  taskId: string,
+  updates: { title?: string; description?: string; requirements?: string; deadline?: Date; oCoinsReward?: number },
+  actor: { email: string; displayName: string; photoURL?: string }
+) {
+  const patch: any = { updatedAt: serverTimestamp() };
+  if (updates.title)       patch.title = updates.title.trim();
+  if (updates.description) patch.description = updates.description.trim();
+  if (updates.requirements !== undefined) patch.requirements = updates.requirements.trim();
+  if (updates.deadline)    patch.deadline = Timestamp.fromDate(updates.deadline);
+  if (updates.oCoinsReward !== undefined) patch.oCoinsReward = Number(updates.oCoinsReward);
+
+  await updateDoc(doc(db, 'tasks', taskId), patch);
+  patchLocalTask(taskId, (t) => ({
+    ...t,
+    ...patch,
+    deadline: updates.deadline ? updates.deadline.toISOString() : t.deadline,
+    updatedAt: new Date().toISOString() as any,
+  }));
+
+  logActivity({
+    actor: actor.email,
+    actorName: actor.displayName,
+    actorPhoto: actor.photoURL || '',
+    action: 'task.updated' as any,
+    targetType: 'task',
+    targetId: taskId,
+    targetName: taskId,
+    metadata: { updates: Object.keys(updates) },
+  }).catch(() => {});
+}
+
 export function getUserTaskStatus(task: Task | null | undefined, userIdentifiers: string[]): UserTaskStatus {
   if (!task) return { status: 'pending' };
   
