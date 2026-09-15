@@ -4,8 +4,9 @@ import {
   Users, Upload, Clock, AlertTriangle, CheckCircle2,
   Coins, Activity, ArrowUpRight, Plus, Shield, Inbox, Calendar, Sparkles, Bell,
   Radio, Gift, Megaphone, AlertCircle, ChevronLeft, Crown, Download, BarChart3, TrendingUp,
-  PieChart as PieChartIcon, Search
+  PieChart as PieChartIcon, Search, Lock
 } from 'lucide-react';
+import { BroadcastBanner } from '@/components/dashboard/BroadcastBanner';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
@@ -117,8 +118,22 @@ export function AdminDashboard() {
   );
   const myCommitteeSubmitted = myCommitteeTasks.filter(t => t.status === 'submitted');
 
-  // Committees performance stats for Top Leaders
-  const committeesStats = DEFAULT_COMMITTEES.map(comm => {
+  // Determine effective committee filter (head is strictly locked to their own committee)
+  const headCommitteeId = userProfile?.committeeId || '';
+  const headCommitteeName = userProfile?.committeeName || '';
+  const effectiveCommitteeFilter = isHead
+    ? (headCommitteeId || headCommitteeName)
+    : leaderboardCommitteeFilter;
+
+  // Committees performance stats (Head sees ONLY their committee, Top Leaders see all)
+  const visibleCommittees = isHead
+    ? DEFAULT_COMMITTEES.filter(comm =>
+        comm.id === headCommitteeId ||
+        (headCommitteeName && comm.name.trim().toLowerCase() === headCommitteeName.trim().toLowerCase())
+      )
+    : DEFAULT_COMMITTEES;
+
+  const committeesStats = visibleCommittees.map(comm => {
     const commTasks = tasks.filter(t =>
       t.committeeId === comm.id ||
       (t.committeeName && t.committeeName.trim().toLowerCase() === comm.name.trim().toLowerCase())
@@ -138,13 +153,17 @@ export function AdminDashboard() {
     };
   });
 
-  // Overall completion rate for gauge
-  const overallCompletionRate = tasks.length > 0 ? (stats.approved / tasks.length) * 100 : 0;
+  // Overall completion rate for gauge (based on scoped tasks for head, all tasks for leaders)
+  const scopedTasks = isHead ? myCommitteeTasks : tasks;
+  const scopedApprovedCount = isHead
+    ? myCommitteeTasks.filter(t => t.status === 'approved' || t.status === 'completed').length
+    : stats.approved;
+  const overallCompletionRate = scopedTasks.length > 0 ? (scopedApprovedCount / scopedTasks.length) * 100 : 0;
 
   // Employee Performance breakdown — EXCLUDES Lead and Co-Lead strictly as requested
   const employeeReports = allUsers
     .filter((u) => u.role !== 'lead' && u.role !== 'co_lead')
-    .filter((u) => !leaderboardCommitteeFilter || u.committeeId === leaderboardCommitteeFilter || (u.committeeName && u.committeeName.trim().toLowerCase() === leaderboardCommitteeFilter.toLowerCase()))
+    .filter((u) => !effectiveCommitteeFilter || u.committeeId === effectiveCommitteeFilter || (u.committeeName && u.committeeName.trim().toLowerCase() === effectiveCommitteeFilter.toLowerCase()))
     .map((u) => {
       const ids = [u.uid, u.username || '', u.email || ''].filter(Boolean).map((v) => v.toLowerCase());
       const userTasks = tasks.filter((t) => {
@@ -279,6 +298,9 @@ export function AdminDashboard() {
 
   return (
     <div className="space-y-5 sm:space-y-6 font-sans text-right dir-rtl">
+      {/* Broadcast System Announcement Banner */}
+      <BroadcastBanner />
+
       {/* Modern High-Tech Hero Header */}
       <div className="card card-glass p-5 sm:p-6 relative overflow-hidden mesh-bg">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
@@ -737,19 +759,26 @@ export function AdminDashboard() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            {/* Committee Filter */}
-            <select
-              value={leaderboardCommitteeFilter}
-              onChange={(e) => setLeaderboardCommitteeFilter(e.target.value)}
-              className="px-3 py-1.5 rounded-xl text-xs bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] cursor-pointer"
-            >
-              <option value="">جميع اللجان</option>
-              {DEFAULT_COMMITTEES.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
+            {/* Committee Filter — Locked for head, full selector for top leaders */}
+            {isHead ? (
+              <span className="px-3 py-1.5 rounded-xl text-xs bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] border border-[var(--brand-primary)]/30 font-bold flex items-center gap-1.5 shadow-xs">
+                <Lock className="h-3.5 w-3.5" />
+                <span>لجنة {userProfile?.committeeName || 'التابعة لك'} (حصرياً)</span>
+              </span>
+            ) : (
+              <select
+                value={leaderboardCommitteeFilter}
+                onChange={(e) => setLeaderboardCommitteeFilter(e.target.value)}
+                className="px-3 py-1.5 rounded-xl text-xs bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] cursor-pointer"
+              >
+                <option value="">جميع اللجان</option>
+                {DEFAULT_COMMITTEES.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            )}
 
             <Button
               variant="outline"

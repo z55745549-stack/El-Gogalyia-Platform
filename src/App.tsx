@@ -32,6 +32,8 @@ import { AdminDiscountsPage } from '@/pages/AdminDiscountsPage';
 import { CoursesPage } from '@/pages/CoursesPage';
 import { CoursePlayerPage } from '@/pages/CoursePlayerPage';
 import { AdminCoursesPage } from '@/pages/AdminCoursesPage';
+import { CompliancePage } from '@/pages/CompliancePage';
+import { OperationsPage } from '@/pages/OperationsPage';
 
 import { AccessDenied } from '@/components/auth/AccessDenied';
 
@@ -78,16 +80,22 @@ export default function App() {
                 <Route path="/my-discounts" element={<Navigate to="/ocoins?tab=purchases" replace />} />
               </Route>
 
-              {/* Leadership & Head routes (replaces Super Admin & Admin) */}
+              {/* Leadership & Head routes */}
               <Route element={<ProtectedRoute allowedRoles={['lead', 'co_lead', 'head']} />}>
-                <Route path="/tasks" element={<TasksPage />} />
+                {/* Unified Operations Hub: Tasks + Submissions */}
+                <Route path="/operations" element={<OperationsPage />} />
+                <Route path="/tasks" element={<Navigate to="/operations?tab=tasks" replace />} />
                 <Route path="/tasks/:taskId" element={<TaskDetailPage />} />
-                <Route path="/submitted-tasks" element={<SubmittedTasksPage />} />
+                <Route path="/submitted-tasks" element={<Navigate to="/operations?tab=submissions" replace />} />
+
+                {/* Unified Compliance Hub: Attendance + Bans */}
+                <Route path="/compliance" element={<CompliancePage />} />
+                <Route path="/attendance" element={<Navigate to="/compliance?tab=attendance" replace />} />
+                <Route path="/bans" element={<Navigate to="/compliance?tab=bans" replace />} />
+
                 <Route path="/employees" element={<EmployeesPage />} />
-                <Route path="/attendance" element={<AttendanceAdminPage />} />
                 <Route path="/admin/discounts" element={<AdminDiscountsPage />} />
                 <Route path="/admin/courses" element={<Navigate to="/courses?tab=manage" replace />} />
-                <Route path="/bans" element={<BansPage />} />
                 <Route path="/admin/support" element={<AdminSupportPage />} />
                 <Route path="/activity-logs" element={<ActivityLogsPage />} />
                 <Route path="/reports" element={<Navigate to="/dashboard" replace />} />

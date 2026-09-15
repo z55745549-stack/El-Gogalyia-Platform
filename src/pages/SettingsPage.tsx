@@ -11,8 +11,10 @@ import { generateSalt, hashPassword } from '@/lib/auth-security';
 import {
   Coins, Shield, User, Info, Users, KeyRound,
   Lock, AtSign, Eye, EyeOff, CheckCircle2, Sparkles, Infinity,
-  Camera, Upload, Trash2, Check, RefreshCw
+  Camera, Upload, Trash2, Check, RefreshCw, Crop
 } from 'lucide-react';
+import { DeviceIdentitySection } from '@/components/settings/DeviceIdentitySection';
+import { ImageCropperModal } from '@/components/ui/ImageCropperModal';
 
 export function SettingsPage() {
   const { userProfile, updateCurrentUserProfile } = useAuth();
@@ -21,9 +23,11 @@ export function SettingsPage() {
   const [displayName, setDisplayName] = useState(userProfile?.displayName || '');
   const [savingProfile, setSavingProfile] = useState(false);
 
-  // Avatar Upload State
+  // Avatar Upload & Crop State
   const [avatarPreview, setAvatarPreview] = useState<string | null>(userProfile?.photoURL || null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
+  const [showCropModal, setShowCropModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Username & Password Change State
@@ -37,7 +41,7 @@ export function SettingsPage() {
 
   const isUnlimited = hasUnlimitedCoins(userProfile.role);
 
-  // ─── 1. Image Upload & Resize Handler ──────────────────────────────────────
+  // ─── 1. Image Upload & Crop Handler ──────────────────────────────────────
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -47,57 +51,40 @@ export function SettingsPage() {
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('حجم الصورة كبير جداً. يرجى اختيار صورة أقل من 5 ميجابايت.');
+    if (file.size > 8 * 1024 * 1024) {
+      toast.error('حجم الصورة كبير جداً. يرجى اختيار صورة أقل من 8 ميجابايت.');
       return;
     }
 
-    setUploadingAvatar(true);
     const reader = new FileReader();
     reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        // Resize to maximum 256x256 for fast local & db storage
-        const canvas = document.createElement('canvas');
-        const maxSize = 256;
-        let width = img.width;
-        let height = img.height;
-
-        if (width > height) {
-          if (width > maxSize) {
-            height = Math.round((height * maxSize) / width);
-            width = maxSize;
-          }
-        } else {
-          if (height > maxSize) {
-            width = Math.round((width * maxSize) / height);
-            height = maxSize;
-          }
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(img, 0, 0, width, height);
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-          setAvatarPreview(dataUrl);
-          saveAvatar(dataUrl);
-        } else {
-          setUploadingAvatar(false);
-        }
-      };
-      img.onerror = () => {
-        toast.error('فشل في معالجة ملف الصورة.');
-        setUploadingAvatar(false);
-      };
-      img.src = event.target?.result as string;
+      const src = event.target?.result as string;
+      if (src) {
+        setCropImageSrc(src);
+        setShowCropModal(true);
+      }
     };
     reader.onerror = () => {
-      toast.error('فشل في قراءة الملف.');
-      setUploadingAvatar(false);
+      toast.error('فشل في قراءة ملف الصورة.');
     };
     reader.readAsDataURL(file);
+
+    // Reset input so user can pick the same file again if desired
+    e.target.value = '';
+  };
+
+  const handleCropComplete = async (croppedDataUrl: string) => {
+    setUploadingAvatar(true);
+    try {
+      setAvatarPreview(croppedDataUrl);
+      await saveAvatar(croppedDataUrl);
+      setShowCropModal(false);
+      setCropImageSrc(null);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setUploadingAvatar(false);
+    }
   };
 
   const saveAvatar = async (photoUrl: string) => {
@@ -111,7 +98,7 @@ export function SettingsPage() {
       } catch (e) {
         // Fallback handled by updateCurrentUserProfile in AuthContext
       }
-      toast.success('تم تحديث وحفظ صورة البروفايل بنجاح! 📸');
+      toast.success('تم اقتصاص وحفظ صورة البروفايل بنجاح! 📸');
     } catch (err: any) {
       toast.error(err?.message || 'فشل حفظ صورة البروفايل.');
     } finally {
@@ -499,7 +486,12 @@ export function SettingsPage() {
         </form>
       </div>
 
-      {/* ── Section 3: High-Security Compliance Banner ───────────────────────── */}
+      {/* ── Section 3: Device Identity (Biometric / WebAuthn) ────────────────── */}
+      <div className="card p-6 rounded-3xl">
+        <DeviceIdentitySection />
+      </div>
+
+      {/* ── Section 4: High-Security Compliance Banner ───────────────────────── */}
       <div className="flex items-start gap-3.5 p-5 rounded-2xl bg-[var(--surface-elevated)] border border-[var(--border-subtle)]">
         <Sparkles className="h-5 w-5 shrink-0 mt-0.5 text-[var(--brand-primary)]" />
         <div className="space-y-1">
@@ -511,6 +503,18 @@ export function SettingsPage() {
           </p>
         </div>
       </div>
+
+      {/* Avatar Cropper Modal */}
+      <ImageCropperModal
+        open={showCropModal}
+        imageSrc={cropImageSrc}
+        onClose={() => {
+          setShowCropModal(false);
+          setCropImageSrc(null);
+        }}
+        onCropComplete={handleCropComplete}
+        loading={uploadingAvatar}
+      />
     </div>
   );
 }

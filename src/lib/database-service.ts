@@ -128,6 +128,19 @@ export async function broadcastNotificationToAll(params: {
     });
     await Promise.all(promises);
 
+    // Save as active pinned announcement for the dashboard
+    try {
+      await setDoc(doc(db, 'system_announcements', 'latest'), {
+        title: params.title,
+        message: params.message,
+        createdByName: params.createdByName,
+        createdAt: serverTimestamp(),
+        active: true,
+      }, { merge: true });
+    } catch (e) {
+      console.warn('Failed to save pinned system announcement:', e);
+    }
+
     await logActivity({
       actor: params.createdByName,
       actorName: params.createdByName,
@@ -140,6 +153,36 @@ export async function broadcastNotificationToAll(params: {
   } catch (err) {
     console.error('Failed to broadcast notification:', err);
     throw err;
+  }
+}
+
+export function subscribeLatestAnnouncement(
+  callback: (announcement: { title: string; message: string; createdByName: string; createdAt?: any; active?: boolean } | null) => void
+) {
+  return onSnapshot(
+    doc(db, 'system_announcements', 'latest'),
+    (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        if (data && data.active !== false) {
+          callback(data as any);
+          return;
+        }
+      }
+      callback(null);
+    },
+    (err) => {
+      console.error('Failed to subscribe announcement:', err);
+      callback(null);
+    }
+  );
+}
+
+export async function clearLatestAnnouncement() {
+  try {
+    await setDoc(doc(db, 'system_announcements', 'latest'), { active: false }, { merge: true });
+  } catch (err) {
+    console.error('Failed to clear announcement:', err);
   }
 }
 

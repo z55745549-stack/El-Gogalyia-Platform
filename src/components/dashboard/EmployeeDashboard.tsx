@@ -20,6 +20,7 @@ import {
 } from '@/utils';
 import { getUserTaskStatus } from '@/lib/database-service';
 import { subscribeBans, getActiveBan } from '@/lib/bans';
+import { BroadcastBanner } from '@/components/dashboard/BroadcastBanner';
 import type { Task, TaskStatus, OCoinTransaction, Notification, Meeting } from '@/types';
 import type { SupportTicket } from '@/types/support';
 
@@ -287,6 +288,9 @@ export function EmployeeDashboard() {
 
   return (
     <div className="space-y-5 sm:space-y-6 font-sans text-right dir-rtl">
+      {/* Broadcast Announcement Banner */}
+      <BroadcastBanner />
+
       {/* ─── 1. Welcome & Contextual Header ────────────────────────────────────── */}
       <div className="card card-glass p-5 sm:p-6 relative overflow-hidden mesh-bg">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
