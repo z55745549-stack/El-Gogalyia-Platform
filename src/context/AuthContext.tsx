@@ -171,10 +171,47 @@ async function upsertProfileToSupabase(profile: UserProfile & { passwordHash?: s
 // -------------------------------------------------------------------
 // Pre-configured Master / Seed Accounts
 // -------------------------------------------------------------------
+const ELTMSAH_PROFILE: UserProfile = {
+  uid: '77940285-14ce-4f9a-b4b8-1a39a88e7b11',
+  username: 'eltmsah',
+  displayName: 'زياد محمد (LEAD)',
+  email: 'eltmsahzeyad@gmail.com',
+  photoURL: '',
+  role: 'lead',
+  permissions: [
+    'tasks.create', 'tasks.edit', 'tasks.delete', 'tasks.assign',
+    'tasks.review', 'tasks.view_all',
+    'employees.view', 'employees.manage',
+    'ocoins.manage', 'ocoins.view_all',
+    'reports.view', 'reports.export',
+    'access.manage',
+    'activity.view',
+    'notifications.send',
+  ],
+  status: 'active',
+  committeeId: 'tech-dev',
+  committeeName: 'Tech Dev',
+  employeeCode: 'GDG-LEAD-01',
+  oCoinsBalance: 10000,
+  createdAt: new Date().toISOString(),
+};
+
 export const MASTER_ACCOUNTS: Record<string, {
   passwords: string[];
   profile: UserProfile;
 }> = {
+  eltmsah: {
+    passwords: ['admin', 'admin123', 'gdg2026', '123456', 'gdghitu', 'hitu2026', 'eltmsah2026', 'eltmsah', 'zeyad2026', 'zeyad'],
+    profile: ELTMSAH_PROFILE,
+  },
+  'eltmsahzeyad@gmail.com': {
+    passwords: ['admin', 'admin123', 'gdg2026', '123456', 'gdghitu', 'hitu2026', 'eltmsah2026', 'eltmsah', 'zeyad2026', 'zeyad'],
+    profile: ELTMSAH_PROFILE,
+  },
+  zeyad: {
+    passwords: ['admin', 'admin123', 'gdg2026', '123456', 'gdghitu', 'hitu2026', 'eltmsah2026', 'eltmsah', 'zeyad2026', 'zeyad'],
+    profile: ELTMSAH_PROFILE,
+  },
   admin: {
     passwords: ['admin', 'admin123', 'gdg2026', '123456', 'gdghitu', 'hitu2026'],
     profile: {
@@ -329,7 +366,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     usernameInput: string,
     passwordInput: string
   ): Promise<boolean | { requires2FA: true; linkedEmail: string; profile: UserProfile }> => {
-    setLoading(true);
+    // Note: Do not call setLoading(true) here. LoginPage maintains its own button loading state
+    // preventing any jarring full-screen loading flash during authentication.
     setUnauthorized(false);
 
     const userClean = usernameInput.trim();
@@ -341,7 +379,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const rateLimitKey = `login_${unameLower.slice(0, 20)}`;
     const rl = recordLoginAttempt(rateLimitKey);
     if (rl.blocked) {
-      setLoading(false);
       throw new Error('تم تجاوز الحد الأقصى لمحاولات تسجيل الدخول. يرجى المحاولة بعد 10 دقائق.');
     }
 
@@ -405,18 +442,69 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
+    // ── Tier 4: Direct Supabase Auth (for accounts created in Supabase Auth) ──
+    if (!isMasterVerified) {
+      try {
+        let authEmail = unameLower;
+        if (!authEmail.includes('@') && matchedProfile?.email) {
+          authEmail = matchedProfile.email.toLowerCase();
+        } else if (!authEmail.includes('@')) {
+          const { data: uRow } = await supabase.from('users').select('email').eq('username', unameLower).maybeSingle();
+          if (uRow?.email) authEmail = uRow.email.toLowerCase();
+        }
+
+        if (authEmail.includes('@')) {
+          const { data: authData, error: authErr } = await supabase.auth.signInWithPassword({
+            email: authEmail,
+            password: passClean,
+          });
+
+          if (!authErr && authData?.user) {
+            const { data: uData } = await supabase.from('users').select('*').eq('id', authData.user.id).maybeSingle();
+            if (uData) {
+              matchedProfile = mapRowToProfile(uData) as any;
+              isMasterVerified = true;
+            } else {
+              // Build profile directly from auth user if not yet in public.users
+              matchedProfile = {
+                uid: authData.user.id,
+                username: authData.user.email?.split('@')[0] || 'lead',
+                displayName: 'قائد المنصة (LEAD)',
+                email: authData.user.email || '',
+                photoURL: '',
+                role: 'lead',
+                status: 'active',
+                permissions: [
+                  'tasks.create', 'tasks.edit', 'tasks.delete', 'tasks.assign',
+                  'tasks.review', 'tasks.view_all',
+                  'employees.view', 'employees.manage',
+                  'ocoins.manage', 'ocoins.view_all',
+                  'reports.view', 'reports.export',
+                  'access.manage', 'activity.view', 'notifications.send',
+                ],
+                oCoinsBalance: 10000,
+                createdAt: new Date().toISOString(),
+              } as any;
+              upsertProfileToSupabase(matchedProfile!);
+              isMasterVerified = true;
+            }
+          }
+        }
+      } catch (authE) {
+        logError('Supabase Auth signInWithPassword verification notice', authE);
+      }
+    }
+
     if (!matchedProfile) {
-      setLoading(false);
       throw new Error(GENERIC_ERROR);
     }
 
     // Account status check
     if (matchedProfile.status === 'suspended' || matchedProfile.status === 'inactive') {
-      setLoading(false);
       throw new Error('حسابك معطّل حالياً. يرجى مراجعة إدارة المنصة.');
     }
 
-    // ── Cryptographic Verification ────────────────────────────────────
+    // ── Cryptographic Verification (PBKDF2) ──────────────────────────
     let isValid = isMasterVerified;
     let needsRehash = false;
 
@@ -425,13 +513,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isValid = result.valid;
       needsRehash = result.needsRehash;
     } else if (!isMasterVerified) {
-      // No hash stored yet — reject
-      setLoading(false);
+      // No hash stored yet and not verified by auth — reject
       throw new Error(GENERIC_ERROR);
     }
 
     if (!isValid) {
-      setLoading(false);
       throw new Error(GENERIC_ERROR);
     }
 
@@ -456,7 +542,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // ── 2FA Check ────────────────────────────────────────────────────
     if (safeUserProfile.isTwoFactorEnabled && safeUserProfile.googleLinkedEmail) {
-      setLoading(false);
       return {
         requires2FA: true,
         linkedEmail: safeUserProfile.googleLinkedEmail,
@@ -467,7 +552,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     saveSession(safeUserProfile);
     setUser({ uid: safeUserProfile.uid, displayName: safeUserProfile.displayName });
     setUserProfile(safeUserProfile);
-    setLoading(false);
     return true;
   }, []);
 

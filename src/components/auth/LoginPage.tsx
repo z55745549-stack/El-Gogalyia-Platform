@@ -58,11 +58,10 @@ function Orb({ className, delay = 0 }: { className: string; delay?: number }) {
 }
 
 export function LoginPage() {
-  const { signInWithUsername, signInWithGoogleAdmin, complete2FALogin } = useAuth();
+  const { signInWithUsername, complete2FALogin } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState<'member' | 'leader'>('member');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -94,8 +93,6 @@ export function LoginPage() {
 
   const handleConfirm2FA = async () => {
     if (!pending2FA) return;
-    // 2FA via Google OAuth is not configured in the current setup.
-    // Simply complete the login with the already-verified profile.
     try {
       await complete2FALogin(pending2FA.profile);
       toast.success('تم التحقق بنجاح!');
@@ -103,18 +100,6 @@ export function LoginPage() {
     } catch (err: any) {
       setErrorMsg(err?.message || 'فشل التحقق.');
     }
-  };
-
-  const handleAdminSignIn = async () => {
-    setErrorMsg(null);
-    setLoading(true);
-    try {
-      await signInWithGoogleAdmin();
-      toast.success('مرحباً! تم تسجيل دخول المشرف بنجاح.');
-      navigate('/dashboard');
-    } catch (err: any) {
-      setErrorMsg(err?.message || 'فشل تسجيل الدخول كمسؤول.');
-    } finally { setLoading(false); }
   };
 
   return (
@@ -369,125 +354,51 @@ export function LoginPage() {
                 exit={{ opacity: 0, y: -8 }}
                 className="space-y-5"
               >
-                {/* Tab selector */}
-                <div className="grid grid-cols-2 gap-1.5 p-1.5 rounded-2xl"
-                  style={{
-                    background: 'var(--surface-elevated)',
-                    border: '1px solid var(--border-subtle)',
-                  }}>
-                  {(['member', 'leader'] as const).map((tab) => (
-                    <button
-                      key={tab}
-                      type="button"
-                      onClick={() => { setActiveTab(tab); setErrorMsg(null); }}
-                      className="py-2.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5"
-                      style={{
-                        background: activeTab === tab ? 'var(--surface-overlay)' : 'transparent',
-                        color: activeTab === tab ? 'var(--text-primary)' : 'var(--text-muted)',
-                        boxShadow: activeTab === tab ? 'var(--shadow-sm)' : 'none',
-                        border: activeTab === tab ? '1px solid var(--border-default)' : '1px solid transparent',
-                      }}
-                    >
-                      {tab === 'member'
-                        ? <><User className="h-3.5 w-3.5" /> الأعضاء ونواب اللجان</>
-                        : <><Shield className="h-3.5 w-3.5" style={{ color: '#A78BFA' }} /> بوابة القيادة والرؤساء</>
-                      }
-                    </button>
-                  ))}
-                </div>
-
-                {/* Member / Leadership Password form */}
-                <AnimatePresence mode="wait">
-                  {activeTab === 'member' && (
-                    <motion.form
-                      key="member"
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -6 }}
-                      onSubmit={handleMemberSignIn}
-                      className="space-y-4"
-                    >
-                      <div>
-                        <label className="form-label">اسم المستخدم أو البريد الإلكتروني</label>
-                        <Input
-                          type="text"
-                          placeholder="e.g. admin أو ahmed_gdg"
-                          value={username}
-                          onChange={(e) => setUsername(e.target.value)}
-                          leftIcon={<User className="h-4 w-4" />}
-                          autoFocus
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label className="form-label">كلمة المرور</label>
-                        <Input
-                          type="password"
-                          placeholder="••••••••"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          leftIcon={<Lock className="h-4 w-4" />}
-                          required
-                        />
-                      </div>
-                      <Button type="submit" variant="default" size="lg"
-                        className="w-full mt-2 font-bold btn-primary" loading={loading}>
-                        تسجيل الدخول للمنصة
-                      </Button>
-
-
-                    </motion.form>
-                  )}
-
-                  {/* Admin form */}
-                  {activeTab === 'leader' && (
-                    <motion.div
-                      key="adm"
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -6 }}
-                      className="p-6 rounded-2xl text-center space-y-5"
-                      style={{
-                        background: 'var(--surface-elevated)',
-                        border: '1px solid var(--border-default)',
-                        boxShadow: 'var(--shadow-sm)',
-                      }}
-                    >
-                      <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto icon-box-primary">
-                        <Shield className="h-6 w-6" />
-                      </div>
-                      <div>
-                        <h3 className="text-base font-black" style={{ color: 'var(--text-primary)' }}>
-                          بوابة دخول المشرفين المعتمدين
-                        </h3>
-                        <p className="text-xs mt-1 max-w-xs mx-auto leading-relaxed"
-                          style={{ color: 'var(--text-secondary)' }}>
-                          يمكنك المتابعة بحساب Google المصرح له من قِبَل مسؤول النظام.
-                        </p>
-                      </div>
-
-                      <div className="space-y-3">
-
-                        <div className="relative flex items-center justify-center">
-                          <div className="border-t border-slate-200 dark:border-white/10 w-full" />
-                          <span className="bg-[var(--surface-elevated)] px-3 text-[11px] text-slate-400 uppercase">أو</span>
-                        </div>
-
-                        <Button
-                          type="button"
-                          onClick={handleAdminSignIn}
-                          variant="outline"
-                          size="lg"
-                          className="w-full flex items-center justify-center gap-3 font-bold border-slate-200 dark:border-white/10"
-                          loading={loading}
-                        >
-                          <GoogleSVG />
-                          المتابعة باستخدام Google
-                        </Button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+              <motion.div
+                key="login"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                className="space-y-5"
+              >
+                <form
+                  onSubmit={handleMemberSignIn}
+                  className="space-y-4"
+                >
+                  <div>
+                    <label className="form-label font-bold text-xs">اسم المستخدم أو البريد الإلكتروني</label>
+                    <Input
+                      type="text"
+                      placeholder="e.g. eltmsah أو admin أو البريد الإلكتروني"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      leftIcon={<User className="h-4 w-4" />}
+                      autoFocus
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label font-bold text-xs">كلمة المرور</label>
+                    <Input
+                      type="password"
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      leftIcon={<Lock className="h-4 w-4" />}
+                      required
+                    />
+                  </div>
+                  <Button
+                    type="submit"
+                    variant="default"
+                    size="lg"
+                    className="w-full mt-2 font-bold btn-primary"
+                    loading={loading}
+                  >
+                    تسجيل الدخول للمنصة
+                  </Button>
+                </form>
+              </motion.div>
               </motion.div>
             )}
           </AnimatePresence>

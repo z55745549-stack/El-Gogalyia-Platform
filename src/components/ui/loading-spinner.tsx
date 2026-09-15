@@ -18,49 +18,7 @@ export function LoadingSpinner({ className, size = 'md' }: { className?: string;
 }
 
 export function PageLoader() {
-  return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950 text-white select-none overflow-hidden">
-      {/* Ambient background glow */}
-      <div className="absolute -top-24 -right-24 w-96 h-96 bg-[#FF3483]/20 rounded-full blur-3xl pointer-events-none animate-pulse" />
-      <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-[#7C00FE]/20 rounded-full blur-3xl pointer-events-none animate-pulse" />
-
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.4, ease: 'easeOut' }}
-        className="relative z-10 flex flex-col items-center gap-5 text-center px-4"
-      >
-        {/* Animated Brand Logo Mark */}
-        <div className="relative">
-          <div className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-xl shadow-[#FF3483]/30 ring-2 ring-white/20" style={{ background: 'linear-gradient(135deg, #FF3483 0%, #7C00FE 100%)' }}>
-            <span className="text-white font-black text-3xl tracking-tight">S</span>
-          </div>
-          <div className="absolute -inset-1.5 rounded-2xl border border-[#FF3483]/40 animate-ping pointer-events-none" />
-        </div>
-
-        {/* Brand Text */}
-        <div className="space-y-1">
-          <div className="flex items-center justify-center gap-2">
-            <h1 className="text-2xl font-black tracking-tight text-white font-sans">
-              SAAS <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF3483] to-[#7C00FE]">Work Hub</span>
-            </h1>
-            <Sparkles className="h-4 w-4 text-[#FF3483] animate-spin" />
-          </div>
-          <p className="text-xs text-slate-400 font-medium">جاري تحميل النظام والمزامنة اللحظية...</p>
-        </div>
-
-        {/* Sleek Progress Bar */}
-        <div className="w-48 h-1 bg-slate-800 rounded-full overflow-hidden mt-2">
-          <motion.div
-            initial={{ x: '-100%' }}
-            animate={{ x: '100%' }}
-            transition={{ repeat: Infinity, duration: 1.2, ease: 'easeInOut' }}
-            className="w-full h-full bg-gradient-to-r from-[#FF3483] to-[#7C00FE] rounded-full"
-          />
-        </div>
-      </motion.div>
-    </div>
-  );
+  return null;
 }
 
 /**
