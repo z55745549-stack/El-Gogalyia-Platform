@@ -180,7 +180,6 @@ export function OpportunitiesPage() {
 
       setShowCreateModal(false);
       setEditingOpportunity(null);
-      setShowAuthConfirm(false);
     } catch (err) {
       console.error(err);
       toast.error('حدث خطأ أثناء حفظ الفرصة.');

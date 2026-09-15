@@ -86,7 +86,6 @@ export function AccessManagementPage() {
       setGoogleEmail('');
       setAdminName('');
       setAdminRole('head');
-      setShowAuthConfirm(false);
     } catch (err: any) {
       toast.error(err?.message || 'فشل إضافة المشرف.');
       throw err;
