@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -7,7 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { Button } from '@/components/ui/button';
 import {
-  Lock, User, Mail, Sparkles, ShieldCheck, Sun, Moon,
+  Lock, User, Mail, ShieldCheck, Sun, Moon,
   CheckCircle2, Eye, EyeOff, Layers, Award, Zap,
 } from 'lucide-react';
 import { DEFAULT_COMMITTEES } from '@/types';
@@ -155,19 +155,7 @@ export function LoginPage() {
   const [regSubmitting, setRegSubmitting] = useState(false);
   const [showRegPassword, setShowRegPassword] = useState(false);
 
-  /* Tick for live clock animation */
-  const [tick, setTick] = useState(0);
-  useEffect(() => {
-    const t = setInterval(() => setTick(n => n + 1), 3000);
-    return () => clearInterval(t);
-  }, []);
 
-  const fillLeadDemo = () => {
-    setUsername('eltmsah');
-    setPassword('admin');
-    setErrorMsg(null);
-    toast.info('تمت تعبئة بيانات حساب القائد بنجاح!');
-  };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -386,11 +374,10 @@ export function LoginPage() {
           <div className="relative z-10 space-y-6 my-auto">
             <div>
               <h2
-                className="text-4xl xl:text-[2.6rem] font-black leading-[1.15] tracking-tight"
+                className="text-[1.85rem] xl:text-[2.1rem] font-black leading-[1.3] tracking-tight"
                 style={{ color: theme === 'dark' ? '#F0F0FF' : '#FFFFFF' }}
               >
-                اصنع الأثر،
-                <br />
+                اصنع الأثر،{' '}
                 <span
                   style={{
                     background: theme === 'dark'
@@ -402,8 +389,7 @@ export function LoginPage() {
                   }}
                 >
                   طوّر ذاتك،
-                </span>
-                <br />
+                </span>{' '}
                 وقُد المستقبل.
               </h2>
               <p
@@ -505,32 +491,13 @@ export function LoginPage() {
                 >
                   {/* Header */}
                   <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-                          مرحباً بك 👋
-                        </h2>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
-                          أدخل بياناتك للوصول إلى لوحة التحكم
-                        </p>
-                      </div>
-                      {/* Quick demo */}
-                      <motion.button
-                        whileHover={{ scale: 1.03 }}
-                        whileTap={{ scale: 0.97 }}
-                        type="button"
-                        onClick={fillLeadDemo}
-                        className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer border"
-                        style={{
-                          background: 'rgba(245,158,11,0.08)',
-                          border: '1px solid rgba(245,158,11,0.25)',
-                          color: theme === 'dark' ? '#FCD34D' : '#D97706',
-                        }}
-                        title="تعبئة بيانات القائد"
-                      >
-                        <Sparkles className="h-3 w-3" />
-                        حساب القائد
-                      </motion.button>
+                    <div>
+                      <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                        مرحباً بك 👋
+                      </h2>
+                      <p className="text-sm text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
+                        أدخل بياناتك للوصول إلى لوحة التحكم
+                      </p>
                     </div>
 
                     {/* Tab switcher */}
