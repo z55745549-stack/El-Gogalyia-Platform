@@ -18,9 +18,10 @@ import {
   Sparkles,
   ChevronLeft,
   Send,
-  Bot
+  HeadphonesIcon,
+  ShieldCheck
 } from 'lucide-react';
-import { AIAssistantChat } from '@/components/support/AIAssistantChat';
+import { AdminSupportPage } from '@/pages/AdminSupportPage';
 import { useAuth } from '@/context/AuthContext';
 import { createSupportTicket } from '@/lib/support';
 import { Button } from '@/components/ui/button';
@@ -68,8 +69,9 @@ const FAQS = [
 export function SupportPage() {
   const { userProfile } = useAuth();
   const navigate = useNavigate();
+  const canManageTickets = ['lead', 'co_lead', 'head'].includes(userProfile?.role || '');
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = searchParams.get('tab') === 'tickets' ? 'tickets' : 'ai';
+  const activeTab = searchParams.get('tab') === 'manage' && canManageTickets ? 'manage' : 'my_tickets';
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -195,44 +197,48 @@ export function SupportPage() {
         <div className="absolute right-20 -top-10 w-48 h-48 bg-[var(--brand-primary)]/15 rounded-full blur-3xl pointer-events-none" />
       </div>
 
-      {/* Segmented Switcher */}
-      <div className="flex items-center gap-1.5 p-1.5 rounded-2xl bg-[var(--surface-elevated)] border border-[var(--border-subtle)] w-fit">
-        <button
-          type="button"
-          onClick={() => setSearchParams({ tab: 'ai' })}
-          className={cn(
-            'px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2',
-            activeTab === 'ai'
-              ? 'bg-[var(--brand-primary)] text-white shadow-md'
-              : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface)]'
-          )}
-        >
-          <Bot className="h-4 w-4" />
-          <span>المساعد الذكي</span>
-        </button>
+      {/* Admin / Member Switcher for Support Tickets */}
+      {canManageTickets && (
+        <div className="flex items-center justify-between p-2 rounded-2xl bg-[var(--surface-elevated)] border border-[var(--border-subtle)] flex-wrap gap-2">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setSearchParams({})}
+              className={cn(
+                'px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2',
+                activeTab === 'my_tickets'
+                  ? 'bg-[var(--brand-primary)] text-white shadow-md'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface)]'
+              )}
+            >
+              <LifeBuoy className="h-4 w-4" />
+              <span>تذاكري واستفساراتي</span>
+            </button>
 
-        <button
-          type="button"
-          onClick={() => setSearchParams({ tab: 'tickets' })}
-          className={cn(
-            'px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2',
-            activeTab === 'tickets'
-              ? 'bg-[var(--brand-primary)] text-white shadow-md'
-              : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface)]'
-          )}
-        >
-          <LifeBuoy className="h-4 w-4" />
-          <span>تذاكر الدعم والأسئلة الشائعة ({tickets.length})</span>
-        </button>
-      </div>
+            <button
+              type="button"
+              onClick={() => setSearchParams({ tab: 'manage' })}
+              className={cn(
+                'px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2',
+                activeTab === 'manage'
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface)]'
+              )}
+            >
+              <HeadphonesIcon className="h-4 w-4" />
+              <span>إدارة جميع تذاكر المنصة (مشرف)</span>
+            </button>
+          </div>
 
-      {activeTab === 'ai' ? (
-        <AIAssistantChat
-          onOpenTicket={() => {
-            setSearchParams({ tab: 'tickets' });
-            setShowCreateModal(true);
-          }}
-        />
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-blue-500/10 text-blue-500 text-[11px] font-black border border-blue-500/20 hidden sm:flex">
+            <ShieldCheck className="h-3.5 w-3.5" />
+            <span>صلاحيات الإشراف مفعّلة</span>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'manage' && canManageTickets ? (
+        <AdminSupportPage />
       ) : (
         <>
       {/* KPI Stats */}

@@ -94,9 +94,9 @@ export default function App() {
                 <Route path="/bans" element={<Navigate to="/compliance?tab=bans" replace />} />
 
                 <Route path="/employees" element={<EmployeesPage />} />
-                <Route path="/admin/discounts" element={<AdminDiscountsPage />} />
+                <Route path="/admin/discounts" element={<Navigate to="/ocoins?tab=manage_discounts" replace />} />
                 <Route path="/admin/courses" element={<Navigate to="/courses?tab=manage" replace />} />
-                <Route path="/admin/support" element={<AdminSupportPage />} />
+                <Route path="/admin/support" element={<Navigate to="/support?tab=manage" replace />} />
                 <Route path="/activity-logs" element={<ActivityLogsPage />} />
                 <Route path="/reports" element={<Navigate to="/dashboard" replace />} />
                 <Route path="/access-management" element={<Navigate to="/dashboard" replace />} />

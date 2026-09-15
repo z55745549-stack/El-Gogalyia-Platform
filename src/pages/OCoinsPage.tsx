@@ -4,6 +4,7 @@ import { collection, query, orderBy, onSnapshot, getDocs, db } from '@/lib/supab
 import { motion, AnimatePresence } from 'framer-motion';
 import { DiscountsPage } from '@/pages/DiscountsPage';
 import { MyDiscountsPage } from '@/pages/MyDiscountsPage';
+import { AdminDiscountsPage } from '@/pages/AdminDiscountsPage';
 import {
   Coins,
   Plus,
@@ -13,6 +14,8 @@ import {
   ArrowUpRight,
   TrendingUp,
   TrendingDown,
+  Tag,
+  ShieldCheck,
   Gift,
   Award,
   Calendar,
@@ -419,10 +422,35 @@ export function OCoinsPage() {
             <Gift className="h-4 w-4" />
             <span>مشترياتي وقسائمي المفعّلة</span>
           </button>
+
+          {canManage && (
+            <button
+              type="button"
+              onClick={() => setSearchParams({ tab: 'manage_discounts' })}
+              className={cn(
+                'px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2',
+                currentTab === 'manage_discounts'
+                  ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface)]'
+              )}
+            >
+              <Tag className="h-4 w-4" />
+              <span>إدارة العروض والخصومات (مشرف)</span>
+            </button>
+          )}
         </div>
+
+        {canManage && (
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-purple-500/10 text-purple-400 text-[11px] font-black border border-purple-500/20 hidden sm:flex">
+            <ShieldCheck className="h-3.5 w-3.5" />
+            <span>صلاحيات الإشراف مفعّلة</span>
+          </div>
+        )}
       </div>
 
-      {currentTab === 'store' ? (
+      {currentTab === 'manage_discounts' && canManage ? (
+        <AdminDiscountsPage />
+      ) : currentTab === 'store' ? (
         <DiscountsPage />
       ) : currentTab === 'purchases' ? (
         <MyDiscountsPage />

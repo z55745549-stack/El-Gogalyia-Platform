@@ -34,12 +34,12 @@ const navItems: NavItem[] = [
   { label: 'سجل حضوري', path: '/my-attendance', icon: <CalendarCheck className="h-4 w-4" />, roles: MEMBER_ROLES, category: 'work' },
 
   // Admin/Lead/Head work — unified
-  { label: 'غرفة العمليات والتكليفات', path: '/operations', icon: <Rocket className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'work' },
+  { label: 'المهام والتكليفات', path: '/operations', icon: <CheckSquare className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'work' },
   { label: 'الاجتماعات واللقاءات', path: '/meetings', icon: <CalendarDays className="h-4 w-4" />, roles: ALL_ROLES, category: 'work' },
 
   // Team management
   { label: 'فريق العمل والطلاب', path: '/employees', icon: <Users className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'team' },
-  { label: 'مرصد الانضباط والامتثال', path: '/compliance', icon: <ShieldAlert className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'team' },
+  { label: 'الحضور والانضباط', path: '/compliance', icon: <Shield className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'team' },
 
   // Development
   { label: 'الدورات التعليمية', path: '/courses', icon: <BookOpen className="h-4 w-4" />, roles: ALL_ROLES, category: 'development' },
@@ -47,13 +47,9 @@ const navItems: NavItem[] = [
 
   // Unified Rewards & Perks
   { label: 'محفظة O Coins والمتجر', path: '/ocoins', icon: <Coins className="h-4 w-4" />, roles: ALL_ROLES, category: 'rewards' },
-  { label: 'إدارة العروض والخصومات', path: '/admin/discounts', icon: <Tag className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'rewards' },
-
-  // AI Assistant
-  { label: 'المساعد الذكي', path: '/support', icon: <MessageCircleQuestion className="h-4 w-4" />, roles: ALL_ROLES, category: 'system' },
 
   // System & Security
-  { label: 'إدارة تذاكر الدعم', path: '/admin/support', icon: <HeadphonesIcon className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'system' },
+  { label: 'تذاكر الدعم الفني', path: '/support', icon: <HeadphonesIcon className="h-4 w-4" />, roles: ALL_ROLES, category: 'system' },
   { label: 'سجل العمليات', path: '/activity-logs', icon: <ClipboardList className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'system' },
   { label: 'مركز التنبيهات', path: '/notifications', icon: <Bell className="h-4 w-4" />, roles: ALL_ROLES, category: 'system' },
   { label: 'الإعدادات والأمان', path: '/settings', icon: <Settings className="h-4 w-4" />, roles: ALL_ROLES, category: 'system' },
