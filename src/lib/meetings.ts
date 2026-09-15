@@ -71,9 +71,12 @@ export async function createMeeting(data: Omit<Meeting, 'id' | 'createdAt' | 'up
         recipientEmail: recipient,
         recipientUid: d.id,
         type: 'meeting.created' as any,
-        title: `New meeting: ${meeting.title}`,
-        message: `${meeting.title} on ${new Date((meeting as any).date?.toDate ? (meeting as any).date.toDate() : meeting.date as any).toLocaleDateString()} at ${meeting.startTime} — ${meeting.location}`,
+        title: `📅 موعد اجتماع جديد: ${meeting.title}`,
+        message: `تمت جدولة اجتماع "${meeting.title}" بتاريخ ${new Date((meeting as any).date?.toDate ? (meeting as any).date.toDate() : meeting.date as any).toLocaleDateString('ar-EG')} في تمام الساعة ${meeting.startTime} (${meeting.location}).`,
         taskId: null,
+        relatedEntityType: 'meeting',
+        relatedEntityId: id,
+        actionUrl: '/meetings',
       }).catch(()=>{});
     }
   } catch {}

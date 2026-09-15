@@ -16,6 +16,7 @@ export interface Discount {
   terms?: string;
   imageUrl?: string;
   status: DiscountStatus;
+  maxPurchasesPerUser?: number;
   totalPurchases: number;
   totalCoinsCollected: number;
   createdBy: string;

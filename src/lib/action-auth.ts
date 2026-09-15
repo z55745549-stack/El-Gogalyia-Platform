@@ -3,7 +3,6 @@ export type AdminActionType =
   | 'add_admin'
   | 'add_opportunity'
   | 'confirm_ban'
-  | 'enable_maintenance'
   | 'change_user_password';
 
 export interface AdminActionConfig {
@@ -38,12 +37,7 @@ export const ADMIN_ACTION_CONFIGS: Record<AdminActionType, AdminActionConfig> = 
     badgeLabel: 'تصريح تنفيذ الحظر',
     description: 'إجراء عالي الحساسية: يتطلب إدخال بيانات التفويض الخاصة بتأكيد قرار الحظر وتصفير الـ O Coins.',
   },
-  enable_maintenance: {
-    type: 'enable_maintenance',
-    title: 'تأكيد تفعيل وضع الصيانة الفورية ⚠️🔧',
-    badgeLabel: 'تصريح تفعيل الصيانة',
-    description: 'يتطلب إدخال بيانات التفويض الخاصة بإيقاف المنصة وحجب الوصول عن كافة الموظفين فوراً.',
-  },
+
   change_user_password: {
     type: 'change_user_password',
     title: 'تأكيد تغيير كلمة مرور الموظف 🔑',

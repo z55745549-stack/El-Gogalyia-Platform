@@ -22,7 +22,7 @@ import { Modal } from '@/components/ui/modal';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { toast } from 'sonner';
-import { cn } from '@/utils';
+import { cn, hasUnlimitedCoins } from '@/utils';
 import type { Discount, DiscountType } from '@/types';
 
 const DISCOUNT_TYPE_CONFIG: Record<DiscountType, { label: string; icon: any; color: string }> = {
@@ -57,6 +57,7 @@ export function DiscountsPage() {
   }, []);
 
   const currentCoins = Number(userProfile?.oCoinsBalance) || 0;
+  const isUnlimited = hasUnlimitedCoins(userProfile?.role);
 
   const activeDiscounts = discounts.filter((d) => {
     if (d.status !== 'active') return false;
@@ -230,7 +231,7 @@ export function DiscountsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {activeDiscounts.map((discount) => {
             const typeConfig = DISCOUNT_TYPE_CONFIG[discount.discountType] || DISCOUNT_TYPE_CONFIG.percentage;
-            const canAfford = currentCoins >= discount.ocoinCost;
+            const canAfford = isUnlimited || currentCoins >= discount.ocoinCost;
             const expTimestamp = discount.expiresAt
               ? (discount.expiresAt as any)?.toDate
                 ? (discount.expiresAt as any).toDate().getTime()
@@ -296,7 +297,7 @@ export function DiscountsPage() {
 
                   <div className="pt-2 border-t border-slate-100 dark:border-white/5 space-y-3">
                     <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         <Clock className={cn('h-3.5 w-3.5', isExpiringSoon ? 'text-rose-500 animate-pulse' : 'text-slate-400')} />
                         {discount.expiresAt ? (
                           <span className={cn(isExpiringSoon && 'text-rose-500 font-bold')}>
@@ -304,6 +305,11 @@ export function DiscountsPage() {
                           </span>
                         ) : (
                           <span>صلاحية دائمة</span>
+                        )}
+                        {isExpiringSoon && expTimestamp > 0 && (
+                          <span className="px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-500 border border-rose-500/20 text-[10px] font-bold">
+                            ⏳ ينتهي قريباً
+                          </span>
                         )}
                       </div>
                       {discount.totalPurchases > 0 && (
@@ -445,7 +451,7 @@ export function DiscountsPage() {
                   <div className="flex justify-between py-1.5 border-b border-slate-100 dark:border-white/5 text-slate-600 dark:text-slate-400">
                     <span>رصيدك الحالي:</span>
                     <span className="font-bold text-slate-900 dark:text-slate-100">
-                      🪙 {currentCoins} O Coins
+                      {isUnlimited ? '🪙 ∞ (خزينة غير محدودة)' : `🪙 ${currentCoins} O Coins`}
                     </span>
                   </div>
                   <div className="flex justify-between py-2 text-sm font-bold">
@@ -453,17 +459,17 @@ export function DiscountsPage() {
                     <span
                       className={cn(
                         'font-black',
-                        currentCoins - selectedDiscount.ocoinCost < 0
+                        !isUnlimited && currentCoins - selectedDiscount.ocoinCost < 0
                           ? 'text-rose-500'
                           : 'text-emerald-400'
                       )}
                     >
-                      🪙 {Math.max(0, currentCoins - selectedDiscount.ocoinCost)} O Coins
+                      {isUnlimited ? '🪙 ∞ (لا يتأثر)' : `🪙 ${Math.max(0, currentCoins - selectedDiscount.ocoinCost)} O Coins`}
                     </span>
                   </div>
                 </div>
 
-                {currentCoins < selectedDiscount.ocoinCost && (
+                {!isUnlimited && currentCoins < selectedDiscount.ocoinCost && (
                   <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center gap-2">
                     <AlertCircle className="h-4 w-4 shrink-0" />
                     <span>رصيدك غير كافٍ لإتمام عملية الشراء. أنت بحاجة إلى {selectedDiscount.ocoinCost - currentCoins} O Coins إضافية.</span>
@@ -482,7 +488,7 @@ export function DiscountsPage() {
                   <Button
                     onClick={handleConfirmPurchase}
                     loading={purchasing}
-                    disabled={currentCoins < selectedDiscount.ocoinCost || purchasing}
+                    disabled={(!isUnlimited && currentCoins < selectedDiscount.ocoinCost) || purchasing}
                     className="gap-2 rounded-xl text-xs font-bold btn-primary"
                   >
                     <ShoppingBag className="h-4 w-4" />

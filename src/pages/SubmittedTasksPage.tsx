@@ -27,7 +27,8 @@ import { Avatar } from '@/components/ui/avatar';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SkeletonTable } from '@/components/ui/skeleton';
 import { formatDate, safeDate, formatRelative, cn } from '@/utils';
-import type { Task, TaskSubmission } from '@/types';
+import { subscribeCommittees } from '@/lib/committees';
+import type { Task, TaskSubmission, Committee } from '@/types';
 
 interface SubmissionItem {
   task: Task;
@@ -37,6 +38,10 @@ interface SubmissionItem {
 export function SubmittedTasksPage() {
   const { userProfile } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [committees, setCommittees] = useState<Committee[]>([]);
+  const [committeeFilter, setCommitteeFilter] = useState<string>(
+    userProfile?.role === 'head' && userProfile?.committeeId ? userProfile.committeeId : ''
+  );
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all'); // all, pending, approved, rejected
@@ -74,7 +79,12 @@ export function SubmittedTasksPage() {
       }
     );
 
-    return () => unsub();
+    const unsubCommittees = subscribeCommittees((list) => setCommittees(list));
+
+    return () => {
+      unsub();
+      unsubCommittees();
+    };
   }, []);
 
   // Extract all submission items from tasks
@@ -132,7 +142,8 @@ export function SubmittedTasksPage() {
       matchStatus = submission.status === 'rejected';
     }
 
-    return matchSearch && matchStatus;
+    const matchCommittee = !committeeFilter || task.committeeId === committeeFilter;
+    return matchSearch && matchStatus && matchCommittee;
   });
 
   const handleApprove = async () => {
@@ -206,17 +217,17 @@ export function SubmittedTasksPage() {
   return (
     <div className="space-y-6 font-sans text-right dir-rtl">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-[#140e29] p-6 rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-sm transition-colors">
+      <div className="card p-6 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-400/20 text-amber-500 flex items-center justify-center font-bold">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/15 text-amber-500 flex items-center justify-center font-bold">
               <Inbox className="h-5 w-5" />
             </div>
             <div>
-              <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+              <h1 className="text-xl sm:text-2xl font-black text-[var(--text-primary)] flex items-center gap-2">
                 تسليمات المهام والتقييم
               </h1>
-              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+              <p className="text-xs sm:text-sm text-[var(--text-muted)] mt-0.5">
                 مراجعة تسليمات الموظفين والطلاب، اعتماد الأعمال، وصرف مكافآت O-Coins
               </p>
             </div>
@@ -231,12 +242,12 @@ export function SubmittedTasksPage() {
           className={cn(
             'p-4 rounded-2xl border text-right transition-all cursor-pointer',
             statusFilter === 'all'
-              ? 'bg-slate-900 text-white border-slate-900 dark:bg-white dark:text-slate-900 shadow-md'
-              : 'bg-white dark:bg-[#140e29] border-slate-200/80 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:border-slate-300'
+              ? 'bg-[var(--brand-primary)] text-white border-[var(--brand-primary)] shadow-md'
+              : 'card hover:border-[var(--brand-primary)] text-[var(--text-secondary)]'
           )}
         >
           <p className="text-xs font-bold opacity-75">إجمالي التسليمات</p>
-          <p className="text-2xl font-black mt-1">{totalCount}</p>
+          <p className="text-2xl font-black mt-1 text-[var(--text-primary)]">{totalCount}</p>
         </button>
 
         <button
@@ -245,14 +256,14 @@ export function SubmittedTasksPage() {
             'p-4 rounded-2xl border text-right transition-all cursor-pointer',
             statusFilter === 'pending'
               ? 'bg-amber-500 text-white border-amber-500 shadow-md shadow-amber-500/20'
-              : 'bg-white dark:bg-[#140e29] border-slate-200/80 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:border-amber-400'
+              : 'card hover:border-amber-500 text-[var(--text-secondary)]'
           )}
         >
           <div className="flex items-center justify-between">
             <p className="text-xs font-bold opacity-75">بانتظار المراجعة</p>
             <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
           </div>
-          <p className="text-2xl font-black mt-1 text-amber-600 dark:text-amber-400">{pendingCount}</p>
+          <p className="text-2xl font-black mt-1 text-amber-500">{pendingCount}</p>
         </button>
 
         <button
@@ -261,11 +272,11 @@ export function SubmittedTasksPage() {
             'p-4 rounded-2xl border text-right transition-all cursor-pointer',
             statusFilter === 'approved'
               ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-600/20'
-              : 'bg-white dark:bg-[#140e29] border-slate-200/80 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:border-emerald-400'
+              : 'card hover:border-emerald-500 text-[var(--text-secondary)]'
           )}
         >
           <p className="text-xs font-bold opacity-75">تم قبولها وصرفها</p>
-          <p className="text-2xl font-black mt-1 text-emerald-600 dark:text-emerald-400">{approvedCount}</p>
+          <p className="text-2xl font-black mt-1 text-emerald-500">{approvedCount}</p>
         </button>
 
         <button
@@ -274,25 +285,39 @@ export function SubmittedTasksPage() {
             'p-4 rounded-2xl border text-right transition-all cursor-pointer',
             statusFilter === 'rejected'
               ? 'bg-rose-600 text-white border-rose-600 shadow-md shadow-rose-600/20'
-              : 'bg-white dark:bg-[#140e29] border-slate-200/80 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:border-rose-400'
+              : 'card hover:border-rose-500 text-[var(--text-secondary)]'
           )}
         >
           <p className="text-xs font-bold opacity-75">بانتظار التعديل</p>
-          <p className="text-2xl font-black mt-1 text-rose-600 dark:text-rose-400">{rejectedCount}</p>
+          <p className="text-2xl font-black mt-1 text-rose-500">{rejectedCount}</p>
         </button>
       </div>
 
       {/* Search & Filters */}
-      <div className="bg-white dark:bg-[#140e29] p-4 rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-sm flex flex-col sm:flex-row gap-3">
+      <div className="card p-4 rounded-2xl flex flex-col sm:flex-row gap-3">
         <div className="flex-1">
           <Input
             placeholder="البحث باسم المهمة، الموظف، الملاحظات..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            leftIcon={<Search className="h-4 w-4 text-slate-400" />}
+            leftIcon={<Search className="h-4 w-4 text-[var(--text-muted)]" />}
           />
         </div>
-        <div className="w-full sm:w-56">
+        <div className="w-full sm:w-48">
+          <select
+            value={committeeFilter}
+            onChange={(e) => setCommitteeFilter(e.target.value)}
+            className="w-full px-3 py-2.5 rounded-xl text-xs bg-[var(--surface-elevated)] border border-[var(--border-subtle)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] cursor-pointer"
+          >
+            <option value="">جميع اللجان</option>
+            {committees.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="w-full sm:w-48">
           <Select
             options={[
               { value: 'all', label: 'جميع التسليمات' },
@@ -307,7 +332,7 @@ export function SubmittedTasksPage() {
       </div>
 
       {/* Submissions List */}
-      <div className="bg-white dark:bg-[#140e29] rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-sm overflow-hidden">
+      <div className="card rounded-2xl overflow-hidden">
         {loading ? (
           <SkeletonTable rows={5} />
         ) : filteredItems.length === 0 ? (

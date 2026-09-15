@@ -86,6 +86,18 @@ export function formatOCoins(amount: number): string {
   return new Intl.NumberFormat('en-US').format(amount || 0);
 }
 
+/** Returns '∞' for lead/co_lead, otherwise formatted balance */
+export function getOCoinsDisplay(role: string | undefined, balance: number): string {
+  if (role === 'lead' || role === 'co_lead') return '∞';
+  return formatOCoins(balance);
+}
+
+/** Returns true if the role gets unlimited O Coins */
+export function hasUnlimitedCoins(role: string | undefined): boolean {
+  return role === 'lead' || role === 'co_lead';
+}
+
+
 export function formatPercent(value: number): string {
   return `${(value || 0).toFixed(1)}%`;
 }

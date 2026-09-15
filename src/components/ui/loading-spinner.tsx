@@ -26,13 +26,19 @@ export function PageLoader() {
  */
 export function SkeletonCard({ className }: { className?: string }) {
   return (
-    <div className={cn('p-5 rounded-2xl bg-white dark:bg-[#140e29] border border-slate-200/80 dark:border-[#271f45] animate-pulse space-y-3', className)}>
+    <div
+      className={cn('p-5 rounded-2xl animate-pulse space-y-3', className)}
+      style={{
+        background: 'var(--bg-card)',
+        border: '1px solid var(--border-subtle)',
+      }}
+    >
       <div className="flex items-center justify-between">
-        <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded-lg w-1/3" />
-        <div className="h-8 w-8 bg-slate-200 dark:bg-slate-800 rounded-xl" />
+        <div className="h-4 skeleton rounded-lg w-1/3" />
+        <div className="h-8 w-8 skeleton rounded-xl" />
       </div>
-      <div className="h-7 bg-slate-200 dark:bg-slate-800 rounded-lg w-1/2 mt-2" />
-      <div className="h-3 bg-slate-200 dark:bg-slate-800 rounded-lg w-2/3" />
+      <div className="h-7 skeleton rounded-lg w-1/2 mt-2" />
+      <div className="h-3 skeleton rounded-lg w-2/3" />
     </div>
   );
 }
@@ -43,16 +49,20 @@ export function SkeletonRow({ count = 4 }: { count?: number }) {
       {Array.from({ length: count }).map((_, idx) => (
         <div
           key={idx}
-          className="p-4 rounded-xl bg-white dark:bg-[#140e29] border border-slate-200/80 dark:border-[#271f45] flex items-center justify-between animate-pulse"
+          className="p-4 rounded-xl animate-pulse flex items-center justify-between"
+          style={{
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-subtle)',
+          }}
         >
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-slate-200 dark:bg-slate-800 shrink-0" />
+            <div className="w-10 h-10 rounded-xl skeleton shrink-0" />
             <div className="space-y-1.5">
-              <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded-md w-32 sm:w-48" />
-              <div className="h-3 bg-slate-200 dark:bg-slate-800 rounded-md w-20 sm:w-32" />
+              <div className="h-4 skeleton rounded-md w-32 sm:w-48" />
+              <div className="h-3 skeleton rounded-md w-20 sm:w-32" />
             </div>
           </div>
-          <div className="h-7 bg-slate-200 dark:bg-slate-800 rounded-lg w-16" />
+          <div className="h-7 skeleton rounded-lg w-16" />
         </div>
       ))}
     </div>

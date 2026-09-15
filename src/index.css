@@ -32,6 +32,11 @@
     --surface-overlay:   #1C1C30;   /* Overlay panels */
     --surface-glass:     rgba(255, 255, 255, 0.03); /* Glass base */
 
+    /* ── Aliases for legacy var names used in components ── */
+    --bg-surface:   #0F0F1A;   /* alias → --surface */
+    --bg-card:      #0F0F1A;   /* alias → --surface */
+    --bg-elevated:  #161627;   /* alias → --surface-elevated */
+
     /* Borders — barely visible, ultra-refined */
     --border-subtle:  rgba(255, 255, 255, 0.06);
     --border-default: rgba(255, 255, 255, 0.09);
@@ -75,9 +80,14 @@
     --app-bg:            #F6F8FC;   /* Crisp, soft tinted background */
     --surface:           #FFFFFF;
     --surface-secondary: #F8FAFC;   /* Slate-50 */
-    --surface-elevated:  #FFFFFF;
+    --surface-elevated:  #F1F5F9;   /* Slightly tinted elevated surface (not pure white) */
     --surface-overlay:   #FFFFFF;
     --surface-glass:     rgba(255, 255, 255, 0.88);
+
+    /* ── Aliases for legacy var names used in components ── */
+    --bg-surface:   #FFFFFF;   /* alias → --surface */
+    --bg-card:      #FFFFFF;   /* alias → --surface */
+    --bg-elevated:  #F1F5F9;   /* alias → --surface-elevated */
 
     /* Borders — clean, subtle, luxurious */
     --border-subtle:  rgba(226, 232, 240, 0.85); /* Slate-200 refined */
@@ -863,15 +873,7 @@ html:not(.dark) .icon-box-primary {
   box-shadow: 0 0 6px rgba(244, 63, 94, 0.6);
 }
 
-/* ═══════════════════════════════════════════════════════════════════════
-   MAINTENANCE BANNER
-   ═══════════════════════════════════════════════════════════════════════ */
 
-.maintenance-banner {
-  background: linear-gradient(90deg, rgba(244, 63, 94, 0.15) 0%, rgba(244, 63, 94, 0.08) 100%);
-  border-bottom: 1px solid rgba(244, 63, 94, 0.2);
-  backdrop-filter: blur(8px);
-}
 
 /* ═══════════════════════════════════════════════════════════════════════
    REDUCED MOTION

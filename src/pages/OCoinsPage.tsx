@@ -37,7 +37,7 @@ import { Modal } from '@/components/ui/modal';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Avatar } from '@/components/ui/avatar';
 import { EmptyState } from '@/components/ui/empty-state';
-import { formatOCoins, formatDate, formatRelative, cn, formatFullName } from '@/utils';
+import { formatOCoins, formatDate, formatRelative, cn, formatFullName, hasUnlimitedCoins } from '@/utils';
 import type { OCoinTransaction, OCoinTransactionType, UserProfile } from '@/types';
 
 const TRANSACTION_TYPE_CONFIG: Record<
@@ -414,10 +414,19 @@ export function OCoinsPage() {
             </p>
             <div className="mt-1 flex items-baseline gap-2">
               {canManage && selectedUser ? (
-                <p className="text-3xl font-black text-[var(--text-primary)]">
-                  {formatOCoins(selectedUser.oCoinsBalance ?? 0)}
-                  <span className="text-sm font-bold text-[var(--brand-warm)] mr-1.5">OC</span>
-                </p>
+                hasUnlimitedCoins(selectedUser.role) ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-4xl font-black text-[var(--brand-warm)]">∞</span>
+                    <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                      خزينة لا نهائية
+                    </span>
+                  </div>
+                ) : (
+                  <p className="text-3xl font-black text-[var(--text-primary)]">
+                    {formatOCoins(selectedUser.oCoinsBalance ?? 0)}
+                    <span className="text-sm font-bold text-[var(--brand-warm)] mr-1.5">OC</span>
+                  </p>
+                )
               ) : isTopLeader ? (
                 <div className="flex items-center gap-2">
                   <span className="text-4xl font-black text-[var(--brand-warm)]">∞</span>
@@ -509,7 +518,7 @@ export function OCoinsPage() {
                 <Avatar name={formatFullName(u.displayName || u.username || 'User')} size="xs" />
                 <span>{formatFullName(u.displayName || u.username || '')}</span>
                 <span className="text-[10px] font-bold text-[var(--brand-warm)]">
-                  ({formatOCoins(u.oCoinsBalance ?? 0)})
+                  ({hasUnlimitedCoins(u.role) ? '∞' : formatOCoins(u.oCoinsBalance ?? 0)})
                 </span>
               </button>
             ))}
@@ -862,7 +871,7 @@ export function OCoinsPage() {
                       </div>
                     </div>
                     <span className="text-xs font-bold text-[var(--brand-warm)] shrink-0">
-                      {formatOCoins(u.oCoinsBalance ?? 0)} OC
+                      {hasUnlimitedCoins(u.role) ? '∞' : formatOCoins(u.oCoinsBalance ?? 0)} OC
                     </span>
                   </button>
                 ))}

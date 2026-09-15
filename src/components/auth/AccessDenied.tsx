@@ -74,28 +74,33 @@ export function AccessDenied() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 font-sans">
+    <div className="min-h-screen flex flex-col items-center justify-center p-6 font-sans" style={{ background: 'var(--app-bg)' }}>
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.3 }}
-        className="bg-white rounded-3xl border border-slate-200 shadow-2xl p-8 sm:p-10 max-w-md w-full text-center space-y-6"
+        className="rounded-3xl p-8 sm:p-10 max-w-md w-full text-center space-y-6"
+        style={{
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border-default)',
+          boxShadow: 'var(--shadow-lg)',
+        }}
       >
-        <div className="w-16 h-16 bg-rose-50 border border-rose-100 rounded-2xl flex items-center justify-center mx-auto">
-          <ShieldX className="h-8 w-8 text-rose-600" />
+        <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto" style={{ background: 'rgba(244,63,94,0.1)', border: '1px solid rgba(244,63,94,0.2)' }}>
+          <ShieldX className="h-8 w-8" style={{ color: 'var(--brand-danger)' }} />
         </div>
 
         <div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Access Restricted</h1>
-          <p className="text-slate-500 text-xs sm:text-sm mt-1 leading-relaxed">
+          <h1 className="text-2xl font-black tracking-tight" style={{ color: 'var(--text-primary)' }}>Access Restricted</h1>
+          <p className="text-xs sm:text-sm mt-1 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
             هذا الحساب غير مضاف حالياً في لوحة الموظفين المصرح لهم بدخول النظام.
           </p>
         </div>
 
         {userProfile?.email && (
-          <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-left">
-            <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider mb-0.5">Attempted Account</span>
-            <span className="text-xs font-mono font-bold text-slate-800 break-all">{userProfile.email}</span>
+          <div className="p-3.5 rounded-2xl text-left" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)' }}>
+            <span className="text-[10px] block font-bold uppercase tracking-wider mb-0.5" style={{ color: 'var(--text-muted)' }}>Attempted Account</span>
+            <span className="text-xs font-mono font-bold break-all" style={{ color: 'var(--text-primary)' }}>{userProfile.email}</span>
           </div>
         )}
 

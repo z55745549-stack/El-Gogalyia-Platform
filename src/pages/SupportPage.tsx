@@ -70,7 +70,7 @@ export function SupportPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [categoryFilter] = useState<string>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
 
   // Create Modal
@@ -274,7 +274,20 @@ export function SupportPage() {
             <p className="text-xs text-[var(--text-muted)]">متابعة حالة التذاكر والردود المباشرة من الإشراف</p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="px-3 py-2 rounded-xl text-xs bg-[var(--surface)] border border-[var(--border-subtle)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] cursor-pointer"
+            >
+              <option value="all">جميع التصنيفات</option>
+              {Object.entries(TICKET_CATEGORY_CONFIG).map(([key, cfg]) => (
+                <option key={key} value={key}>
+                  {cfg.label}
+                </option>
+              ))}
+            </select>
+
             <div className="relative flex-1 sm:w-64">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
               <input
@@ -282,7 +295,7 @@ export function SupportPage() {
                 placeholder="ابحث برقم التذكرة أو الموضوع..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pr-9 pl-4 py-2 rounded-xl text-xs bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]"
+                className="w-full pr-9 pl-4 py-2 rounded-xl text-xs bg-[var(--surface)] border border-[var(--border-subtle)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]"
               />
             </div>
           </div>

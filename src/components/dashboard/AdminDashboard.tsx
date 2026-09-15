@@ -16,7 +16,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
-import { formatDate, formatOCoins, formatRelative, isOverdue, getNotificationEmoji, cn, formatFullName } from '@/utils';
+import { formatDate, formatOCoins, formatRelative, isOverdue, getNotificationEmoji, cn, formatFullName, hasUnlimitedCoins } from '@/utils';
 import { broadcastNotificationToAll, manualOCoinAdjustment } from '@/lib/database-service';
 import { DEFAULT_COMMITTEES } from '@/types';
 import type { Task, OCoinTransaction, ActivityLog, UserProfile } from '@/types';
@@ -746,7 +746,7 @@ export function AdminDashboard() {
                 <option value="">-- اختر عضو اللجنة --</option>
                 {myCommitteeSubordinates.map(u => (
                   <option key={u.uid} value={u.uid}>
-                    {formatFullName(u.displayName)} (@{u.username || u.email}) — رصيده: {u.oCoinsBalance ?? 0} OC
+                    {formatFullName(u.displayName)} (@{u.username || u.email}) — رصيده: {hasUnlimitedCoins(u.role) ? '∞' : (u.oCoinsBalance ?? 0)} OC
                   </option>
                 ))}
               </select>

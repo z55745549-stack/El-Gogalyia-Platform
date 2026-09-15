@@ -10,7 +10,8 @@ import {
   CheckCircle2,
   Inbox,
   Sparkles,
-  Archive
+  Archive,
+  Clock
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
@@ -26,7 +27,8 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { isAdminRole } from '@/utils/permissions';
 import { TaskFormModal } from '@/components/tasks/TaskFormModal';
 import { formatDate, safeDate, isOverdue, cn } from '@/utils';
-import type { Task } from '@/types';
+import { subscribeCommittees } from '@/lib/committees';
+import type { Task, Committee } from '@/types';
 
 const PRIORITY_OPTIONS = [
   { value: '', label: 'جميع الأولويات' },
@@ -39,6 +41,10 @@ const PRIORITY_OPTIONS = [
 export function TasksPage() {
   const { userProfile } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [committees, setCommittees] = useState<Committee[]>([]);
+  const [committeeFilter, setCommitteeFilter] = useState<string>(
+    userProfile?.role === 'head' && userProfile?.committeeId ? userProfile.committeeId : ''
+  );
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [search, setSearch] = useState('');
@@ -87,8 +93,13 @@ export function TasksPage() {
     };
     window.addEventListener('elgogalyia_data_change', handleDataChange);
 
+    const unsubCommittees = subscribeCommittees((list) => {
+      setCommittees(list);
+    });
+
     return () => {
       unsub();
+      unsubCommittees();
       window.removeEventListener('elgogalyia_data_change', handleDataChange);
     };
   }, []);
@@ -177,7 +188,8 @@ export function TasksPage() {
     }
 
     const matchPriority = !priorityFilter || t.priority === priorityFilter;
-    return matchSearch && matchTab && matchPriority;
+    const matchCommittee = !committeeFilter || t.committeeId === committeeFilter;
+    return matchSearch && matchTab && matchPriority && matchCommittee;
   });
 
   const canCreate = userProfile ? isAdminRole(userProfile.role) : false;
@@ -185,19 +197,19 @@ export function TasksPage() {
   return (
     <div className="space-y-6 font-sans text-right dir-rtl">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-[#140e29] p-6 rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-sm transition-colors">
+      <div className="card p-6 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-black text-[var(--text-primary)] flex items-center gap-2">
             <CheckSquare className="h-6 w-6 text-amber-500" /> إدارة وتكليف المهام
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+          <p className="text-xs sm:text-sm text-[var(--text-muted)] mt-1">
             إجمالي {tasks.length} مهمة مسجلة بالنظام · {submittedCount} بانتظار الاعتماد
           </p>
         </div>
         <div className="flex items-center gap-2.5 flex-wrap">
           {submittedCount > 0 && (
             <Link to="/submitted-tasks">
-              <Button size="sm" variant="outline" className="gap-2 border-amber-300 text-amber-600 dark:text-amber-400 text-xs font-bold">
+              <Button size="sm" variant="outline" className="gap-2 border-amber-500/40 text-amber-500 text-xs font-bold">
                 <Inbox className="h-4 w-4" /> مراجعة التسليمات ({submittedCount})
               </Button>
             </Link>
@@ -213,8 +225,51 @@ export function TasksPage() {
         </div>
       </div>
 
+      {/* KPI Metrics Bar */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="card p-4 rounded-2xl flex items-center justify-between">
+          <div>
+            <p className="text-xs font-bold text-[var(--text-muted)]">إجمالي المهام</p>
+            <p className="text-2xl font-black text-[var(--text-primary)] mt-0.5">{tasks.length}</p>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center font-bold">
+            <CheckSquare className="h-5 w-5" />
+          </div>
+        </div>
+
+        <div className="card p-4 rounded-2xl flex items-center justify-between">
+          <div>
+            <p className="text-xs font-bold text-[var(--text-muted)]">مهام قيد العمل</p>
+            <p className="text-2xl font-black text-[var(--brand-primary)] mt-0.5">{activeCount}</p>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] flex items-center justify-center font-bold">
+            <Clock className="h-5 w-5" />
+          </div>
+        </div>
+
+        <div className="card p-4 rounded-2xl flex items-center justify-between">
+          <div>
+            <p className="text-xs font-bold text-[var(--text-muted)]">بانتظار الاعتماد</p>
+            <p className="text-2xl font-black text-amber-500 mt-0.5">{submittedCount}</p>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-amber-500/15 text-amber-500 flex items-center justify-center font-bold">
+            <Inbox className="h-5 w-5" />
+          </div>
+        </div>
+
+        <div className="card p-4 rounded-2xl flex items-center justify-between">
+          <div>
+            <p className="text-xs font-bold text-[var(--text-muted)]">تم اعتمادها</p>
+            <p className="text-2xl font-black text-emerald-500 mt-0.5">{completedCount}</p>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center font-bold">
+            <CheckCircle2 className="h-5 w-5" />
+          </div>
+        </div>
+      </div>
+
       {/* Tabs */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar border-b border-slate-200 dark:border-white/10">
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar border-b border-[var(--border-subtle)]">
         {[
           { id: 'all', label: 'جميع المهام', count: tasks.length },
           { id: 'active', label: 'المهام النشطة', count: activeCount },
@@ -230,7 +285,7 @@ export function TasksPage() {
               'px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-2 cursor-pointer',
               statusTab === tab.id
                 ? 'bg-[var(--brand-primary)] text-white shadow-md shadow-[var(--brand-primary)]/25 font-black'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5'
+                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-elevated)]'
             )}
           >
             <span>{tab.label}</span>
@@ -239,8 +294,8 @@ export function TasksPage() {
                 'px-1.5 py-0.5 rounded-full text-[10px] font-black',
                 statusTab === tab.id
                   ? 'bg-white/20 text-white'
-                  : 'bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300',
-                tab.alert && statusTab !== tab.id && 'bg-[var(--brand-danger)] text-white animate-pulse'
+                  : 'bg-[var(--surface-elevated)] text-[var(--text-muted)]',
+                tab.alert && statusTab !== tab.id && 'bg-rose-500 text-white animate-pulse'
               )}
             >
               {tab.count}
@@ -250,16 +305,30 @@ export function TasksPage() {
       </div>
 
       {/* Search & Filters */}
-      <div className="bg-white dark:bg-[#140e29] p-4 rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-sm flex flex-col sm:flex-row gap-3 transition-colors">
+      <div className="card p-4 rounded-2xl flex flex-col sm:flex-row gap-3">
         <div className="flex-1">
           <Input
             placeholder="البحث باسم المهمة أو الوصف..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            leftIcon={<Search className="h-4 w-4 text-slate-400" />}
+            leftIcon={<Search className="h-4 w-4 text-[var(--text-muted)]" />}
           />
         </div>
-        <div className="w-full sm:w-60">
+        <div className="w-full sm:w-48">
+          <select
+            value={committeeFilter}
+            onChange={(e) => setCommitteeFilter(e.target.value)}
+            className="w-full px-3 py-2.5 rounded-xl text-xs bg-[var(--surface-elevated)] border border-[var(--border-subtle)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] cursor-pointer"
+          >
+            <option value="">جميع اللجان</option>
+            {committees.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="w-full sm:w-48">
           <Select
             options={PRIORITY_OPTIONS}
             value={priorityFilter}
@@ -269,7 +338,7 @@ export function TasksPage() {
       </div>
 
       {/* Task Table - Desktop & Mobile */}
-      <div className="bg-white dark:bg-[#140e29] rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-sm overflow-hidden transition-colors">
+      <div className="card rounded-2xl overflow-hidden">
         {loading ? (
           <SkeletonTable rows={6} />
         ) : filtered.length === 0 ? (

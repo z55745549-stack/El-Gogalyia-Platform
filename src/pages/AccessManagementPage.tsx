@@ -144,11 +144,11 @@ export function AccessManagementPage() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="page-title text-slate-900 dark:text-white flex items-center gap-2.5">
-            <Shield className="h-6 w-6 text-[var(--brand-accent)]" />
+          <h1 className="page-title text-[var(--text-primary)] flex items-center gap-2.5">
+            <Shield className="h-6 w-6 text-[var(--brand-primary)]" />
             إدارة المشرفين وحسابات Google المصرح لها
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+          <p className="text-xs sm:text-sm text-[var(--text-muted)] mt-1">
             أضف أي حساب Google لتفويضه كمسؤول في لوحة التحكم وتحديد صلاحياته بدقة.
           </p>
         </div>
@@ -165,10 +165,10 @@ export function AccessManagementPage() {
       </div>
 
       {/* Info Card */}
-      <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 flex items-start gap-3 text-xs leading-relaxed text-amber-900 dark:text-amber-200">
-        <Sparkles className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+      <div className="p-4 rounded-2xl bg-[var(--surface-elevated)] border border-[var(--border-subtle)] flex items-start gap-3 text-xs leading-relaxed text-[var(--text-secondary)]">
+        <Sparkles className="h-5 w-5 text-[var(--brand-warm)] flex-shrink-0 mt-0.5" />
         <div>
-          <p className="font-bold mb-0.5">كيف يعمل نظام تفويض المشرفين؟</p>
+          <p className="font-bold mb-0.5 text-[var(--text-primary)]">كيف يعمل نظام تفويض المشرفين؟</p>
           <p>
             بمجرد كتابة بريد Google الإلكتروني للمشرف هنا، سيتمكن فوراً من الضغط على <strong>"المتابعة باستخدام Google"</strong> في صفحة الدخول وسيتم التعرف عليه ومنحه الصلاحيات الإدارية المحددة له دون الحاجة لإنشاء كلمة مرور.
           </p>
@@ -178,13 +178,13 @@ export function AccessManagementPage() {
       {/* Search Bar */}
       <div className="card p-4">
         <div className="relative">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
           <input
             type="text"
             placeholder="البحث بالبريد الإلكتروني أو الاسم..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="form-input pr-9.5 text-sm bg-slate-50 dark:bg-white/5"
+            className="w-full pr-9 pl-4 py-2.5 rounded-xl text-xs bg-[var(--surface-elevated)] border border-[var(--border-subtle)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]"
           />
         </div>
       </div>
@@ -195,7 +195,7 @@ export function AccessManagementPage() {
           <SkeletonTable rows={5} />
         ) : filteredAdmins.length === 0 ? (
           <EmptyState
-            icon={<Shield className="h-10 w-10 text-slate-400" />}
+            icon={<Shield className="h-10 w-10 text-[var(--text-muted)]" />}
             title="لا يوجد مشرفين مضافين حتى الآن"
             description="اضغط على زر إضافة مشرف جديد لإضافة أول حساب Google مصرح له بالدخول."
             action={
@@ -207,7 +207,7 @@ export function AccessManagementPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-right text-xs">
-              <thead className="table-header text-slate-600 dark:text-slate-400 font-bold">
+              <thead className="bg-[var(--surface-elevated)] text-[var(--text-muted)] border-b border-[var(--border-subtle)] font-bold">
                 <tr>
                   <th className="p-4">حساب Google</th>
                   <th className="p-4">الاسم الظاهر</th>
@@ -217,16 +217,16 @@ export function AccessManagementPage() {
                   <th className="p-4 text-center">الإجراءات</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-white/10">
+              <tbody className="divide-y divide-[var(--border-subtle)]">
                 {filteredAdmins.map((admin) => (
-                  <tr key={admin.id || admin.email} className="table-row">
-                    <td className="p-4 font-semibold text-slate-900 dark:text-white flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 flex items-center justify-center text-amber-700 dark:text-amber-300 font-bold">
+                  <tr key={admin.id || admin.email} className="hover:bg-[var(--surface-elevated)]/50 transition-colors">
+                    <td className="p-4 font-semibold text-[var(--text-primary)] flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-lg bg-[var(--surface-elevated)] border border-[var(--border-subtle)] flex items-center justify-center text-[var(--brand-primary)] font-bold">
                         <Mail className="h-4 w-4" />
                       </div>
                       <span>{admin.email}</span>
                     </td>
-                    <td className="p-4 text-slate-600 dark:text-slate-300 font-medium">
+                    <td className="p-4 text-[var(--text-secondary)] font-medium">
                       {admin.displayName || '—'}
                     </td>
                     <td className="p-4">
@@ -237,14 +237,14 @@ export function AccessManagementPage() {
                     <td className="p-4">
                       <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-bold text-[11px] ${
                         admin.status === 'active'
-                          ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300'
-                          : 'bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300'
+                          ? 'bg-emerald-500/15 text-emerald-600 border border-emerald-500/20'
+                          : 'bg-rose-500/15 text-rose-600 border border-rose-500/20'
                       }`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${admin.status === 'active' ? 'bg-emerald-500' : 'bg-rose-500'}`} />
                         {admin.status === 'active' ? 'مفعل' : 'معطل'}
                       </span>
                     </td>
-                    <td className="p-4 text-slate-500 dark:text-slate-400">
+                    <td className="p-4 text-[var(--text-muted)]">
                       {formatDate(admin.createdAt)}
                     </td>
                     <td className="p-4">

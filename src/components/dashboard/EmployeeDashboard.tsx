@@ -16,7 +16,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { SkeletonCard } from '@/components/ui/loading-spinner';
 import { Button } from '@/components/ui/button';
 import {
-  getGreeting, getFirstName, formatDate, formatOCoins, isOverdue, formatRelative, getNotificationEmoji, cn, safeDate
+  getGreeting, getFirstName, formatDate, formatOCoins, isOverdue, formatRelative, getNotificationEmoji, cn, safeDate, hasUnlimitedCoins
 } from '@/utils';
 import { getUserTaskStatus } from '@/lib/database-service';
 import { subscribeBans, getActiveBan } from '@/lib/bans';
@@ -344,8 +344,13 @@ export function EmployeeDashboard() {
                 </p>
               </div>
               <p className="text-3xl sm:text-4xl font-black text-[var(--text-primary)] tracking-tight">
-                {formatOCoins(userProfile?.oCoinsBalance ?? 0)}
-                <span className="text-xs font-bold text-[var(--brand-warm)] mr-2">OC</span>
+                {hasUnlimitedCoins(userProfile?.role)
+                  ? <span className="text-[var(--brand-warm)]">∞</span>
+                  : formatOCoins(userProfile?.oCoinsBalance ?? 0)
+                }
+                <span className="text-xs font-bold text-[var(--brand-warm)] mr-2">
+                  {hasUnlimitedCoins(userProfile?.role) ? 'خزينة لا نهائية' : 'OC'}
+                </span>
               </p>
             </div>
             <div className="w-12 h-12 bg-[var(--brand-warm)]/15 text-[var(--brand-warm)] rounded-2xl flex items-center justify-center border border-[var(--brand-warm)]/30 shrink-0 shadow-sm shadow-[var(--brand-warm)]/20">

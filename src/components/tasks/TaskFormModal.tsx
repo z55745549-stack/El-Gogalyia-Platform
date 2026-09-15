@@ -225,22 +225,37 @@ export function TaskFormModal({ open, onClose }: TaskFormModalProps) {
         <div>
           <div className="flex items-center justify-between mb-1.5">
             <label className="form-label mb-0">تكليف الموظفين * (متعدد)</label>
-            <span className="text-xs text-blue-600 font-semibold">{selectedUids.length} مختار</span>
+            <span className="text-xs font-semibold" style={{ color: 'var(--brand-primary)' }}>
+              {selectedUids.length} مختار
+            </span>
           </div>
 
-          <div className="border border-gray-300 rounded-xl overflow-hidden bg-white">
-            <div className="p-2.5 border-b border-gray-200 bg-gray-50/50">
+          <div
+            className="rounded-xl overflow-hidden"
+            style={{
+              border: '1px solid var(--border-default)',
+              background: 'var(--bg-card)',
+            }}
+          >
+            {/* Search bar */}
+            <div
+              className="p-2.5"
+              style={{ borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-elevated)' }}
+            >
               <Input
                 placeholder="بحث بالاسم أو اسم المستخدم..."
                 value={employeeSearch}
                 onChange={(e) => setEmployeeSearch(e.target.value)}
                 leftIcon={<Search className="h-4 w-4" />}
-                className="bg-white"
               />
             </div>
-            <div className="max-h-48 overflow-y-auto divide-y divide-gray-100">
+
+            {/* Employee list */}
+            <div className="max-h-48 overflow-y-auto no-scrollbar divide-y divide-[var(--border-subtle)]">
               {filteredEmployees.length === 0 ? (
-                <p className="text-xs text-gray-400 text-center py-6">لا يوجد موظفون متاحون</p>
+                <p className="text-xs text-center py-6" style={{ color: 'var(--text-muted)' }}>
+                  لا يوجد موظفون متاحون
+                </p>
               ) : (
                 filteredEmployees.map((emp) => {
                   const uname = emp.username || '';
@@ -250,23 +265,45 @@ export function TaskFormModal({ open, onClose }: TaskFormModalProps) {
                       key={emp.uid}
                       type="button"
                       onClick={() => toggleEmployee(emp.uid)}
-                      className={cn(
-                        'w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors text-right cursor-pointer',
-                        isSelected && 'bg-blue-50/60'
-                      )}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 transition-colors text-right cursor-pointer"
+                      style={{
+                        background: isSelected ? 'rgba(108,99,255,0.08)' : 'transparent',
+                        borderBottom: '1px solid var(--border-subtle)',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isSelected) (e.currentTarget as HTMLElement).style.background = 'var(--bg-elevated)';
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLElement).style.background = isSelected ? 'rgba(108,99,255,0.08)' : 'transparent';
+                      }}
                     >
-                      <div className={cn(
-                        'w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors',
-                        isSelected ? 'bg-blue-600 border-blue-600' : 'border-gray-300 bg-white'
-                      )}>
+                      {/* Checkbox */}
+                      <div
+                        className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0 transition-all"
+                        style={{
+                          background: isSelected ? 'var(--brand-primary)' : 'transparent',
+                          border: isSelected ? '1px solid var(--brand-primary)' : '1px solid var(--border-strong)',
+                        }}
+                      >
                         {isSelected && <Check className="h-3 w-3 text-white stroke-[3]" />}
                       </div>
                       <Avatar src={emp.photoURL} name={emp.displayName || uname} size="xs" />
                       <div className="flex-1 min-w-0 text-right">
-                        <p className="text-xs font-semibold text-gray-900 truncate">{emp.displayName}</p>
-                        <p className="text-[11px] text-gray-500 truncate font-mono">@{uname}</p>
+                        <p className="text-xs font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
+                          {emp.displayName}
+                        </p>
+                        <p className="text-[11px] truncate font-mono" style={{ color: 'var(--text-muted)' }}>
+                          @{uname}
+                        </p>
                       </div>
-                      <span className="text-[10px] font-medium text-gray-500 uppercase px-2 py-0.5 bg-gray-100 rounded">
+                      <span
+                        className="text-[10px] font-bold uppercase px-2 py-0.5 rounded"
+                        style={{
+                          background: 'var(--bg-elevated)',
+                          color: 'var(--text-secondary)',
+                          border: '1px solid var(--border-subtle)',
+                        }}
+                      >
                         {emp.role}
                       </span>
                     </button>

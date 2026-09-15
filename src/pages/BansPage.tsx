@@ -82,21 +82,21 @@ export function BansPage() {
   if (!isPrivileged) {
     return (
       <div className="space-y-6 text-right">
-        <div className="rounded-2xl p-8 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 text-center">
-          <Shield className="h-8 w-8 text-amber-600 dark:text-amber-400 mx-auto" />
-          <h2 className="text-lg font-bold text-amber-900 dark:text-amber-200 mt-3">وصول مقيد للإدارة فقط</h2>
-          <p className="text-sm text-amber-800 dark:text-amber-300 mt-1">سجل العقوبات والحظر العام متاح للمشرفين فقط. يمكنك التحقق من حالة حسابك عبر لوحة التحكم.</p>
+        <div className="rounded-2xl p-8 bg-[var(--surface-elevated)] border border-[var(--border-subtle)] text-center">
+          <Shield className="h-8 w-8 text-[var(--brand-warm)] mx-auto" />
+          <h2 className="text-lg font-bold text-[var(--text-primary)] mt-3">وصول مقيد للإدارة فقط</h2>
+          <p className="text-sm text-[var(--text-muted)] mt-1">سجل العقوبات والحظر العام متاح للمشرفين فقط. يمكنك التحقق من حالة حسابك عبر لوحة التحكم.</p>
         </div>
         <div className="space-y-3">
           {filtered.map((b) => (
-            <div key={b.id} className="bg-white dark:bg-[#181820] rounded-2xl border border-slate-200 dark:border-[#2A2A35] p-5 shadow-xs">
-              <p className="font-bold text-sm text-slate-900 dark:text-[#F7F7FA]">{b.reason}</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <div key={b.id} className="card p-5 rounded-2xl">
+              <p className="font-bold text-sm text-[var(--text-primary)]">{b.reason}</p>
+              <p className="text-xs text-[var(--text-muted)] mt-1">
                 ينتهي في: {formatDateTime(b.endAt)} • الحالة: {b.status === 'active' ? 'نشط' : 'منتهي'}
               </p>
             </div>
           ))}
-          {filtered.length === 0 && <p className="text-sm text-slate-400 text-center py-8">لا توجد عقوبات أو حظر مسجل على حسابك.</p>}
+          {filtered.length === 0 && <p className="text-sm text-[var(--text-muted)] text-center py-8">لا توجد عقوبات أو حظر مسجل على حسابك.</p>}
         </div>
       </div>
     );
@@ -107,17 +107,17 @@ export function BansPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="page-title flex items-center gap-2">
-            <Ban className="h-7 w-7 text-rose-500" />
-            <span>سجل الحظر والعقوبات</span>
+            <Ban className="h-7 w-7 text-[var(--brand-danger)]" />
+            <span className="text-[var(--text-primary)]">سجل الحظر والعقوبات</span>
           </h1>
-          <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mt-1">
+          <p className="text-[var(--text-muted)] text-xs sm:text-sm mt-1">
             سجل إداري موثق لعقوبات الحظر، الخصومات التأديبية، وتاريخ إيقاف الحسابات.
           </p>
         </div>
         {isPrivileged && bans.length > 0 && (
           <button
             onClick={() => setShowClearAll(true)}
-            className="text-xs font-bold text-rose-600 dark:text-rose-400 hover:text-rose-700 bg-rose-50 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-950/50 px-3.5 py-2 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 self-start sm:self-auto shadow-xs"
+            className="text-xs font-bold text-[var(--brand-danger)] hover:bg-[var(--brand-danger)]/10 px-3.5 py-2 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 self-start sm:self-auto border border-[var(--brand-danger)]/20"
             title="مسح جميع سجلات الحظر"
           >
             <Trash2 className="h-4 w-4" />
@@ -126,12 +126,12 @@ export function BansPage() {
         )}
       </div>
 
-      <div className="card p-4 rounded-2xl bg-white dark:bg-[#181820] border border-slate-200 dark:border-[#2A2A35] shadow-xs">
+      <div className="card p-4 rounded-2xl">
         <Input
           placeholder="ابحث بالاسم، اسم المستخدم، أو سبب العقوبة..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          rightIcon={<Search className="h-4 w-4 text-slate-400" />}
+          rightIcon={<Search className="h-4 w-4 text-[var(--text-muted)]" />}
         />
       </div>
 
@@ -155,17 +155,17 @@ export function BansPage() {
                 key={b.id}
                 initial={{ opacity: 0, y: 4 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white dark:bg-[#181820] rounded-2xl border border-slate-200 dark:border-[#2A2A35] p-5 shadow-xs transition-colors"
+                className="card p-5 rounded-2xl transition-colors"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex gap-3 items-center">
                     <Avatar name={b.employeeName} size="sm" />
                     <div>
-                      <p className="font-bold text-sm text-slate-900 dark:text-[#F7F7FA]">
+                      <p className="font-bold text-sm text-[var(--text-primary)]">
                         {b.employeeName}{' '}
-                        <span className="font-mono text-xs text-[var(--brand-primary)] dark:text-[var(--brand-accent)]">@{b.employeeUsername}</span>
+                        <span className="font-mono text-xs text-[var(--brand-primary)]">@{b.employeeUsername}</span>
                       </p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      <p className="text-xs text-[var(--text-muted)] mt-0.5">
                         اللجنة: {(b as any).committeeId || '—'}
                       </p>
                     </div>
@@ -195,36 +195,36 @@ export function BansPage() {
                 </div>
 
                 <div className="mt-3.5 grid sm:grid-cols-2 gap-3 text-xs">
-                  <div className="p-3 bg-slate-50 dark:bg-[#1E1E28] rounded-xl border border-slate-100 dark:border-[#2A2A35]">
-                    <p className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                      <Clock className="h-3.5 w-3.5 text-[var(--brand-primary)] dark:text-[var(--brand-accent)]" />
+                  <div className="p-3 bg-[var(--surface-elevated)] rounded-xl border border-[var(--border-subtle)]">
+                    <p className="font-bold text-[var(--text-primary)] flex items-center gap-1">
+                      <Clock className="h-3.5 w-3.5 text-[var(--brand-primary)]" />
                       <span>فترة سريان الحظر</span>
                     </p>
-                    <p className="mt-1 text-slate-800 dark:text-slate-300">
+                    <p className="mt-1 text-[var(--text-secondary)]">
                       من: {formatDateTime(b.startAt)} <br />
                       إلى: {formatDateTime(b.endAt)}
                     </p>
                   </div>
-                  <div className="p-3 bg-rose-50/60 dark:bg-rose-950/20 rounded-xl border border-rose-100 dark:border-rose-900/30">
-                    <p className="font-bold text-rose-700 dark:text-rose-400 flex items-center gap-1">
+                  <div className="p-3 bg-rose-500/10 rounded-xl border border-rose-500/20">
+                    <p className="font-bold text-rose-600 flex items-center gap-1">
                       <AlertTriangle className="h-3.5 w-3.5" />
                       <span>سبب العقوبة</span>
                     </p>
-                    <p className="mt-1 text-slate-800 dark:text-slate-200">{b.reason}</p>
+                    <p className="mt-1 text-[var(--text-primary)]">{b.reason}</p>
                   </div>
                 </div>
 
                 {b.internalNote && (
-                  <div className="mt-3 p-3 bg-amber-50/60 dark:bg-amber-950/20 rounded-xl border border-amber-200 dark:border-amber-900/40">
-                    <p className="text-xs font-bold text-amber-800 dark:text-amber-400">ملاحظة داخلية (للمشرفين فقط)</p>
-                    <p className="text-xs text-amber-900 dark:text-amber-200 mt-1">{b.internalNote}</p>
+                  <div className="mt-3 p-3 bg-amber-500/10 rounded-xl border border-amber-500/20">
+                    <p className="text-xs font-bold text-amber-600">ملاحظة داخلية (للمشرفين فقط)</p>
+                    <p className="text-xs text-[var(--text-secondary)] mt-1">{b.internalNote}</p>
                   </div>
                 )}
 
-                <div className="mt-3 flex flex-wrap items-center gap-3 text-[11px] text-slate-500 dark:text-slate-400">
+                <div className="mt-3 flex flex-wrap items-center gap-3 text-[11px] text-[var(--text-muted)]">
                   <span>
                     الخصم التأديبي:{' '}
-                    <strong className="text-rose-600 dark:text-rose-400 font-bold">{b.coinPenalty} كوينز</strong>
+                    <strong className="text-rose-600 font-bold">{b.coinPenalty} كوينز</strong>
                   </span>
                   <span>• المشرف: {b.createdByName}</span>
                   {b.endedBy && <span>• تم الرفع بواسطة: {b.endedByName}</span>}

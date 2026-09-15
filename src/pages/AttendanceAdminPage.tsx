@@ -64,6 +64,25 @@ export function AttendanceAdminPage() {
   const [recordSearch, setRecordSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'present' | 'late'>('all');
 
+  // Dynamic 60s auto-renewing QR
+  const [secondsLeft, setSecondsLeft] = useState(60);
+  const [qrTimestamp, setQrTimestamp] = useState(Date.now());
+
+  useEffect(() => {
+    if (!activeSessionForQR) return;
+    setSecondsLeft(60);
+    const interval = setInterval(() => {
+      setSecondsLeft((prev) => {
+        if (prev <= 1) {
+          setQrTimestamp(Date.now());
+          return 60;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [activeSessionForQR?.id]);
+
   // 1. Realtime Sessions Subscription
   useEffect(() => {
     const unsub = subscribeAttendanceSessions((list) => {
@@ -163,7 +182,8 @@ export function AttendanceAdminPage() {
 
   const getQRUrl = (session: AttendanceSession) => {
     const origin = window.location.origin;
-    return `${origin}/attendance/check?sessionId=${session.id}&token=${session.secureToken}`;
+    const timeBucket = Math.floor(qrTimestamp / 60000);
+    return `${origin}/attendance/check?sessionId=${session.id}&token=${session.secureToken}&tb=${timeBucket}`;
   };
 
   const copyQRLink = (session: AttendanceSession) => {
@@ -172,6 +192,29 @@ export function AttendanceAdminPage() {
     setCopiedLink(true);
     toast.success('تم نسخ رابط الحضور المباشر للحافظة!');
     setTimeout(() => setCopiedLink(false), 2000);
+  };
+
+  const exportSessionCSV = () => {
+    if (!selectedSessionForDetails) return;
+    const csvContent = [
+      ['اسم العضو', 'كود الموظف', 'وقت الحضور', 'الحالة'].join(','),
+      ...filteredRecords.map((r) =>
+        [
+          `"${r.employeeName || ''}"`,
+          `"${r.employeeCode || ''}"`,
+          `"${r.checkInTime || ''}"`,
+          `"${r.status === 'present' ? 'حاضر في الموعد' : 'متأخر'}"`,
+        ].join(',')
+      ),
+    ].join('\n');
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `attendance-${selectedSessionForDetails.title}-${selectedSessionForDetails.date}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('تم تصدير سجل الحضور كـ CSV بنجاح!');
   };
 
   return (
@@ -547,6 +590,28 @@ export function AttendanceAdminPage() {
               />
             </div>
 
+            {/* 60-Second Auto-Renewing Countdown Progress */}
+            <div className="max-w-xs mx-auto p-3 rounded-2xl bg-[var(--surface-elevated)] border border-[var(--border-subtle)] space-y-2">
+              <div className="flex items-center justify-between text-[11px] font-bold">
+                <span className="text-[var(--text-muted)] flex items-center gap-1">
+                  <Clock className="h-3.5 w-3.5 text-[var(--brand-primary)]" />
+                  <span>تجديد الرمز التلقائي</span>
+                </span>
+                <span className="text-[var(--brand-primary)] font-mono">
+                  {secondsLeft} ثانية
+                </span>
+              </div>
+              <div className="w-full bg-[var(--surface)] h-2 rounded-full overflow-hidden border border-[var(--border-subtle)]">
+                <div
+                  className="bg-[var(--brand-primary)] h-full transition-all duration-1000"
+                  style={{ width: `${(secondsLeft / 60) * 100}%` }}
+                />
+              </div>
+              <p className="text-[10px] text-[var(--text-muted)]">
+                حماية أمنية: يتجدد الرمز تلقائياً كل دقيقة لمنع تصوير الشاشة وتناقلها خارج القاعة.
+              </p>
+            </div>
+
             <div className="max-w-md mx-auto space-y-1">
               <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
                 امسح الـ QR بكاميرا الهاتف للدخول المباشر إلى صفحة التحقق وتأكيد الحضور
@@ -567,14 +632,26 @@ export function AttendanceAdminPage() {
         description="قائمة بجميع أعضاء الفريق المسجلين في هذه الجلسة مع وقت تسجيل الدخول الدقيق."
         size="xl"
         footer={
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setSelectedSessionForDetails(null)}
-            className="text-xs"
-          >
-            إغلاق
-          </Button>
+          <div className="flex items-center justify-between w-full">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={exportSessionCSV}
+              disabled={filteredRecords.length === 0}
+              className="text-xs gap-1.5 font-bold"
+            >
+              <Download className="h-3.5 w-3.5 text-[var(--brand-primary)]" />
+              <span>تصدير CSV ({filteredRecords.length})</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSelectedSessionForDetails(null)}
+              className="text-xs"
+            >
+              إغلاق
+            </Button>
+          </div>
         }
       >
         {selectedSessionForDetails && (

@@ -205,6 +205,21 @@ export async function purchaseDiscount(params: {
       }
     }
 
+    // 3.5 Validate per-user purchase limit
+    const maxAllowed = discount.maxPurchasesPerUser ?? 1;
+    const existingSnap = await getDocs(
+      query(
+        collection(db, 'discount_purchases'),
+        where('discountId', '==', discountId),
+        where('employeeId', '==', employee.uid)
+      )
+    );
+    if (existingSnap.size >= maxAllowed) {
+      throw new Error(
+        `لقد قمت بالحصول على هذا العرض بالفعل (الحد الأقصى المسموح به هو ${maxAllowed} لكل عضو).`
+      );
+    }
+
     const requiredCoins = Number(discount.ocoinCost) || 0;
 
     // 4. Fetch user balance
@@ -216,14 +231,16 @@ export async function purchaseDiscount(params: {
     const userData = userSnap.data() as UserProfile;
     const currentBalance = Number(userData.oCoinsBalance) || 0;
 
-    // 5. Validate sufficient balance
-    if (currentBalance < requiredCoins) {
+    const isUnlimitedUser = userData.role === 'lead' || userData.role === 'co_lead';
+
+    // 5. Validate sufficient balance (lead and co_lead have unlimited coins)
+    if (!isUnlimitedUser && currentBalance < requiredCoins) {
       throw new Error(
         `رصيدك الحالي (${currentBalance} OC) غير كافٍ لشراء هذا العرض الذي يتطلب (${requiredCoins} OC).`
       );
     }
 
-    finalNewBalance = currentBalance - requiredCoins;
+    finalNewBalance = isUnlimitedUser ? currentBalance : Math.max(0, currentBalance - requiredCoins);
 
     // 6. Assign promo/redemption code (Secret code configured by Admin or generated unique code)
     const assignedCode = discount.promoCode && discount.promoCode.trim().length > 0

@@ -8,6 +8,7 @@ import {
   QrCode, CalendarCheck, Tag, ShoppingBag, BookOpen
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { useNotificationCount } from '@/hooks/useNotifications';
 import { Avatar } from '@/components/ui/avatar';
 import { cn } from '@/utils';
 import { getRoleLabel } from '@/utils/permissions';
@@ -29,25 +30,20 @@ const navItems: NavItem[] = [
   { label: 'لوحة التحكم', path: '/dashboard', icon: <LayoutDashboard className="h-4 w-4" />, roles: ALL_ROLES, category: 'main' },
   { label: 'مهامي وتكليفاتي', path: '/my-tasks', icon: <ListTodo className="h-4 w-4" />, roles: MEMBER_ROLES, category: 'work' },
   { label: 'سجل حضوري', path: '/my-attendance', icon: <CalendarCheck className="h-4 w-4" />, roles: MEMBER_ROLES, category: 'work' },
-  { label: 'الاجتماعات واللقاءات', path: '/meetings', icon: <CalendarDays className="h-4 w-4" />, roles: MEMBER_ROLES, category: 'work' },
   { label: 'المهام والتكليفات', path: '/tasks', icon: <CheckSquare className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'work' },
   { label: 'تسليمات المهام', path: '/submitted-tasks', icon: <Inbox className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'work' },
+  { label: 'الاجتماعات واللقاءات', path: '/meetings', icon: <CalendarDays className="h-4 w-4" />, roles: ALL_ROLES, category: 'work' },
   { label: 'فريق العمل والطلاب', path: '/employees', icon: <Users className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'team' },
   { label: 'نظام الحضور (QR)', path: '/attendance', icon: <QrCode className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'team' },
-  { label: 'الاجتماعات واللقاءات', path: '/meetings', icon: <CalendarDays className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'team' },
   { label: 'الحظر والعقوبات', path: '/bans', icon: <Ban className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'team' },
-  { label: 'الدورات التعليمية', path: '/courses', icon: <BookOpen className="h-4 w-4" />, roles: MEMBER_ROLES, category: 'development' },
-  { label: 'الفرص والتدريبات', path: '/opportunities', icon: <GraduationCap className="h-4 w-4" />, roles: MEMBER_ROLES, category: 'development' },
-  { label: 'الدورات التعليمية', path: '/courses', icon: <BookOpen className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'content' },
+  { label: 'الدورات التعليمية', path: '/courses', icon: <BookOpen className="h-4 w-4" />, roles: ALL_ROLES, category: 'development' },
+  { label: 'الفرص والتدريبات', path: '/opportunities', icon: <GraduationCap className="h-4 w-4" />, roles: ALL_ROLES, category: 'development' },
   { label: 'إدارة الدورات', path: '/admin/courses', icon: <GraduationCap className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'content' },
-  { label: 'الفرص والتدريبات', path: '/opportunities', icon: <GraduationCap className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'content' },
   { label: 'إدارة الخصومات', path: '/admin/discounts', icon: <Tag className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'content' },
-  { label: 'محفظة O Coins', path: '/ocoins', icon: <Coins className="h-4 w-4" />, roles: MEMBER_ROLES, category: 'rewards' },
-  { label: 'متجر الخصومات', path: '/discounts', icon: <Tag className="h-4 w-4" />, roles: MEMBER_ROLES, category: 'rewards' },
-  { label: 'مشترياتي', path: '/my-discounts', icon: <ShoppingBag className="h-4 w-4" />, roles: MEMBER_ROLES, category: 'rewards' },
-  { label: 'محفظة O Coins', path: '/ocoins', icon: <Coins className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'rewards' },
-  { label: 'متجر الخصومات', path: '/discounts', icon: <Tag className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'rewards' },
-  { label: 'مركز المساعدة', path: '/support', icon: <LifeBuoy className="h-4 w-4" />, roles: MEMBER_ROLES, category: 'help' },
+  { label: 'محفظة O Coins', path: '/ocoins', icon: <Coins className="h-4 w-4" />, roles: ALL_ROLES, category: 'rewards' },
+  { label: 'متجر الخصومات', path: '/discounts', icon: <Tag className="h-4 w-4" />, roles: ALL_ROLES, category: 'rewards' },
+  { label: 'مشترياتي', path: '/my-discounts', icon: <ShoppingBag className="h-4 w-4" />, roles: ALL_ROLES, category: 'rewards' },
+  { label: 'مركز المساعدة', path: '/support', icon: <LifeBuoy className="h-4 w-4" />, roles: ALL_ROLES, category: 'help' },
   { label: 'إدارة التذاكر', path: '/admin/support', icon: <LifeBuoy className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'help' },
   { label: 'إدارة الوصول', path: '/access-management', icon: <Shield className="h-4 w-4" />, roles: ['lead', 'co_lead', 'head'], category: 'system' },
   { label: 'التقارير والإحصائيات', path: '/reports', icon: <BarChart3 className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'system' },
@@ -111,6 +107,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   const { userProfile, signOut } = useAuth();
   const navigate = useNavigate();
   const role = userProfile?.role ?? 'member';
+  const unreadCount = useNotificationCount();
 
   const visibleItems = navItems.filter((item) => item.roles.includes(role));
 
@@ -201,7 +198,12 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
                       >
                         {item.icon}
                       </span>
-                      <span className="truncate">{item.label}</span>
+                      <span className="truncate flex-1">{item.label}</span>
+                      {item.path === '/notifications' && unreadCount > 0 && (
+                        <span className="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-rose-500 text-white min-w-[18px] text-center leading-none">
+                          {unreadCount > 99 ? '99+' : unreadCount}
+                        </span>
+                      )}
                     </>
                   )}
                 </NavLink>

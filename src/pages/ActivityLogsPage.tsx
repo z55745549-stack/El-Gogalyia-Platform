@@ -1,38 +1,46 @@
 import { useState, useEffect } from 'react';
 import { collection, query, orderBy, onSnapshot, limit, db } from '@/lib/supabase';
-import { Search, ClipboardList, Shield, Filter } from 'lucide-react';
+import { Search, ClipboardList, Shield, Filter, Download } from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
-import { Input } from '@/components/ui/input';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SkeletonTable } from '@/components/ui/skeleton';
 import { formatDateTime } from '@/utils';
 import type { ActivityLog } from '@/types';
 
 const ACTION_LABELS: Record<string, { label: string; color: string }> = {
-  'task.created': { label: 'إنشاء مهمة جديدة', color: 'text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30' },
-  'task.updated': { label: 'تعديل بيانات مهمة', color: 'text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800' },
-  'task.deleted': { label: 'حذف / أرشفة مهمة', color: 'text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30' },
-  'task.submitted': { label: 'تسليم عمل من موظف', color: 'text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30' },
-  'task.approved': { label: 'اعتماد تسليم ومكافأة كوينز', color: 'text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30' },
-  'task.rejected': { label: 'رفض تسليم وإعادة للمراجعة', color: 'text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30' },
-  'task.status_changed': { label: 'تغيير حالة المهمة', color: 'text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30' },
-  'ocoin.awarded': { label: 'منح O Coins', color: 'text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30' },
-  'ocoin.manual_add': { label: 'إضافة كوينز يدوية', color: 'text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30' },
-  'ocoin.manual_remove': { label: 'خصم كوينز', color: 'text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30' },
-  'ocoin.discount_purchase': { label: 'شراء خصم بكوينز', color: 'text-purple-700 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/30' },
-  'user.created': { label: 'إضافة مستخدم جديد', color: 'text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30' },
-  'user.role_changed': { label: 'تعديل رتبة المستخدم', color: 'text-purple-700 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/30' },
-  'user.status_changed': { label: 'تغيير حالة الحساب', color: 'text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30' },
-  'user.removed': { label: 'إلغاء تفويض مستخدم', color: 'text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30' },
-  'user.banned': { label: 'حظر وتعليق حساب', color: 'text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30' },
-  'attendance.session_created': { label: 'بدء جلسة حضور QR', color: 'text-teal-700 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/30' },
-  'attendance.check_in': { label: 'تسجيل حضور موظف', color: 'text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30' },
+  'task.created': { label: 'إنشاء مهمة جديدة', color: 'text-blue-600 bg-blue-500/10 border-blue-500/20' },
+  'task.updated': { label: 'تعديل بيانات مهمة', color: 'text-indigo-600 bg-indigo-500/10 border-indigo-500/20' },
+  'task.deleted': { label: 'حذف / أرشفة مهمة', color: 'text-rose-600 bg-rose-500/10 border-rose-500/20' },
+  'task.submitted': { label: 'تسليم عمل من موظف', color: 'text-amber-600 bg-amber-500/10 border-amber-500/20' },
+  'task.approved': { label: 'اعتماد تسليم ومكافأة كوينز', color: 'text-emerald-600 bg-emerald-500/10 border-emerald-500/20' },
+  'task.rejected': { label: 'رفض تسليم وإعادة للمراجعة', color: 'text-rose-600 bg-rose-500/10 border-rose-500/20' },
+  'task.status_changed': { label: 'تغيير حالة المهمة', color: 'text-blue-600 bg-blue-500/10 border-blue-500/20' },
+  'ocoin.awarded': { label: 'منح O Coins', color: 'text-amber-600 bg-amber-500/10 border-amber-500/20' },
+  'ocoin.manual_add': { label: 'إضافة كوينز يدوية', color: 'text-emerald-600 bg-emerald-500/10 border-emerald-500/20' },
+  'ocoin.manual_remove': { label: 'خصم كوينز', color: 'text-rose-600 bg-rose-500/10 border-rose-500/20' },
+  'ocoin.discount_purchase': { label: 'شراء خصم بكوينز', color: 'text-purple-600 bg-purple-500/10 border-purple-500/20' },
+  'user.created': { label: 'إضافة مستخدم جديد', color: 'text-blue-600 bg-blue-500/10 border-blue-500/20' },
+  'user.role_changed': { label: 'تعديل رتبة المستخدم', color: 'text-purple-600 bg-purple-500/10 border-purple-500/20' },
+  'user.status_changed': { label: 'تغيير حالة الحساب', color: 'text-amber-600 bg-amber-500/10 border-amber-500/20' },
+  'user.removed': { label: 'إلغاء تفويض مستخدم', color: 'text-rose-600 bg-rose-500/10 border-rose-500/20' },
+  'user.banned': { label: 'حظر وتعليق حساب', color: 'text-rose-600 bg-rose-500/10 border-rose-500/20' },
+  'attendance.session_created': { label: 'بدء جلسة حضور QR', color: 'text-teal-600 bg-teal-500/10 border-teal-500/20' },
+  'attendance.check_in': { label: 'تسجيل حضور موظف', color: 'text-emerald-600 bg-emerald-500/10 border-emerald-500/20' },
 };
+
+const FILTER_GROUPS = [
+  { id: 'all', label: 'جميع العمليات' },
+  { id: 'task', label: 'إدارة المهام' },
+  { id: 'ocoin', label: 'المعاملات المالية و O Coins' },
+  { id: 'user', label: 'المستخدمين والصلاحيات' },
+  { id: 'attendance', label: 'الحضور والغياب' },
+];
 
 export function ActivityLogsPage() {
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState('all');
 
   useEffect(() => {
     const unsub = onSnapshot(
@@ -49,69 +57,146 @@ export function ActivityLogsPage() {
     return unsub;
   }, []);
 
-  const filtered = logs.filter((l) =>
-    !search ||
-    (l.actorName || '').toLowerCase().includes(search.toLowerCase()) ||
-    (l.targetName || '').toLowerCase().includes(search.toLowerCase()) ||
-    (l.action || '').toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = logs.filter((l) => {
+    const matchesSearch =
+      !search ||
+      (l.actorName || '').toLowerCase().includes(search.toLowerCase()) ||
+      (l.targetName || '').toLowerCase().includes(search.toLowerCase()) ||
+      (l.action || '').toLowerCase().includes(search.toLowerCase());
+
+    const matchesType =
+      typeFilter === 'all' || (l.action && l.action.startsWith(typeFilter));
+
+    return matchesSearch && matchesType;
+  });
+
+  const exportLogs = () => {
+    const csvContent = [
+      ['التاريخ والوقت', 'المسؤول', 'الإجراء', 'الهدف'].join(','),
+      ...filtered.map((l) =>
+        [
+          `"${(l as any).createdAt ? formatDateTime((l as any).createdAt) : ''}"`,
+          `"${l.actorName || l.actor || ''}"`,
+          `"${ACTION_LABELS[l.action]?.label || l.action}"`,
+          `"${l.targetName || ''}"`,
+        ].join(',')
+      ),
+    ].join('\n');
+
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `audit-logs-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="space-y-6 text-right">
-      <div>
-        <h1 className="page-title flex items-center gap-2.5">
-          <Shield className="h-6 w-6 text-[var(--brand-primary)] dark:text-[var(--brand-accent)]" />
-          <span>سجل العمليات والرقابة (Audit Logs)</span>
-        </h1>
-        <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mt-1">
-          سجل غير قابل للتعديل يوثق جميع العمليات الإدارية، المالية، وتغييرات الصلاحيات بالنظام.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="page-title flex items-center gap-2.5">
+            <Shield className="h-6 w-6 text-[var(--brand-primary)]" />
+            <span className="text-[var(--text-primary)]">سجل العمليات والرقابة (Audit Logs)</span>
+          </h1>
+          <p className="text-xs sm:text-sm mt-1 text-[var(--text-muted)]">
+            سجل غير قابل للتعديل يوثق جميع العمليات الإدارية، المالية، وتغييرات الصلاحيات بالنظام.
+          </p>
+        </div>
+
+        <button
+          onClick={exportLogs}
+          disabled={filtered.length === 0}
+          className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all bg-[var(--surface-elevated)] border border-[var(--border-subtle)] text-[var(--text-primary)] hover:border-[var(--brand-primary)] cursor-pointer self-start sm:self-auto disabled:opacity-50"
+        >
+          <Download className="h-4 w-4 text-[var(--brand-primary)]" />
+          <span>تصدير CSV ({filtered.length})</span>
+        </button>
       </div>
 
-      <div className="card p-4 rounded-2xl bg-white dark:bg-[#181820] border border-slate-200 dark:border-[#2A2A35] shadow-xs">
-        <Input
-          placeholder="ابحث باسم المشرف، الإجراء، أو العنصر المستهدف..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          rightIcon={<Search className="h-4 w-4 text-slate-400" />}
-        />
+      {/* Filter and Search Bar */}
+      <div className="card p-4 rounded-2xl flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
+          <Filter className="h-4 w-4 text-[var(--text-muted)] shrink-0" />
+          {FILTER_GROUPS.map((grp) => (
+            <button
+              key={grp.id}
+              onClick={() => setTypeFilter(grp.id)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                typeFilter === grp.id
+                  ? 'bg-[var(--brand-primary)] text-white shadow-xs'
+                  : 'bg-[var(--surface-elevated)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+              }`}
+            >
+              {grp.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="relative w-full sm:w-72">
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
+          <input
+            type="text"
+            placeholder="ابحث باسم المشرف أو الإجراء..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pr-9 pl-4 py-2 rounded-xl text-xs bg-[var(--surface-elevated)] border border-[var(--border-subtle)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]"
+          />
+        </div>
       </div>
 
-      <div className="card overflow-hidden rounded-2xl bg-white dark:bg-[#181820] border border-slate-200 dark:border-[#2A2A35] shadow-xs">
+      {/* Logs Table Card */}
+      <div className="card overflow-hidden rounded-2xl">
         {loading ? (
           <SkeletonTable rows={8} />
         ) : filtered.length === 0 ? (
           <EmptyState
-            icon={<ClipboardList className="h-8 w-8 text-slate-400" />}
+            icon={<ClipboardList className="h-8 w-8 text-[var(--text-muted)]" />}
             title="لا توجد عمليات مسجلة حالياً"
             description="ستظهر جميع أحداث وعمليات النظام الإدارية هنا بالترتيب الزمني."
           />
         ) : (
-          <div className="divide-y divide-slate-100 dark:divide-[#2A2A35]">
+          <div className="divide-y divide-[var(--border-subtle)]">
             {filtered.map((log) => {
-              const actionMeta = ACTION_LABELS[log.action] || { label: log.action, color: 'text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800' };
+              const actionMeta = ACTION_LABELS[log.action] || {
+                label: log.action,
+                color: 'text-[var(--text-secondary)] bg-[var(--surface-elevated)] border-[var(--border-subtle)]',
+              };
               return (
-                <div key={log.id} className="flex items-start gap-4 px-5 py-4 hover:bg-slate-50/80 dark:hover:bg-[#1E1E28]/60 transition-colors">
+                <div
+                  key={log.id}
+                  className="flex items-start gap-4 px-5 py-4 hover:bg-[var(--surface-elevated)]/60 transition-colors"
+                >
                   <Avatar src={log.actorPhoto} name={log.actorName || log.actor} size="sm" />
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <strong className="text-xs sm:text-sm font-bold text-slate-900 dark:text-[#F7F7FA]">{log.actorName || log.actor}</strong>
-                      <span className={`badge text-[10px] font-bold px-2 py-0.5 rounded-lg ${actionMeta.color}`}>
+                      <strong className="text-xs sm:text-sm font-bold text-[var(--text-primary)]">
+                        {log.actorName || log.actor}
+                      </strong>
+                      <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-lg border ${actionMeta.color}`}>
                         {actionMeta.label}
                       </span>
                       {log.targetName && (
-                        <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-[#2A2A35] px-2 py-0.5 rounded-lg">
+                        <span className="text-xs font-semibold text-[var(--text-secondary)] bg-[var(--surface-elevated)] border border-[var(--border-subtle)] px-2 py-0.5 rounded-lg">
                           {log.targetName}
                         </span>
                       )}
                     </div>
                     {log.metadata && Object.keys(log.metadata).length > 0 && (
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono mt-1.5 bg-slate-50 dark:bg-[#13131A] border border-slate-100 dark:border-[#2A2A35] px-2 py-1 rounded-lg inline-block ltr:text-left">
-                        {JSON.stringify(log.metadata)}
-                      </p>
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {Object.entries(log.metadata).map(([k, v]) => (
+                          <span
+                            key={k}
+                            className="text-[10px] font-mono bg-[var(--surface-elevated)] text-[var(--text-muted)] border border-[var(--border-subtle)] px-2 py-0.5 rounded-md"
+                          >
+                            <span className="font-semibold text-[var(--text-secondary)]">{k}:</span> {String(v)}
+                          </span>
+                        ))}
+                      </div>
                     )}
                   </div>
-                  <p className="text-[11px] text-slate-400 dark:text-slate-500 shrink-0 font-medium">
+                  <p className="text-[11px] text-[var(--text-muted)] shrink-0 font-medium pt-1">
                     {(log as any).createdAt ? formatDateTime((log as any).createdAt) : 'الآن'}
                   </p>
                 </div>

@@ -20,8 +20,7 @@ import { subscribeBans, createBan, endBan, getActiveBan } from '@/lib/bans';
 // 2-Step admin auth removed — Lead/Co-Lead and Head act directly
 import { generateEmployeeCode } from '@/lib/attendance';
 import { canManageRole, isTopTierRole, getRoleLabel, getRoleColor, isAdminRole } from '@/utils/permissions';
-import { formatFullName } from '@/utils';
-import { hasArabic } from '@/utils';
+import { formatFullName, hasArabic, hasUnlimitedCoins } from '@/utils';
 
 const AVAILABLE_PERMISSIONS: { key: Permission; label: string }[] = [
   { key: 'employees.manage' as Permission, label: 'إدارة الموظفين (manageEmployees)' },
@@ -737,7 +736,7 @@ export function EmployeesPage() {
                       </td>
 
                       <td className="p-4 font-bold text-slate-800">
-                        🪙 {emp.oCoinsBalance ?? 0}
+                        🪙 {hasUnlimitedCoins(emp.role) ? '∞' : (emp.oCoinsBalance ?? 0)}
                       </td>
 
                       <td className="p-4 text-left">
@@ -789,7 +788,7 @@ export function EmployeesPage() {
                       )}
                     </div>
                   </div>
-                  <span className="text-xs font-black px-2 py-1 rounded-lg bg-amber-50 text-amber-700 border border-amber-200">🪙 {emp.oCoinsBalance ?? 0}</span>
+                  <span className="text-xs font-black px-2 py-1 rounded-lg bg-amber-50 text-amber-700 border border-amber-200">🪙 {hasUnlimitedCoins(emp.role) ? '∞' : (emp.oCoinsBalance ?? 0)}</span>
                 </div>
                 <div className="flex items-center gap-2 mt-3 flex-wrap">
                   <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${getRoleColor(emp.role)}`}>{getRoleLabel(emp.role)}</span>

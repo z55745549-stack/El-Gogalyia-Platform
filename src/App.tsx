@@ -37,24 +37,11 @@ import { AdminCoursesPage } from '@/pages/AdminCoursesPage';
 
 import { AccessDenied } from '@/components/auth/AccessDenied';
 
-import { MaintenanceScreen } from '@/components/maintenance/MaintenanceScreen';
-import { useMaintenance } from '@/hooks/useMaintenance';
-import { isAdminRole } from '@/utils/permissions';
 
 function RootRedirect() {
   const { user, userProfile, loading, unauthorized } = useAuth();
-  const { isMaintenanceActive, maintenance } = useMaintenance();
 
   if (loading) return <PageLoader />;
-
-  // If maintenance is active, only Admins are allowed to access dashboard
-  if (isMaintenanceActive) {
-    const isAdmin = userProfile && isAdminRole(userProfile.role);
-    if (!isAdmin) {
-      return <MaintenanceScreen message={maintenance.message} />;
-    }
-  }
-
   if (!user) return <LoginPage />;
   if (unauthorized) return <AccessDenied />;
   return <Navigate to="/dashboard" replace />;

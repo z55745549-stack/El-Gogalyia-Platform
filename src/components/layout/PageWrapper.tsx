@@ -9,13 +9,10 @@ import {
   Bell,
   CalendarDays,
   GraduationCap,
-  Wrench,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { useMaintenance } from '@/hooks/useMaintenance';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
-import { toast } from 'sonner';
 import { isAdminRole } from '@/utils/permissions';
 
 const pageVariants = {
@@ -32,19 +29,8 @@ interface PageWrapperProps {
 export function PageWrapper({ children, unreadNotifications = 0 }: PageWrapperProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { userProfile } = useAuth();
-  const { isMaintenanceActive, toggleMaintenance } = useMaintenance();
   const role = userProfile?.role ?? 'member';
-  const isAdmin = isAdminRole(role);
-  const isEmployee = !isAdmin;
-
-  const handleDisableMaintenance = async () => {
-    try {
-      await toggleMaintenance(false);
-      toast.success('تم إنهاء وضعية الصيانة الفورية بنجاح وإتاحة المنصة للجميع! ✨');
-    } catch {
-      toast.error('حدث خطأ أثناء تعطيل وضع الصيانة.');
-    }
-  };
+  const isEmployee = !isAdminRole(role);
 
   return (
     <div className="flex h-screen app-bg overflow-hidden font-sans">
@@ -53,37 +39,6 @@ export function PageWrapper({ children, unreadNotifications = 0 }: PageWrapperPr
         onMobileClose={() => setMobileOpen(false)}
       />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Sticky Emergency Maintenance Warning Banner for Admins */}
-        {isMaintenanceActive && isAdmin && (
-          <div
-            className="px-4 py-2 sm:px-6 flex items-center justify-between gap-3 text-xs sm:text-sm font-bold z-40 text-right"
-            style={{
-              background: 'rgba(244,63,94,0.12)',
-              borderBottom: '1px solid rgba(244,63,94,0.25)',
-              backdropFilter: 'blur(8px)',
-              color: '#F43F5E',
-            }}
-          >
-            <div className="flex items-center gap-2">
-              <span className="p-1 rounded-lg" style={{ background: 'rgba(244,63,94,0.15)' }}>
-                <Wrench className="h-4 w-4 animate-spin" style={{ color: '#F43F5E' }} />
-              </span>
-              <span>تنبيه: المنصة في وضعية الصيانة الفورية — وصول الأعضاء معطّل حالياً.</span>
-            </div>
-            <button
-              onClick={handleDisableMaintenance}
-              className="px-3 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer shrink-0"
-              style={{
-                background: 'rgba(244,63,94,0.15)',
-                border: '1px solid rgba(244,63,94,0.3)',
-                color: '#F43F5E',
-              }}
-            >
-              إنهاء الصيانة ✕
-            </button>
-          </div>
-        )}
-
         <Header onMobileMenuClick={() => setMobileOpen(true)} />
 
         <main className="flex-1 overflow-y-auto">
