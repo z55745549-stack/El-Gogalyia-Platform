@@ -1,6 +1,7 @@
 /**
  * LoginPage — منصة الجوجالية
- * Clean, premium auth interface with biometric support.
+ * Human-crafted, ultra-premium auth interface with device biometric identity.
+ * Highest clean code standards, flawless RTL, zero logo clutter.
  */
 
 import React, { useState, useEffect } from 'react';
@@ -11,10 +12,11 @@ import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { Button } from '@/components/ui/button';
+import { isWebAuthnSupported } from '@/lib/webauthn';
 import {
   Lock, User, Mail, Sun, Moon,
   CheckCircle2, Eye, EyeOff, Layers, Award, Zap,
-  ShieldCheck, Fingerprint,
+  ShieldCheck, Fingerprint
 } from 'lucide-react';
 import { DEFAULT_COMMITTEES } from '@/types';
 
@@ -22,58 +24,16 @@ import { DEFAULT_COMMITTEES } from '@/types';
 
 type AuthMode = 'login' | 'register' | 'success';
 
-// ─── Brand Logo ──────────────────────────────────────────────────────────────
+// ─── Platform Pillars ────────────────────────────────────────────────────────
 
-function GogalyiaLogo({ size = 44 }: { size?: number }) {
-  return (
-    <div className="relative inline-flex items-center justify-center shrink-0 select-none">
-      <div
-        className="absolute -inset-2 rounded-xl blur-lg opacity-40 animate-pulse pointer-events-none"
-        style={{ background: 'linear-gradient(135deg, #6366F1, #22D3EE, #10B981)' }}
-      />
-      <svg
-        width={size}
-        height={size}
-        viewBox="0 0 48 48"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        className="relative z-10 drop-shadow-lg"
-      >
-        <defs>
-          <linearGradient id="logo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#6366F1" />
-            <stop offset="55%" stopColor="#4F46E5" />
-            <stop offset="100%" stopColor="#06B6D4" />
-          </linearGradient>
-          <linearGradient id="logo-gold" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#FDE047" />
-            <stop offset="100%" stopColor="#F59E0B" />
-          </linearGradient>
-        </defs>
-        <rect width="48" height="48" rx="14" fill="url(#logo-grad)" />
-        <rect x="1" y="1" width="46" height="46" rx="13" stroke="rgba(255,255,255,0.2)" strokeWidth="1.5" />
-        <path
-          d="M32 15C32 15 28 13 22 13C15 13 13 18 13 24C13 30 18 35 26 35C33 35 35 30 35 28"
-          stroke="white"
-          strokeWidth="3.5"
-          strokeLinecap="round"
-        />
-        <circle cx="24" cy="24" r="3" fill="url(#logo-gold)" />
-      </svg>
-    </div>
-  );
-}
-
-// ─── Platform Features ────────────────────────────────────────────────────────
-
-const FEATURES = [
-  { Icon: Zap,         label: 'إدارة المهام', sub: 'متابعة حية وتسليم رقمي',   color: '#8B5CF6' },
-  { Icon: Award,       label: 'O Coins',       sub: 'نظام مكافآت تنافسي',        color: '#F59E0B' },
-  { Icon: Layers,      label: 'الدورات',       sub: 'محتوى تعليمي حصري',         color: '#06B6D4' },
-  { Icon: ShieldCheck, label: 'الأمان',        sub: 'بيئة عمل احترافية',         color: '#10B981' },
+const PILLARS = [
+  { Icon: Zap,         label: 'إدارة المهام', sub: 'متابعة حية وتسليم معتمد' },
+  { Icon: Award,       label: 'O Coins',       sub: 'نظام مكافآت ونقاط تميز' },
+  { Icon: Layers,      label: 'المسارات',      sub: 'ورش عمل وتطوير مستمر' },
+  { Icon: ShieldCheck, label: 'الأمان المتقدم', sub: 'حماية وحوكمة موثوقة' },
 ] as const;
 
-// ─── Input Component ──────────────────────────────────────────────────────────
+// ─── Input Field Component (Guaranteed Zero Overlap via Flexbox) ──────────────
 
 interface InputFieldProps {
   id: string;
@@ -86,23 +46,31 @@ interface InputFieldProps {
   rightElement?: React.ReactNode;
   required?: boolean;
   autoFocus?: boolean;
+  isDark: boolean;
 }
 
 function InputField({
   id, label, type = 'text', placeholder,
   value, onChange, IconLeft, rightElement,
-  required, autoFocus,
+  required, autoFocus, isDark,
 }: InputFieldProps) {
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-1.5 text-right">
       <label
         htmlFor={id}
-        className="block text-xs font-semibold text-slate-600 dark:text-slate-400"
+        className="block text-xs font-bold text-slate-700 dark:text-slate-300"
       >
         {label}
       </label>
-      <div className="relative flex items-center">
-        <IconLeft className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500 pointer-events-none z-10" />
+      <div
+        className={[
+          'w-full flex items-center gap-3 px-3.5 py-3 rounded-xl transition-all duration-200 border',
+          isDark
+            ? 'bg-white/[0.04] border-white/[0.09] focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:bg-white/[0.06]'
+            : 'bg-slate-50/90 border-slate-200/90 focus-within:bg-white focus-within:border-indigo-600 focus-within:ring-2 focus-within:ring-indigo-500/15 shadow-2xs',
+        ].join(' ')}
+      >
+        <IconLeft className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500" />
         <input
           id={id}
           type={type}
@@ -111,55 +79,16 @@ function InputField({
           onChange={(e) => onChange(e.target.value)}
           required={required}
           autoFocus={autoFocus}
-          className={[
-            'w-full py-3 text-sm rounded-xl outline-none transition-all duration-200',
-            'pr-10 bg-slate-50 dark:bg-white/[0.04]',
-            'border border-slate-200 dark:border-white/[0.08]',
-            'text-slate-900 dark:text-white',
-            'placeholder:text-slate-400 dark:placeholder:text-slate-500',
-            'focus:border-indigo-500 dark:focus:border-indigo-400',
-            'focus:ring-2 focus:ring-indigo-500/15',
-            rightElement ? 'pl-10' : 'pl-4',
-          ].join(' ')}
+          className="flex-1 min-w-0 bg-transparent border-0 outline-none text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
         />
         {rightElement && (
-          <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center">
+          <div className="shrink-0 flex items-center">
             {rightElement}
           </div>
         )}
       </div>
     </div>
   );
-}
-
-// ─── Biometric helpers ────────────────────────────────────────────────────────
-
-async function isBiometricAvailable(): Promise<boolean> {
-  if (!window.PublicKeyCredential) return false;
-  try {
-    return await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
-  } catch {
-    return false;
-  }
-}
-
-async function triggerBiometricVerification(): Promise<boolean> {
-  const challenge = crypto.getRandomValues(new Uint8Array(32));
-  try {
-    const result = await navigator.credentials.get({
-      publicKey: {
-        challenge,
-        timeout: 60000,
-        userVerification: 'required',
-        rpId: window.location.hostname,
-        allowCredentials: [],
-      },
-    });
-    return result !== null;
-  } catch (err: any) {
-    if (err?.name === 'NotAllowedError') return false;
-    throw err;
-  }
 }
 
 // ─── Mode Tabs ────────────────────────────────────────────────────────────────
@@ -173,10 +102,10 @@ function ModeTabs({
 }) {
   return (
     <div
-      className="flex p-1 rounded-xl"
+      className="flex p-1 rounded-xl transition-colors"
       style={{
         background: isDark ? 'rgba(255,255,255,0.05)' : '#F1F5F9',
-        border: isDark ? '1px solid rgba(255,255,255,0.07)' : '1px solid #E2E8F0',
+        border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid #E2E8F0',
       }}
     >
       {(['login', 'register'] as const).map((tab) => {
@@ -196,13 +125,15 @@ function ModeTabs({
                       : 'linear-gradient(135deg, #06B6D4, #0891B2)',
                     color: '#FFFFFF',
                     boxShadow: isLogin
-                      ? '0 3px 10px rgba(99,102,241,0.3)'
-                      : '0 3px 10px rgba(6,182,212,0.3)',
+                      ? '0 3px 12px rgba(99,102,241,0.35)'
+                      : '0 3px 12px rgba(6,182,212,0.35)',
                   }
-                : { color: isDark ? '#94A3B8' : '#64748B' }
+                : {
+                    color: isDark ? '#94A3B8' : '#64748B',
+                  }
             }
           >
-            {isLogin ? 'تسجيل الدخول' : 'طلب انضمام جديد'}
+            {tab === 'login' ? 'تسجيل الدخول' : 'طلب انضمام جديد'}
           </button>
         );
       })}
@@ -210,7 +141,7 @@ function ModeTabs({
   );
 }
 
-// ─── Error Banner ─────────────────────────────────────────────────────────────
+// ─── Error / Notice Banner ────────────────────────────────────────────────────
 
 function ErrorBanner({
   message, onClose, isDark,
@@ -223,25 +154,29 @@ function ErrorBanner({
     <AnimatePresence>
       {message && (
         <motion.div
-          initial={{ opacity: 0, y: -6 }}
+          initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -6 }}
+          exit={{ opacity: 0, y: -8 }}
           transition={{ duration: 0.2 }}
-          className="flex items-start gap-2.5 p-3.5 rounded-xl text-xs"
+          className="flex items-start justify-between gap-3 p-3.5 rounded-xl text-xs font-semibold"
           style={{
-            background: 'rgba(244,63,94,0.07)',
-            border: '1px solid rgba(244,63,94,0.22)',
+            background: isDark ? 'rgba(244,63,94,0.1)' : '#FFF1F2',
+            border: isDark ? '1px solid rgba(244,63,94,0.25)' : '1px solid #FECDD3',
             color: isDark ? '#FDA4AF' : '#BE123C',
           }}
+          role="alert"
         >
-          <span className="font-bold mt-0.5 shrink-0">تنبيه</span>
-          <span className="flex-1 leading-relaxed">{message}</span>
+          <div className="flex items-start gap-2">
+            <span className="shrink-0 mt-0.5">⚠️</span>
+            <span className="leading-relaxed">{message}</span>
+          </div>
           <button
+            type="button"
             onClick={onClose}
-            className="shrink-0 opacity-50 hover:opacity-100 cursor-pointer font-bold"
+            className="shrink-0 opacity-60 hover:opacity-100 cursor-pointer font-bold text-sm px-1"
             aria-label="إغلاق"
           >
-            ×
+            ✕
           </button>
         </motion.div>
       )}
@@ -249,176 +184,180 @@ function ErrorBanner({
   );
 }
 
-// ─── Hero Panel ───────────────────────────────────────────────────────────────
+// ─── Hero Panel (Human-Crafted Typography, No Broken Boxes, No Logos) ────────
 
 function HeroPanel({ isDark }: { isDark: boolean }) {
   return (
     <div
-      className="hidden lg:flex lg:w-[46%] flex-col justify-between p-10 xl:p-12 relative overflow-hidden"
+      className="hidden lg:flex lg:w-[48%] flex-col justify-between p-10 xl:p-12 relative overflow-hidden"
       style={{
         background: isDark
-          ? 'linear-gradient(150deg, #0F0F24 0%, #131330 55%, #0A0A1A 100%)'
-          : 'linear-gradient(150deg, #4F46E5 0%, #6366F1 50%, #4338CA 100%)',
-        borderRight: isDark ? '1px solid rgba(255,255,255,0.05)' : 'none',
+          ? 'linear-gradient(150deg, #0D0D20 0%, #12122E 50%, #090916 100%)'
+          : 'linear-gradient(150deg, #4338CA 0%, #4F46E5 55%, #3730A3 100%)',
+        borderRight: isDark ? '1px solid rgba(255,255,255,0.06)' : 'none',
       }}
     >
-      {/* Decorative ambient blobs */}
+      {/* Subtle ambient lighting */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden>
         <div
-          className="absolute w-56 h-56 rounded-full top-[-12%] right-[-12%]"
+          className="absolute w-72 h-72 rounded-full top-[-10%] right-[-10%]"
           style={{
-            background: isDark ? 'rgba(99,102,241,0.25)' : 'rgba(255,255,255,0.12)',
-            filter: 'blur(40px)',
-            opacity: 0.5,
+            background: isDark ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.12)',
+            filter: 'blur(50px)',
           }}
         />
         <div
-          className="absolute w-44 h-44 rounded-full bottom-[8%] left-[-8%]"
+          className="absolute w-60 h-60 rounded-full bottom-[-8%] left-[-8%]"
           style={{
-            background: isDark ? 'rgba(34,211,238,0.2)' : 'rgba(255,255,255,0.1)',
-            filter: 'blur(36px)',
-            opacity: 0.4,
+            background: isDark ? 'rgba(34,211,238,0.18)' : 'rgba(255,255,255,0.08)',
+            filter: 'blur(45px)',
           }}
         />
       </div>
 
-      {/* Brand */}
-      <div className="relative z-10 flex items-center gap-3">
-        <GogalyiaLogo size={42} />
-        <div>
-          <h1
-            className="text-lg font-black tracking-tight leading-none"
-            style={{ color: isDark ? '#F0F0FF' : '#FFFFFF' }}
+      {/* Pure Human Typographic Header (Zero Logos) */}
+      <div className="relative z-10">
+        <div className="flex items-center gap-2">
+          <span
+            className="text-2xl font-black tracking-tight"
+            style={{ color: '#FFFFFF' }}
           >
             منصة الجوجالية
-          </h1>
-          <p
-            className="text-[11px] font-medium mt-0.5"
-            style={{ color: isDark ? 'rgba(148,163,184,0.8)' : 'rgba(255,255,255,0.72)' }}
+          </span>
+          <span
+            className="text-[10px] font-black px-2 py-0.5 rounded-md"
+            style={{
+              background: isDark ? 'rgba(99,102,241,0.25)' : 'rgba(255,255,255,0.22)',
+              border: isDark ? '1px solid rgba(99,102,241,0.4)' : '1px solid rgba(255,255,255,0.3)',
+              color: isDark ? '#A78BFA' : '#FFFFFF',
+            }}
           >
-            مجتمع الإبداع والريادة التقنية
-          </p>
+            المنظومة الرسمية
+          </span>
         </div>
+        <p
+          className="text-xs font-semibold mt-1"
+          style={{ color: isDark ? 'rgba(148,163,184,0.85)' : 'rgba(255,255,255,0.82)' }}
+        >
+          مجتمع الإبداع والريادة التقنية
+        </p>
       </div>
 
-      {/* Hero copy */}
-      <div className="relative z-10 space-y-5 my-auto">
+      {/* Inspiring Human Copy */}
+      <div className="relative z-10 space-y-6 my-auto">
         <div
-          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-bold"
+          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[11px] font-bold"
           style={{
-            background: isDark ? 'rgba(16,185,129,0.12)' : 'rgba(255,255,255,0.16)',
-            border: isDark ? '1px solid rgba(16,185,129,0.28)' : '1px solid rgba(255,255,255,0.3)',
+            background: isDark ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.18)',
+            border: isDark ? '1px solid rgba(16,185,129,0.3)' : '1px solid rgba(255,255,255,0.35)',
             color: isDark ? '#6EE7B7' : '#FFFFFF',
           }}
         >
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          بوابة التميز المؤسسي الشاملة
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          بوابة العضوية والقيادة المتكاملة
         </div>
 
         <h2
           className="font-black tracking-tight"
           style={{
-            fontSize: 'clamp(1.6rem, 3vw, 2.1rem)',
-            lineHeight: 1.3,
-            color: isDark ? '#F0F0FF' : '#FFFFFF',
+            fontSize: 'clamp(1.75rem, 3vw, 2.3rem)',
+            lineHeight: 1.35,
+            color: '#FFFFFF',
           }}
         >
           اصنع الأثر،{' '}
           <span
             style={{
-              display: 'inline-block',
-              backgroundImage: isDark
-                ? 'linear-gradient(90deg, #A78BFA, #67E8F9)'
-                : 'linear-gradient(90deg, #FDE68A, #FCD34D)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
+              color: isDark ? '#38BDF8' : '#FDE047',
+              textShadow: isDark
+                ? '0 0 24px rgba(56,189,248,0.5)'
+                : '0 0 20px rgba(253,224,71,0.45)',
             }}
           >
             طوّر ذاتك،
-          </span>
-          {' '}وقُد المستقبل.
+          </span>{' '}
+          وقُد المستقبل.
         </h2>
 
         <p
-          className="text-sm leading-relaxed max-w-xs"
-          style={{ color: isDark ? 'rgba(148,163,184,0.9)' : 'rgba(255,255,255,0.78)' }}
+          className="text-sm leading-relaxed max-w-sm"
+          style={{ color: isDark ? 'rgba(203,213,225,0.9)' : 'rgba(255,255,255,0.82)' }}
         >
-          منصة مركزية صُممت لتوحيد المهام والتعليم والتحفيز بأعلى درجات الاحترافية.
+          بيئة رقمية حديثة تجمع فرق العمل، وتدير التكليفات والمسابقات والمكافآت بوضوح واحترافية متناهية.
         </p>
 
-        {/* Features grid */}
-        <div className="grid grid-cols-2 gap-2">
-          {FEATURES.map(({ Icon, label, sub, color }) => (
+        {/* 4 Pillars Grid */}
+        <div className="grid grid-cols-2 gap-2.5 pt-2">
+          {PILLARS.map(({ Icon, label, sub }) => (
             <div
               key={label}
-              className="flex items-center gap-2 p-3 rounded-xl"
+              className="flex items-center gap-2.5 p-3 rounded-xl transition-all"
               style={{
-                background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.14)',
-                border: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(255,255,255,0.25)',
+                background: isDark ? 'rgba(255,255,255,0.035)' : 'rgba(255,255,255,0.14)',
+                border: isDark ? '1px solid rgba(255,255,255,0.07)' : '1px solid rgba(255,255,255,0.22)',
               }}
             >
               <div
-                className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                style={{ background: isDark ? `${color}20` : 'rgba(255,255,255,0.22)' }}
+                className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                style={{
+                  background: isDark ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.2)',
+                  color: isDark ? '#A78BFA' : '#FFFFFF',
+                }}
               >
-                <Icon className="h-3.5 w-3.5" style={{ color: isDark ? color : '#FFFFFF' }} />
+                <Icon className="h-4 w-4" />
               </div>
               <div className="min-w-0">
-                <p
-                  className="text-[11px] font-black truncate"
-                  style={{ color: isDark ? '#E2E8F0' : '#FFFFFF' }}
+                <div
+                  className="text-xs font-black truncate"
+                  style={{ color: '#FFFFFF' }}
                 >
                   {label}
-                </p>
-                <p
+                </div>
+                <div
                   className="text-[10px] truncate"
-                  style={{ color: isDark ? 'rgba(148,163,184,0.65)' : 'rgba(255,255,255,0.65)' }}
+                  style={{ color: isDark ? 'rgba(148,163,184,0.8)' : 'rgba(255,255,255,0.7)' }}
                 >
                   {sub}
-                </p>
+                </div>
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Footer */}
-      <div
-        className="relative z-10 flex items-center justify-between text-[11px] pt-5"
-        style={{
-          borderTop: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(255,255,255,0.2)',
-          color: isDark ? 'rgba(100,116,139,0.8)' : 'rgba(255,255,255,0.6)',
-        }}
-      >
-        <span>© 2026 منصة الجوجالية</span>
-        <div className="flex gap-1.5">
-          {['#6366F1', '#22D3EE', '#10B981', '#F59E0B'].map((c) => (
-            <div key={c} className="w-2 h-2 rounded-full opacity-75" style={{ background: c }} />
-          ))}
-        </div>
+      {/* Clean Footer Note */}
+      <div className="relative z-10 flex items-center justify-between text-[11px] pt-4 border-t border-white/10">
+        <span style={{ color: isDark ? 'rgba(148,163,184,0.7)' : 'rgba(255,255,255,0.7)' }}>
+          منصة الجوجالية &copy; 2026
+        </span>
+        <span
+          className="font-bold"
+          style={{ color: isDark ? '#A78BFA' : '#FFFFFF' }}
+        >
+          مجتمع رقمي موحد
+        </span>
       </div>
     </div>
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// ─── Main LoginPage Component ────────────────────────────────────────────────
 
 export function LoginPage() {
-  const { signInWithUsername, registerMember } = useAuth();
+  const { signInWithUsername, registerMember, signInWithDevice } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   const [mode, setMode] = useState<AuthMode>('login');
   const [biometricAvailable, setBiometricAvailable] = useState(false);
 
-  // Login state
+  // Login Form State
   const [username, setUsername]         = useState('');
   const [password, setPassword]         = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading]           = useState(false);
 
-  // Register state
+  // Register Form State
   const [regFullName, setRegFullName]               = useState('');
   const [regUsername, setRegUsername]               = useState('');
   const [regEmail, setRegEmail]                     = useState('');
@@ -433,7 +372,7 @@ export function LoginPage() {
   const isDark = theme === 'dark';
 
   useEffect(() => {
-    isBiometricAvailable().then(setBiometricAvailable);
+    isWebAuthnSupported().then(setBiometricAvailable);
   }, []);
 
   function switchMode(next: 'login' | 'register') {
@@ -441,15 +380,18 @@ export function LoginPage() {
     setErrorMsg(null);
   }
 
+  // ── Password-based Login ──────────────────────────────────────────
   async function handleSignIn(e: React.FormEvent) {
     e.preventDefault();
     setErrorMsg(null);
     const u = username.trim();
     const p = password.trim();
+
     if (!u || !p) {
       toast.error('يرجى إدخال اسم المستخدم وكلمة المرور.');
       return;
     }
+
     setLoading(true);
     try {
       await signInWithUsername(u, p);
@@ -462,24 +404,34 @@ export function LoginPage() {
     }
   }
 
+  // ── Biometric / Device Identity Login ─────────────────────────────
   async function handleBiometricLogin() {
     if (!biometricAvailable) {
-      toast.error('جهازك لا يدعم هذه الميزة حالياً.');
+      toast.error('جهازك لا يدعم المصادقة البيومترية أو هوية الجهاز.');
       return;
     }
+    setLoading(true);
+    setErrorMsg(null);
     try {
-      toast.info('سيظهر طلب التحقق من هويتك...');
-      const verified = await triggerBiometricVerification();
-      if (verified) {
-        toast.info('تحقق الجهاز بنجاح — يرجى إدخال اسم المستخدم لإكمال الدخول.');
+      const res = await signInWithDevice();
+      if (res.success) {
+        toast.success('تم التحقق من هوية جهازك بنجاح. مرحباً بك!');
+        navigate('/dashboard');
       } else {
-        toast.error('لم يتم التحقق من الهوية.');
+        const msg = res.error || 'هوية جهازك غير مربوطة بأي حساب في منصة الجوجالية — يرجى تسجيل الدخول أولاً وتفعيل الميزة من إعدادات حسابك.';
+        setErrorMsg(msg);
+        toast.error(msg);
       }
-    } catch {
-      toast.error('تعذّر التحقق من الجهاز.');
+    } catch (err: any) {
+      const msg = err?.message || 'هوية جهازك غير مربوطة بأي حساب في منصة الجوجالية — يرجى تسجيل الدخول أولاً وتفعيل الميزة من إعدادات حسابك.';
+      setErrorMsg(msg);
+      toast.error(msg);
+    } finally {
+      setLoading(false);
     }
   }
 
+  // ── Registration ──────────────────────────────────────────────────
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
     setErrorMsg(null);
@@ -489,11 +441,11 @@ export function LoginPage() {
     const pass  = regPassword.trim();
 
     if (!name || !uname || !email || !pass) {
-      toast.error('يرجى تعبئة كافة الحقول المطلوبة.');
+      setErrorMsg('يرجى ملء كافة الحقول المطلوبة.');
       return;
     }
     if (pass.length < 6) {
-      setErrorMsg('كلمة المرور يجب ألا تقل عن 6 خانات.');
+      setErrorMsg('كلمة المرور يجب أن لا تقل عن 6 خانات.');
       return;
     }
     if (pass !== regConfirmPassword.trim()) {
@@ -526,106 +478,89 @@ export function LoginPage() {
       className="min-h-screen w-full flex items-center justify-center relative overflow-hidden transition-colors duration-300"
       style={{
         background: isDark
-          ? 'linear-gradient(135deg, #07070E 0%, #0D0D1F 50%, #070710 100%)'
-          : 'linear-gradient(135deg, #EEF2FF 0%, #F0F9FF 50%, #F8FAFC 100%)',
+          ? 'linear-gradient(135deg, #07070E 0%, #0C0C1C 50%, #06060D 100%)'
+          : 'linear-gradient(135deg, #EEF2FF 0%, #F1F5F9 50%, #F8FAFC 100%)',
       }}
       dir="rtl"
     >
-      {/* Background ambience */}
+      {/* Background ambient lighting */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden>
         <div
-          className="absolute w-[700px] h-[700px] rounded-full top-[-20%] right-[-10%] opacity-60"
+          className="absolute w-[650px] h-[650px] rounded-full top-[-18%] right-[-8%] opacity-60"
           style={{
             background: isDark
               ? 'radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%)'
-              : 'radial-gradient(circle, rgba(79,70,229,0.07) 0%, transparent 70%)',
+              : 'radial-gradient(circle, rgba(79,70,229,0.08) 0%, transparent 70%)',
           }}
         />
         <div
           className="absolute w-[500px] h-[500px] rounded-full bottom-[-15%] left-[-8%] opacity-50"
           style={{
             background: isDark
-              ? 'radial-gradient(circle, rgba(34,211,238,0.07) 0%, transparent 70%)'
-              : 'radial-gradient(circle, rgba(6,182,212,0.05) 0%, transparent 70%)',
-          }}
-        />
-        <div
-          className="absolute inset-0"
-          style={{
-            backgroundImage: `radial-gradient(${
-              isDark ? 'rgba(255,255,255,0.03)' : 'rgba(99,102,241,0.06)'
-            } 1px, transparent 1px)`,
-            backgroundSize: '28px 28px',
+              ? 'radial-gradient(circle, rgba(34,211,238,0.08) 0%, transparent 70%)'
+              : 'radial-gradient(circle, rgba(6,182,212,0.06) 0%, transparent 70%)',
           }}
         />
       </div>
 
-      {/* Theme toggle */}
+      {/* Theme toggle button */}
       <button
         onClick={toggleTheme}
         aria-label={isDark ? 'التبديل إلى الوضع الفاتح' : 'التبديل إلى الوضع الداكن'}
         className={[
-          'absolute top-5 left-5 z-50 flex items-center gap-2 px-4 py-2 rounded-xl',
-          'text-sm font-semibold transition-all cursor-pointer backdrop-blur-md',
+          'absolute top-5 left-5 z-50 flex items-center gap-2 px-3.5 py-2 rounded-xl',
+          'text-xs font-bold transition-all cursor-pointer backdrop-blur-md',
           isDark
             ? 'bg-white/5 border border-white/10 text-slate-300 hover:bg-white/[0.08]'
-            : 'bg-white/80 border border-slate-200 text-slate-700 hover:bg-white shadow-sm',
+            : 'bg-white/80 border border-slate-200 text-slate-700 hover:bg-white shadow-xs',
         ].join(' ')}
       >
-        {isDark
-          ? <><Sun className="h-4 w-4 text-amber-400" /><span className="hidden sm:inline">فاتح</span></>
-          : <><Moon className="h-4 w-4 text-indigo-600" /><span className="hidden sm:inline">داكن</span></>
-        }
+        {isDark ? (
+          <><Sun className="h-4 w-4 text-amber-400" /><span className="hidden sm:inline">الوضع الفاتح</span></>
+        ) : (
+          <><Moon className="h-4 w-4 text-indigo-600" /><span className="hidden sm:inline">الوضع الداكن</span></>
+        )}
       </button>
 
-      {/* ═══════════ MASTER CARD ═══════════ */}
+      {/* ═══════════ MASTER LUXURY CONTAINER ═══════════ */}
       <motion.div
-        initial={{ opacity: 0, y: 24, scale: 0.98 }}
+        initial={{ opacity: 0, y: 20, scale: 0.985 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
-        className="relative z-10 w-full max-w-5xl mx-4 flex rounded-[28px] overflow-hidden"
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        className="relative z-10 w-full max-w-5xl mx-4 flex rounded-[32px] overflow-hidden"
         style={{
           boxShadow: isDark
-            ? '0 40px 100px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.06)'
-            : '0 32px 80px rgba(15,23,42,0.14), 0 0 0 1px rgba(203,213,225,0.5)',
+            ? '0 30px 90px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.06)'
+            : '0 24px 70px rgba(15,23,42,0.12), 0 0 0 1px rgba(203,213,225,0.6)',
           minHeight: '580px',
         }}
       >
-        {/* Hero panel */}
+        {/* Left Hero Panel */}
         <HeroPanel isDark={isDark} />
 
-        {/* Form panel */}
+        {/* Right Form Panel */}
         <div
-          className="flex-1 flex flex-col justify-center px-8 py-10 sm:px-10 xl:px-12 relative"
-          style={{ background: isDark ? 'rgba(9,9,18,0.97)' : 'rgba(255,255,255,0.98)' }}
+          className="flex-1 flex flex-col justify-center px-8 py-10 sm:px-12 xl:px-14 relative"
+          style={{ background: isDark ? 'rgba(10,10,20,0.98)' : 'rgba(255,255,255,0.99)' }}
         >
-          {/* Mobile logo */}
-          <div className="lg:hidden flex items-center gap-3 mb-8">
-            <GogalyiaLogo size={36} />
-            <div>
-              <p className="font-black text-base text-slate-900 dark:text-white leading-none">منصة الجوجالية</p>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">مجتمع الإبداع والريادة</p>
-            </div>
-          </div>
-
           <AnimatePresence mode="wait">
 
-            {/* ── LOGIN ── */}
+            {/* ── LOGIN MODE ── */}
             {mode === 'login' && (
               <motion.div
                 key="login"
-                initial={{ opacity: 0, x: 16 }}
+                initial={{ opacity: 0, x: 14 }}
                 animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -16 }}
-                transition={{ duration: 0.25 }}
+                exit={{ opacity: 0, x: -14 }}
+                transition={{ duration: 0.22 }}
                 className="space-y-6"
               >
                 <div>
                   <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-                    مرحباً بك
+                    تسجيل الدخول
                   </h2>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                    أدخل بياناتك للوصول إلى لوحة التحكم
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                    أدخل بيانات حسابك للمتابعة إلى لوحة التحكم
                   </p>
                 </div>
 
@@ -637,13 +572,15 @@ export function LoginPage() {
                   <InputField
                     id="login-username"
                     label="اسم المستخدم أو البريد الإلكتروني"
-                    placeholder="اسم المستخدم أو البريد"
+                    placeholder="مثال: eltmsah"
                     value={username}
                     onChange={setUsername}
                     IconLeft={User}
                     required
                     autoFocus
+                    isDark={isDark}
                   />
+
                   <InputField
                     id="login-password"
                     label="كلمة المرور"
@@ -656,13 +593,14 @@ export function LoginPage() {
                       <button
                         type="button"
                         onClick={() => setShowPassword((v) => !v)}
-                        className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors cursor-pointer"
+                        className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors cursor-pointer p-1"
                         aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
                       >
                         {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
                     }
                     required
+                    isDark={isDark}
                   />
 
                   <Button
@@ -672,69 +610,71 @@ export function LoginPage() {
                     className="w-full h-12 rounded-xl font-black text-sm text-white cursor-pointer"
                     style={{
                       background: 'linear-gradient(135deg, #6366F1 0%, #4F46E5 60%, #4338CA 100%)',
-                      boxShadow: '0 6px 24px rgba(99,102,241,0.4)',
+                      boxShadow: '0 6px 24px rgba(99,102,241,0.35)',
                       border: 'none',
                     }}
                     loading={loading}
                   >
-                    تسجيل الدخول
+                    دخول إلى المنصة
                   </Button>
                 </form>
 
-                {/* Biometric login */}
+                {/* Biometric / Device Identity Button */}
                 {biometricAvailable && (
-                  <div className="space-y-3">
+                  <div className="space-y-3 pt-1">
                     <div className="flex items-center gap-3">
-                      <div className="flex-1 h-px bg-slate-200 dark:bg-white/[0.06]" />
-                      <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">أو</span>
-                      <div className="flex-1 h-px bg-slate-200 dark:bg-white/[0.06]" />
+                      <div className="flex-1 h-px bg-slate-200 dark:bg-white/[0.08]" />
+                      <span className="text-[11px] text-slate-400 dark:text-slate-500 font-bold">أو عبر هوية الجهاز</span>
+                      <div className="flex-1 h-px bg-slate-200 dark:bg-white/[0.08]" />
                     </div>
+
                     <button
                       type="button"
                       onClick={handleBiometricLogin}
+                      disabled={loading}
                       className={[
-                        'w-full flex items-center justify-center gap-2.5 py-3 rounded-xl',
-                        'text-sm font-bold transition-all cursor-pointer border',
+                        'w-full flex items-center justify-center gap-2.5 py-3 px-4 rounded-xl',
+                        'text-xs font-bold transition-all cursor-pointer border',
                         isDark
-                          ? 'bg-white/[0.04] border-white/[0.09] text-slate-300 hover:bg-white/[0.07] hover:border-white/[0.15]'
-                          : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100',
+                          ? 'bg-white/[0.03] border-white/[0.09] text-slate-200 hover:bg-white/[0.06] hover:border-indigo-500/40'
+                          : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-indigo-300 shadow-2xs',
                       ].join(' ')}
                     >
-                      <Fingerprint className="h-4 w-4 text-indigo-500" />
-                      الدخول بهوية الجهاز
+                      <Fingerprint className="h-4 w-4 text-indigo-500 shrink-0" />
+                      <span>الدخول بهوية الجهاز (بصمة / قفل الشاشة)</span>
                     </button>
                   </div>
                 )}
 
-                <p className="text-xs text-center text-slate-500 dark:text-slate-400">
-                  عضو جديد؟{' '}
+                <p className="text-xs text-center text-slate-500 dark:text-slate-400 pt-2">
+                  عضو جديد في الجوجالية؟{' '}
                   <button
                     type="button"
                     onClick={() => switchMode('register')}
-                    className="font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
+                    className="font-black text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
                   >
-                    قدّم طلب انضمام
+                    قدّم طلب انضمام الآن
                   </button>
                 </p>
               </motion.div>
             )}
 
-            {/* ── REGISTER ── */}
+            {/* ── REGISTER MODE ── */}
             {mode === 'register' && (
               <motion.div
                 key="register"
-                initial={{ opacity: 0, x: -16 }}
+                initial={{ opacity: 0, x: -14 }}
                 animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 16 }}
-                transition={{ duration: 0.25 }}
+                exit={{ opacity: 0, x: 14 }}
+                transition={{ duration: 0.22 }}
                 className="space-y-5"
               >
                 <div>
                   <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-                    طلب انضمام
+                    طلب انضمام جديد
                   </h2>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                    أكمل بياناتك وسيقوم القائد بمراجعة طلبك واعتماده
+                    أكمل بياناتك الشخصية لمراجعة طلبك واعتماده من قِبل القيادة
                   </p>
                 </div>
 
@@ -751,6 +691,7 @@ export function LoginPage() {
                     onChange={setRegFullName}
                     IconLeft={User}
                     required
+                    isDark={isDark}
                   />
 
                   <div className="grid grid-cols-2 gap-2.5">
@@ -762,13 +703,14 @@ export function LoginPage() {
                       onChange={(v) => setRegUsername(v.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
                       IconLeft={User}
                       required
+                      isDark={isDark}
                     />
-                    <div className="space-y-1.5">
+                    <div className="space-y-1.5 text-right">
                       <label
                         htmlFor="reg-committee"
-                        className="block text-xs font-semibold text-slate-600 dark:text-slate-400"
+                        className="block text-xs font-bold text-slate-700 dark:text-slate-300"
                       >
-                        اللجنة
+                        اللجنة التخصصية
                       </label>
                       <select
                         id="reg-committee"
@@ -776,7 +718,7 @@ export function LoginPage() {
                         onChange={(e) => setRegCommittee(e.target.value)}
                         className={[
                           'w-full h-[46px] px-3 rounded-xl text-sm outline-none transition-all cursor-pointer',
-                          'border border-slate-200 dark:border-white/[0.08]',
+                          'border border-slate-200 dark:border-white/[0.09]',
                           isDark ? 'bg-white/[0.04] text-white' : 'bg-slate-50 text-slate-900',
                           'focus:border-indigo-500 dark:focus:border-indigo-400',
                           'focus:ring-2 focus:ring-indigo-500/15',
@@ -804,6 +746,7 @@ export function LoginPage() {
                     onChange={setRegEmail}
                     IconLeft={Mail}
                     required
+                    isDark={isDark}
                   />
 
                   <div className="grid grid-cols-2 gap-2.5">
@@ -811,7 +754,7 @@ export function LoginPage() {
                       id="reg-password"
                       label="كلمة المرور"
                       type={showRegPassword ? 'text' : 'password'}
-                      placeholder="6 خانات على الأقل"
+                      placeholder="6 خانات كحد أدنى"
                       value={regPassword}
                       onChange={setRegPassword}
                       IconLeft={Lock}
@@ -819,23 +762,25 @@ export function LoginPage() {
                         <button
                           type="button"
                           onClick={() => setShowRegPassword((v) => !v)}
-                          className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors cursor-pointer"
+                          className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors cursor-pointer p-1"
                           aria-label="إظهار / إخفاء كلمة المرور"
                         >
                           {showRegPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                         </button>
                       }
                       required
+                      isDark={isDark}
                     />
                     <InputField
                       id="reg-confirm"
                       label="تأكيد كلمة المرور"
                       type="password"
-                      placeholder="أعد كتابة كلمة المرور"
+                      placeholder="تأكيد الكلمة"
                       value={regConfirmPassword}
                       onChange={setRegConfirmPassword}
                       IconLeft={Lock}
                       required
+                      isDark={isDark}
                     />
                   </div>
 
@@ -843,7 +788,7 @@ export function LoginPage() {
                     type="submit"
                     variant="default"
                     size="lg"
-                    className="w-full h-12 rounded-xl font-black text-sm text-white cursor-pointer mt-1"
+                    className="w-full h-12 rounded-xl font-black text-sm text-white cursor-pointer mt-2"
                     style={{
                       background: 'linear-gradient(135deg, #06B6D4 0%, #0891B2 60%, #0284C7 100%)',
                       boxShadow: '0 6px 20px rgba(6,182,212,0.35)',
@@ -855,12 +800,12 @@ export function LoginPage() {
                   </Button>
                 </form>
 
-                <p className="text-xs text-center text-slate-500 dark:text-slate-400">
-                  لديك حساب؟{' '}
+                <p className="text-xs text-center text-slate-500 dark:text-slate-400 pt-1">
+                  لديك حساب مسبقاً؟{' '}
                   <button
                     type="button"
                     onClick={() => switchMode('login')}
-                    className="font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
+                    className="font-black text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
                   >
                     تسجيل الدخول
                   </button>
@@ -868,11 +813,11 @@ export function LoginPage() {
               </motion.div>
             )}
 
-            {/* ── SUCCESS ── */}
+            {/* ── SUCCESS STATE ── */}
             {mode === 'success' && (
               <motion.div
                 key="success"
-                initial={{ opacity: 0, scale: 0.94 }}
+                initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                 className="text-center space-y-6 py-4"
@@ -880,12 +825,12 @@ export function LoginPage() {
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  transition={{ delay: 0.2, type: 'spring', stiffness: 180 }}
+                  transition={{ delay: 0.15, type: 'spring', stiffness: 200 }}
                   className="w-16 h-16 rounded-full flex items-center justify-center mx-auto"
                   style={{
-                    background: 'rgba(16,185,129,0.1)',
+                    background: 'rgba(16,185,129,0.12)',
                     border: '2px solid rgba(16,185,129,0.4)',
-                    boxShadow: '0 0 24px rgba(16,185,129,0.2)',
+                    boxShadow: '0 0 24px rgba(16,185,129,0.25)',
                   }}
                 >
                   <CheckCircle2 className="h-8 w-8 text-emerald-500" />
@@ -893,31 +838,31 @@ export function LoginPage() {
 
                 <div className="space-y-2">
                   <h3 className="text-xl font-black text-slate-900 dark:text-white">
-                    تم استلام طلبك
+                    تم استلام طلبك بنجاح
                   </h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed max-w-xs mx-auto">
-                    بياناتك مسجّلة، وحسابك{' '}
+                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed max-w-xs mx-auto">
+                    تم حفظ بياناتك، والحساب حالياً{' '}
                     <span className="font-bold text-amber-600 dark:text-amber-400">
-                      بانتظار موافقة القائد
+                      قيد مراجعة القيادة
                     </span>{' '}
-                    للتفعيل.
+                    للاعتماد والتفعيل.
                   </p>
                 </div>
 
                 <div
-                  className="p-4 rounded-xl text-right space-y-2"
+                  className="p-4 rounded-xl text-right space-y-2.5"
                   style={{
-                    background: isDark ? 'rgba(255,255,255,0.04)' : '#F8FAFC',
+                    background: isDark ? 'rgba(255,255,255,0.03)' : '#F8FAFC',
                     border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid #E2E8F0',
                   }}
                 >
                   {[
-                    { label: 'الاسم',      value: regFullName,    className: '' },
-                    { label: 'المستخدم',   value: `@${regUsername}`, className: 'text-indigo-600 dark:text-cyan-400' },
-                    { label: 'الحالة',     value: 'قيد المراجعة', className: 'text-amber-600 dark:text-amber-400' },
+                    { label: 'الاسم الكامل', value: regFullName, className: '' },
+                    { label: 'اسم المستخدم', value: `@${regUsername}`, className: 'text-indigo-600 dark:text-cyan-400' },
+                    { label: 'حالة الحساب',  value: 'قيد الاعتماد', className: 'text-amber-600 dark:text-amber-400' },
                   ].map(({ label, value, className }) => (
                     <div key={label} className="flex justify-between text-xs">
-                      <span className="text-slate-500 dark:text-slate-400">{label}:</span>
+                      <span className="text-slate-500 dark:text-slate-400 font-medium">{label}:</span>
                       <span className={`font-bold text-slate-900 dark:text-white ${className}`}>{value}</span>
                     </div>
                   ))}

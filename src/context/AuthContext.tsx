@@ -15,6 +15,7 @@ import { verifyPassword, generateSalt, hashPassword } from '@/lib/auth-security'
 import { parseErrorMessage, logError } from '@/lib/errors';
 import type { UserProfile, Permission } from '@/types';
 import { isAdminRole } from '@/utils/permissions';
+import { authenticateWithDevice } from '@/lib/webauthn';
 
 // -------------------------------------------------------------------
 // Login Rate Limiter (In-memory + Session scoped protection)
@@ -223,6 +224,7 @@ interface AuthContextValue {
   loading: boolean;
   unauthorized: boolean;
   signInWithUsername: (username: string, password: string) => Promise<boolean | { requires2FA: true; linkedEmail: string; profile: UserProfile }>;
+  signInWithDevice: () => Promise<{ success: boolean; error?: string }>;
   complete2FALogin: (profile: UserProfile) => Promise<boolean>;
   signInWithGoogleAdmin: () => Promise<boolean>;
   registerMember: (data: {
@@ -495,6 +497,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // -------------------------------------------------------------------
+  // signInWithDevice — WebAuthn / Passkey login
+  // -------------------------------------------------------------------
+  const signInWithDevice = useCallback(async (): Promise<{ success: boolean; error?: string }> => {
+    const result = await authenticateWithDevice();
+    if (!result.userId) {
+      return { success: false, error: result.error };
+    }
+
+    const profile = await fetchProfileFromSupabase(result.userId);
+    if (!profile) {
+      return { success: false, error: 'لم يُعثر على الحساب المرتبط بهذا الجهاز.' };
+    }
+    if (profile.status === 'pending') {
+      return { success: false, error: 'حسابك قيد المراجعة ولا يمكن الدخول بعد.' };
+    }
+    if (profile.status === 'suspended' || profile.status === 'inactive') {
+      return { success: false, error: 'حسابك معطّل. يرجى مراجعة إدارة المنصة.' };
+    }
+
+    const safeProfile = sanitizeProfileForSession(profile);
+    saveSession(safeProfile);
+    setUser({ uid: safeProfile.uid, displayName: safeProfile.displayName });
+    setUserProfile(safeProfile);
+    return { success: true };
+  }, []);
+
+  // -------------------------------------------------------------------
   // complete2FALogin
   // -------------------------------------------------------------------
   const complete2FALogin = useCallback(async (profile: UserProfile): Promise<boolean> => {
@@ -637,6 +666,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       loading,
       unauthorized,
       signInWithUsername,
+      signInWithDevice,
       complete2FALogin,
       signInWithGoogleAdmin,
       registerMember,

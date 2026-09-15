@@ -11,6 +11,7 @@ import { getRoleLabel, getRoleColor, isAdminRole } from '@/utils/permissions';
 import { formatOCoins, cn } from '@/utils';
 import { generateSalt, hashPassword } from '@/lib/auth-security';
 import { useMaintenance } from '@/hooks/useMaintenance';
+import { DeviceIdentitySection } from '@/components/settings/DeviceIdentitySection';
 // 2-Step admin auth removed — Lead/Co-Lead act directly
 import {
   Coins, Mail, Shield, User, Info, Users, KeyRound,
@@ -32,10 +33,6 @@ export function SettingsPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [savingCredentials, setSavingCredentials] = useState(false);
 
-  const [linking2FA, setLinking2FA] = useState(false);
-  const [showUnlinkModal, setShowUnlinkModal] = useState(false);
-  const [unlinking, setUnlinking] = useState(false);
-
   // Maintenance Mode Hook
   const { isMaintenanceActive, maintenance, toggleMaintenance } = useMaintenance();
   const [togglingMaintenance, setTogglingMaintenance] = useState(false);
@@ -44,7 +41,6 @@ export function SettingsPage() {
   if (!userProfile) return null;
 
   const isAdmin = isAdminRole(userProfile.role);
-  const is2FAActive = Boolean(userProfile.isTwoFactorEnabled && userProfile.googleLinkedEmail);
 
   // ─── 1. Update Display Name ───────────────────────────────────────────────
   const handleSaveProfile = async (e: React.FormEvent) => {
@@ -137,57 +133,6 @@ export function SettingsPage() {
     }
   };
 
-  // ─── 3. Link Google Account for 2FA ────────────────────────────────────────
-  const handleLinkGoogle2FA = async () => {
-    setLinking2FA(true);
-    try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const googleUser = result.user;
-      const emailLower = (googleUser.email || '').trim().toLowerCase();
-
-      if (!emailLower) {
-        await appSignOut();
-        toast.error('لم نتمكن من قراءة البريد الإلكتروني لحساب Google.');
-        return;
-      }
-
-      const updates = {
-        googleLinkedEmail: emailLower,
-        googleLinkedUid: googleUser.uid,
-        isTwoFactorEnabled: true,
-      };
-
-      await updateCurrentUserProfile(updates);
-
-      toast.success(`تم تفعيل التحقق الثنائي وربط حساب Google (${emailLower}) بنجاح! 🛡️`);
-    } catch (err: any) {
-      if (err?.code !== 'auth/popup-closed-by-user') {
-        toast.error(err?.message || 'فشل ربط حساب Google.');
-      }
-    } finally {
-      setLinking2FA(false);
-    }
-  };
-
-  // ─── 4. Unlink Google 2FA ──────────────────────────────────────────────────
-  const handleUnlink2FA = async () => {
-    setUnlinking(true);
-    try {
-      const updates = {
-        googleLinkedEmail: '',
-        googleLinkedUid: '',
-        isTwoFactorEnabled: false,
-      };
-      await updateCurrentUserProfile(updates);
-      setShowUnlinkModal(false);
-      toast.success('تم تعطيل التحقق الثنائي وإلغاء ربط حساب Google.');
-    } catch (err: any) {
-      toast.error(err?.message || 'فشل إلغاء الربط.');
-    } finally {
-      setUnlinking(false);
-    }
-  };
-
   return (
     <div className="space-y-6 sm:space-y-8 max-w-4xl mx-auto font-sans text-right dir-rtl pb-12">
       {/* Page Title & Context */}
@@ -196,7 +141,7 @@ export function SettingsPage() {
           الإعدادات والأمان
         </h1>
         <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mt-1">
-          إدارة بيانات ملفك الشخصي، تحديث اسم المستخدم وكلمة المرور، وإعداد التحقق الثنائي عبر Google.
+          إدارة بيانات ملفك الشخصي، تحديث اسم المستخدم وكلمة المرور، وربط هوية الجهاز (بصمة / Face ID / قفل الشاشة) لتسجيل الدخول الفوري والآمن.
         </p>
       </div>
 
@@ -367,105 +312,9 @@ export function SettingsPage() {
         </form>
       </div>
 
-      {/* ─── Section 3: Two-Factor Authentication (2FA) via Google Link ───────── */}
-      <div className="card p-6 sm:p-8 rounded-3xl space-y-6 transition-colors">
-        <div className="flex items-center gap-3 border-b border-[var(--border-subtle)] pb-4">
-          <div className={cn(
-            'w-10 h-10 rounded-2xl flex items-center justify-center font-black',
-            is2FAActive ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
-          )}>
-            <ShieldCheck className="h-5 w-5" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg font-black text-[var(--text-primary)]">
-                التحقق الثنائي عبر ربط حساب Google (2FA Security)
-              </h2>
-              {is2FAActive ? (
-                <span className="badge bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[10px] font-black">
-                  مفعل ومحمي 🔒
-                </span>
-              ) : (
-                <span className="badge bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 text-[10px] font-black">
-                  غير مفعل ⚠️
-                </span>
-              )}
-            </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              ميزة أمان متقدمة تفرض التحقق من حساب Google المرتبط عند تسجيل الدخول باسم المستخدم وكلمة المرور.
-            </p>
-          </div>
-        </div>
-
-        {/* 2FA State Display */}
-        {is2FAActive ? (
-          <div className="space-y-4">
-            <div className="p-4 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/70 dark:border-emerald-900/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#150f2f] text-emerald-600 flex items-center justify-center font-bold shadow-xs">
-                  <CheckCircle2 className="h-5 w-5" />
-                </div>
-                <div>
-                  <span className="text-[10px] uppercase font-bold text-emerald-800 dark:text-emerald-300 block">حساب Google المرتبط للتحقق المزدوج</span>
-                  <span className="text-sm font-black text-emerald-950 dark:text-emerald-100 font-mono">{userProfile.googleLinkedEmail}</span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 self-end sm:self-auto">
-                <Button
-                  onClick={handleLinkGoogle2FA}
-                  variant="outline"
-                  size="sm"
-                  loading={linking2FA}
-                  className="text-xs font-bold border-emerald-300 text-emerald-800 dark:text-emerald-200"
-                >
-                  <RefreshCw className="h-3.5 w-3.5" /> تغيير الحساب
-                </Button>
-                <Button
-                  onClick={() => setShowUnlinkModal(true)}
-                  variant="outline"
-                  size="sm"
-                  className="text-xs font-bold border-rose-300 text-rose-600 hover:bg-rose-50"
-                >
-                  <Unlink className="h-3.5 w-3.5" /> إلغاء الربط
-                </Button>
-              </div>
-            </div>
-
-            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-              💡 <strong>كيف يعمل؟</strong> عند تسجيل الدخول باسم المستخدم وكلمة المرور، ستطلب المنصة تسجيل الدخول بحساب Google الموضح أعلاه للتأكد من هويتك. إذا لم يتم اختيار هذا الحساب بعينه، سيتم حظر محاولة الدخول تلقائياً.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="p-4 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/70 dark:border-amber-900/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="space-y-1">
-                <h3 className="text-sm font-black text-amber-900 dark:text-amber-200">
-                  قم بحماية حسابك بالتحقق الثنائي الآن
-                </h3>
-                <p className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed max-w-lg">
-                  عند ربط حساب Google الخاص بك، لن يتمكن أي شخص من الدخول لحسابك حتى لو عرف كلمة المرور الخاصة بك إلا بعد تأكيد هويته عبر حساب Google المرتبط.
-                </p>
-              </div>
-
-              <Button
-                onClick={handleLinkGoogle2FA}
-                loading={linking2FA}
-                variant="default"
-                size="default"
-                className="font-black text-xs gap-2 flex-shrink-0"
-              >
-                <svg className="h-4 w-4" viewBox="0 0 24 24">
-                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-                </svg>
-                <span>ربط حساب Google وتفعيل 2FA</span>
-              </Button>
-            </div>
-          </div>
-        )}
+      {/* ─── Section 3: Device Identity (هوية الجهاز / المصادقة البيومترية) ─── */}
+      <div className="card p-6 sm:p-8 rounded-3xl transition-colors">
+        <DeviceIdentitySection />
       </div>
 
       {/* ─── Notification Preferences Section ────────────────────────────────── */}
@@ -632,37 +481,7 @@ export function SettingsPage() {
         </div>
       </div>
 
-      {/* Modal: Confirm Unlink 2FA */}
-      <Modal
-        open={showUnlinkModal}
-        onClose={() => setShowUnlinkModal(false)}
-        title="تأكيد تعطيل التحقق الثنائي"
-        size="sm"
-        footer={
-          <div className="flex items-center justify-end gap-2 w-full">
-            <Button variant="outline" onClick={() => setShowUnlinkModal(false)} disabled={unlinking}>
-              إلغاء
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleUnlink2FA}
-              loading={unlinking}
-              className="font-bold"
-            >
-              تعطيل التحقق الثنائي
-            </Button>
-          </div>
-        }
-      >
-        <div className="space-y-3 font-sans text-right dir-rtl">
-          <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-            هل أنت متأكد من رغبتك في إلغاء ربط حساب Google وتعطيل التحقق الثنائي؟
-          </p>
-          <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/40 text-[11px] text-rose-800 dark:text-rose-300">
-            ⚠️ سيعود حسابك للدخول المباشر باسم المستخدم وكلمة المرور فقط دون طبقة حماية ثانوية.
-          </div>
-        </div>
-      </Modal>
+
 
       {/* 2-Step Verification for Maintenance Mode removed — Lead/Co-Lead act directly */}
     </div>
