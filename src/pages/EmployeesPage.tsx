@@ -13,8 +13,7 @@ import { Select } from '@/components/ui/select';
 import { Modal } from '@/components/ui/modal';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Avatar } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import type { UserProfile, UserRole, UserStatus, Permission, Committee, Ban as BanRecord } from '@/types';
+import { DEFAULT_COMMITTEES, type UserProfile, type UserRole, type UserStatus, type Permission, type Committee, type Ban as BanRecord } from '@/types';
 import { subscribeCommittees, assignUserCommittee, createCommittee } from '@/lib/committees';
 import { subscribeBans, createBan, endBan, getActiveBan } from '@/lib/bans';
 // 2-Step admin auth removed — Lead/Co-Lead and Head act directly
@@ -454,7 +453,7 @@ export function EmployeesPage() {
     let commName: string = 'بدون لجنة';
 
     if (chosenCommId && chosenCommId !== 'none') {
-      const c = committees.find((item) => item.id === chosenCommId) || DEFAULT_COMMITTEES.find((item) => item.id === chosenCommId);
+      const c = committees.find((item: any) => item.id === chosenCommId) || DEFAULT_COMMITTEES.find((item: any) => item.id === chosenCommId);
       if (c) {
         commId = c.id;
         commName = c.name;
@@ -663,7 +662,7 @@ export function EmployeesPage() {
                                   {c.name}
                                 </option>
                               ))
-                            : DEFAULT_COMMITTEES.map((c) => (
+                            : DEFAULT_COMMITTEES.map((c: any) => (
                                 <option key={c.id} value={c.id}>
                                   {c.name}
                                 </option>

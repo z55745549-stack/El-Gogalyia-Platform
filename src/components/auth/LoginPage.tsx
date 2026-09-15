@@ -493,7 +493,7 @@ export function LoginPage() {
         username:      uname,
         email,
         password:      pass,
-        committeeId:   isNoCommittee ? null : regCommittee,
+        committeeId:   isNoCommittee ? 'none' : regCommittee,
         committeeName: isNoCommittee ? 'بدون لجنة' : (selectedComm?.name ?? 'Tech Dev'),
       });
       setMode('success');
