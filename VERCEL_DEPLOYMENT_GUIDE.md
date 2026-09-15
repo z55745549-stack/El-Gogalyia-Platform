@@ -1,4 +1,4 @@
-# دليل رفع مشروع SAAS Work Hub على Vercel 🚀
+# دليل رفع مشروع منصة الجوجالية على Vercel 🚀
 
 المشروع جاهز ومؤهل 100% للرفع على استضافة **Vercel** مجاناً مع إعدادات حظر أخطاء الـ SPA (404 Page Not Found) تلقائياً.
 
@@ -20,7 +20,7 @@
 1. ارفع الكود إلى مستودع جديد على **GitHub**.
 2. ادخل على منصة [Vercel](https://vercel.com) وسجل الدخول بحساب GitHub الخاص بك.
 3. اضغط على **Add New...** -> **Project**.
-4. اختر المستودع الخاص بـ **SAAS Work Hub** واضغط **Import**.
+4. اختر المستودع الخاص بـ **منصة الجوجالية (GDG HITU Platform)** واضغط **Import**.
 5. في شاشة الإعدادات (**Environment Variables**):
    - أضف متغيرات بيئة Supabase التالية (من ملف `.env.local`):
      - `VITE_SUPABASE_URL`
