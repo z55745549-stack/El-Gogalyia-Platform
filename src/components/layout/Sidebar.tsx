@@ -140,15 +140,15 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
           <GogalyiaLogoMark />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5">
-              <span className="font-black text-sm tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-indigo-200">
+              <span className="font-black text-sm tracking-tight text-slate-900 dark:text-transparent dark:bg-clip-text dark:bg-gradient-to-r dark:from-white dark:via-slate-100 dark:to-indigo-200">
                 منصة الجوجالية
               </span>
               <span
                 className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
                 style={{
-                  background: 'rgba(108,99,255,0.12)',
-                  color: '#A78BFA',
-                  border: '1px solid rgba(108,99,255,0.2)',
+                  background: 'rgba(79,70,229,0.12)',
+                  color: 'var(--brand-primary)',
+                  border: '1px solid rgba(79,70,229,0.2)',
                 }}
               >
                 2026
@@ -195,9 +195,9 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
                       <span
                         className={cn(
                           'shrink-0 transition-colors duration-150',
-                          isActive ? 'text-[#A78BFA]' : 'group-hover:text-[#A78BFA]'
+                          isActive ? 'text-[var(--brand-primary)]' : 'group-hover:text-[var(--brand-primary)]'
                         )}
-                        style={{ color: isActive ? '#A78BFA' : 'var(--text-muted)' }}
+                        style={{ color: isActive ? 'var(--brand-primary)' : 'var(--text-muted)' }}
                       >
                         {item.icon}
                       </span>

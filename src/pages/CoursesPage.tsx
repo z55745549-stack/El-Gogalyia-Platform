@@ -129,7 +129,7 @@ export function CoursesPage() {
   return (
     <div className="space-y-6 font-sans dir-rtl text-right animate-fadeIn">
       {/* Hero Header */}
-      <div className="relative overflow-hidden rounded-3xl card-aurora p-6 sm:p-8 text-white shadow-xl">
+      <div className="relative overflow-hidden rounded-3xl p-6 sm:p-8 text-white shadow-xl bg-gradient-to-r from-[#1E1B4B] via-[#0F172A] to-[#1E1B4B] border border-indigo-500/25">
         <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--brand-accent)]/20 backdrop-blur-md text-xs font-black border border-[var(--brand-accent)]/30 text-[var(--brand-accent)]">

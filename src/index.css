@@ -63,42 +63,42 @@
      ─────────────────────────────────────────────────────────────────── */
   .light, html:not(.dark) {
     /* Brand — same core identity, adjusted for light */
-    --brand-primary:   #5B50F0;   /* Deeper indigo for contrast on white */
+    --brand-primary:   #4F46E5;   /* Crisp indigo for high contrast */
     --brand-secondary: #7C3AED;   /* Rich violet */
-    --brand-accent:    #0891B2;   /* Teal for light backgrounds */
-    --brand-warm:      #D97706;   /* Deeper amber on white */
+    --brand-accent:    #0284C7;   /* Sky/cyan with WCAG contrast */
+    --brand-warm:      #D97706;   /* Amber gold */
     --brand-success:   #059669;
     --brand-danger:    #E11D48;
     --brand-warning:   #D97706;
 
-    /* Surfaces — warm ivory, not cold white */
-    --app-bg:            #F5F5FB;   /* Warm lavender-white */
+    /* Surfaces — clean architectural porcelain & silk white */
+    --app-bg:            #F8FAFC;   /* Crisp slate-50 background */
     --surface:           #FFFFFF;
-    --surface-secondary: #EEEFF8;   /* Light indigo tint */
+    --surface-secondary: #F1F5F9;   /* Slate-100 */
     --surface-elevated:  #FFFFFF;
-    --surface-overlay:   #F8F8FF;
-    --surface-glass:     rgba(255, 255, 255, 0.85);
+    --surface-overlay:   #FFFFFF;
+    --surface-glass:     rgba(255, 255, 255, 0.92);
 
-    /* Borders */
-    --border-subtle:  rgba(90, 80, 200, 0.08);
-    --border-default: rgba(90, 80, 200, 0.13);
-    --border-strong:  rgba(90, 80, 200, 0.22);
-    --border-glow:    rgba(91, 80, 240, 0.3);
+    /* Borders — clean and well-defined */
+    --border-subtle:  rgba(203, 213, 225, 0.8);  /* slate-300 soft */
+    --border-default: rgba(148, 163, 184, 0.45); /* slate-400 */
+    --border-strong:  rgba(100, 116, 139, 0.6);  /* slate-500 */
+    --border-glow:    rgba(79, 70, 229, 0.35);
 
-    /* Text */
-    --text-primary:   #0E0E1F;   /* Near-black with indigo depth */
-    --text-secondary: #4B4B72;   /* Deep violet-grey */
-    --text-muted:     #9898B0;
+    /* Text — razor sharp contrast */
+    --text-primary:   #0F172A;   /* Slate-900 */
+    --text-secondary: #334155;   /* Slate-700 */
+    --text-muted:     #64748B;   /* Slate-500 */
     --text-inverse:   #FFFFFF;
 
-    /* Shadows — soft, premium */
-    --shadow-xs: 0 1px 3px rgba(10, 10, 50, 0.06);
-    --shadow-sm: 0 2px 10px rgba(10, 10, 50, 0.08);
-    --shadow-md: 0 8px 28px rgba(10, 10, 50, 0.1);
-    --shadow-lg: 0 20px 50px rgba(10, 10, 50, 0.14);
-    --shadow-glow-primary: 0 0 20px rgba(91, 80, 240, 0.18);
-    --shadow-glow-accent:  0 0 20px rgba(8, 145, 178, 0.15);
-    --shadow-glow-warm:    0 0 16px rgba(217, 119, 6, 0.18);
+    /* Shadows — soft, multi-tier */
+    --shadow-xs: 0 1px 3px rgba(15, 23, 42, 0.05);
+    --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.06);
+    --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.08);
+    --shadow-lg: 0 20px 45px rgba(15, 23, 42, 0.1);
+    --shadow-glow-primary: 0 0 20px rgba(79, 70, 229, 0.15);
+    --shadow-glow-accent:  0 0 20px rgba(2, 132, 199, 0.12);
+    --shadow-glow-warm:    0 0 16px rgba(217, 119, 6, 0.15);
   }
 
   /* ── GLOBAL BASE ──────────────────────────────────────────────────────*/
@@ -116,7 +116,7 @@
     text-rendering: optimizeLegibility;
     scroll-behavior: smooth;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
-    color-scheme: dark;
+    color-scheme: light dark;
   }
 
   body {
@@ -638,13 +638,21 @@ html:not(.dark) .sidebar-nav-item-active {
   z-index: 0;
 }
 
-/* Mesh gradient background (login left panel) */
+/* Mesh gradient background — adaptive for dark & light */
 .mesh-bg {
-  background-color: #07070E;
+  background-color: var(--surface);
   background-image:
-    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(108, 99, 255, 0.18), transparent),
-    radial-gradient(ellipse 60% 40% at 80% 80%, rgba(34, 211, 238, 0.10), transparent),
-    radial-gradient(ellipse 50% 60% at 10% 60%, rgba(167, 139, 250, 0.08), transparent);
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(108, 99, 255, 0.16), transparent),
+    radial-gradient(ellipse 60% 40% at 80% 80%, rgba(34, 211, 238, 0.08), transparent),
+    radial-gradient(ellipse 50% 60% at 10% 60%, rgba(167, 139, 250, 0.06), transparent);
+}
+
+html:not(.dark) .mesh-bg, .light .mesh-bg {
+  background-color: #FFFFFF;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(79, 70, 229, 0.07), transparent),
+    radial-gradient(ellipse 60% 40% at 80% 80%, rgba(2, 132, 199, 0.05), transparent),
+    radial-gradient(ellipse 50% 60% at 10% 60%, rgba(124, 58, 237, 0.04), transparent);
 }
 
 /* Grid pattern overlay */

@@ -121,7 +121,7 @@ export function MyTasksPage() {
   return (
     <div className="space-y-6 font-sans text-right dir-rtl">
       {/* Top Banner */}
-      <div className="relative overflow-hidden rounded-3xl card-aurora p-6 sm:p-7 text-white shadow-lg">
+      <div className="relative overflow-hidden rounded-3xl p-6 sm:p-7 text-white shadow-xl bg-gradient-to-r from-[#1E1B4B] via-[#0F172A] to-[#1E1B4B] border border-indigo-500/25">
         <div className="relative z-10">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-xs font-bold border border-white/20 mb-3">
             <CheckSquare className="h-3.5 w-3.5 text-[var(--brand-accent)]" />

@@ -447,13 +447,13 @@ export function EmployeesPage() {
   return (
     <div className="space-y-6 font-sans dir-rtl text-right">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-[var(--surface)] p-6 rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-sm">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2.5">
-            <Users className="h-7 w-7 text-indigo-600" />
+          <h1 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2.5">
+            <Users className="h-7 w-7 text-indigo-600 dark:text-indigo-400" />
             إدارة أعضاء منصة الجوجالية (Team & Members)
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
             إدارة وتفعيل حسابات أعضاء مجتمع الجوجالية، اعتماد طلبات الانضمام، وإسناد الصلاحيات واللجان
           </p>
         </div>
@@ -467,14 +467,14 @@ export function EmployeesPage() {
       </div>
 
       {/* View Tabs: Approved Members vs Pending Requests */}
-      <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-white/10 pb-2">
         <button
           type="button"
           onClick={() => setViewTab('approved')}
           className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
             viewTab === 'approved'
               ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/25'
-              : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+              : 'bg-white dark:bg-[var(--surface-elevated)] text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 border border-slate-200 dark:border-white/10'
           }`}
         >
           <Users className="h-4 w-4" />
@@ -490,7 +490,7 @@ export function EmployeesPage() {
           className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 relative ${
             viewTab === 'pending'
               ? 'bg-amber-500 text-white shadow-md shadow-amber-500/25'
-              : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+              : 'bg-white dark:bg-[var(--surface-elevated)] text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 border border-slate-200 dark:border-white/10'
           }`}
         >
           <UserPlus className="h-4 w-4" />
@@ -547,12 +547,12 @@ export function EmployeesPage() {
       {viewTab === 'pending' && (
         <div className="space-y-4">
           {filteredEmployees.length === 0 ? (
-            <div className="bg-white p-12 text-center rounded-2xl border border-slate-200/80 shadow-sm space-y-3">
-              <div className="w-16 h-16 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center mx-auto text-amber-500">
+            <div className="bg-white dark:bg-[var(--surface)] p-12 text-center rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-sm space-y-3">
+              <div className="w-16 h-16 rounded-full bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 flex items-center justify-center mx-auto text-amber-500">
                 <UserCheck className="h-8 w-8" />
               </div>
-              <h3 className="text-base font-bold text-slate-800">لا توجد طلبات انضمام معلقة حالياً</h3>
-              <p className="text-xs text-slate-400 max-w-sm mx-auto">
+              <h3 className="text-base font-bold text-slate-800 dark:text-white">لا توجد طلبات انضمام معلقة حالياً</h3>
+              <p className="text-xs text-slate-400 dark:text-slate-400 max-w-sm mx-auto">
                 جميع طلبات الانضمام المرسلة عبر صفحة التسجيل تم مراجعتها واعتمادها بنجاح.
               </p>
             </div>
@@ -561,7 +561,7 @@ export function EmployeesPage() {
               {filteredEmployees.map((emp) => (
                 <div
                   key={emp.uid}
-                  className="bg-white rounded-2xl border-2 border-amber-200/80 p-5 shadow-sm space-y-4 hover:shadow-md transition-shadow relative overflow-hidden text-right"
+                  className="bg-white dark:bg-[var(--surface)] rounded-2xl border-2 border-amber-300 dark:border-amber-500/30 p-5 shadow-sm space-y-4 hover:shadow-md transition-shadow relative overflow-hidden text-right"
                 >
                   <div className="absolute top-0 right-0 w-2 h-full bg-amber-400" />
 
@@ -569,39 +569,39 @@ export function EmployeesPage() {
                     <div className="flex items-center gap-3">
                       <Avatar name={emp.displayName} size="md" />
                       <div>
-                        <h4 className="font-bold text-slate-900 text-sm sm:text-base">
+                        <h4 className="font-bold text-slate-900 dark:text-white text-sm sm:text-base">
                           {emp.displayName}
                         </h4>
                         <div className="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
-                          <span className="font-mono font-bold text-indigo-600">@{emp.username}</span>
+                          <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">@{emp.username}</span>
                           {emp.email && <span>• {emp.email}</span>}
                         </div>
                       </div>
                     </div>
-                    <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-500/20">
                       طلب انضمام جديد ⏳
                     </span>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/60 flex items-center justify-between text-xs">
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-black/30 border border-slate-200/60 dark:border-white/10 flex items-center justify-between text-xs">
                     <div>
                       <span className="text-slate-400 block text-[10px]">اللجنة المطلوبة:</span>
-                      <span className="font-bold text-slate-700">{emp.committeeName || 'Tech Dev'}</span>
+                      <span className="font-bold text-slate-700 dark:text-slate-200">{emp.committeeName || 'Tech Dev'}</span>
                     </div>
                     <div>
                       <span className="text-slate-400 block text-[10px]">كود العضوية المقترح:</span>
-                      <span className="font-mono font-bold text-purple-700">{emp.employeeCode || 'GOGA-NEW'}</span>
+                      <span className="font-mono font-bold text-purple-700 dark:text-purple-300">{emp.employeeCode || 'GOGA-NEW'}</span>
                     </div>
                   </div>
 
                   {/* Role assignment & Actions */}
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-2 border-t border-slate-100">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-2 border-t border-slate-100 dark:border-white/10">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-slate-600 whitespace-nowrap">الرتبة:</span>
+                      <span className="text-xs font-bold text-slate-600 dark:text-slate-300 whitespace-nowrap">الرتبة:</span>
                       <select
                         value={pendingRoles[emp.uid] || 'member'}
                         onChange={(e) => setPendingRoles({ ...pendingRoles, [emp.uid]: e.target.value as UserRole })}
-                        className="bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-800"
+                        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/15 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-800 dark:text-slate-200"
                       >
                         <option value="member">عضو (MEMBER)</option>
                         <option value="vice_head">نائب لجنة (VICE-HEAD)</option>

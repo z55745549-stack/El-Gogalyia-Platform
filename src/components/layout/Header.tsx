@@ -133,11 +133,10 @@ export function Header({ onMobileMenuClick }: HeaderProps) {
     <header
       className="sticky top-0 z-30 px-4 sm:px-6 h-14 flex items-center justify-between gap-3 font-sans transition-colors"
       style={{
-        background: 'rgba(var(--surface, 15,15,26), 0.9)',
+        background: 'var(--surface-glass)',
         backdropFilter: 'blur(16px) saturate(180%)',
         WebkitBackdropFilter: 'blur(16px) saturate(180%)',
         borderBottom: '1px solid var(--border-subtle)',
-        backgroundColor: 'color-mix(in srgb, var(--surface) 90%, transparent)',
       }}
     >
       {/* Left side */}
@@ -154,8 +153,8 @@ export function Header({ onMobileMenuClick }: HeaderProps) {
         </button>
 
         <div className="hidden sm:flex items-center gap-2 text-xs font-semibold">
-          <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: '#6C63FF' }} />
-          <span className="font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-cyan-400">منصة الجوجالية</span>
+          <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: 'var(--brand-primary)' }} />
+          <span className="font-black text-slate-900 dark:text-transparent dark:bg-clip-text dark:bg-gradient-to-r dark:from-violet-400 dark:to-cyan-400">منصة الجوجالية</span>
           <span style={{ color: 'var(--border-strong)' }}>·</span>
           <span style={{ color: 'var(--text-muted)' }}>
             {new Date().toLocaleDateString('ar-EG', { weekday: 'long', month: 'long', day: 'numeric' })}
