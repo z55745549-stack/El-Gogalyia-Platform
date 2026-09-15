@@ -28,6 +28,37 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 
 export const db = supabase;
 
+// ─── Realtime Synchronization Bus (0ms Instant Reactivity & Cross-Tab) ─────────
+
+const syncListeners = new Map<string, Set<() => void>>();
+let broadcastChannel: BroadcastChannel | null = null;
+try {
+  if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+    broadcastChannel = new BroadcastChannel('elgogalyia_realtime_sync');
+    broadcastChannel.onmessage = (event) => {
+      const table = event.data?.table;
+      if (table && syncListeners.has(table)) {
+        syncListeners.get(table)?.forEach((cb) => {
+          try { cb(); } catch {}
+        });
+      }
+    };
+  }
+} catch {}
+
+export function notifyTableChange(table: string) {
+  // 1. Instantly trigger all active listeners in the current tab (0ms)
+  if (syncListeners.has(table)) {
+    syncListeners.get(table)?.forEach((cb) => {
+      try { cb(); } catch (e) { console.warn('sync listener error:', e); }
+    });
+  }
+  // 2. Broadcast to other open browser tabs
+  try {
+    broadcastChannel?.postMessage({ table, timestamp: Date.now() });
+  } catch {}
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 export function toSnakeCase(str: string): string {
@@ -511,6 +542,7 @@ export async function setDoc(docRef: DocRef, data: any, options?: { merge?: bool
     console.error(`Supabase setDoc error on ${table}:`, error.message);
     throw new Error(error.message);
   }
+  notifyTableChange(table);
 }
 
 export async function updateDoc(docRef: DocRef, data: any): Promise<void> {
@@ -547,6 +579,8 @@ export async function updateDoc(docRef: DocRef, data: any): Promise<void> {
   const { error } = await supabase.from(table).update(payload).eq(idCol, docRef.id);
   if (error) {
     console.warn(`Supabase updateDoc error on ${table}:`, error.message);
+  } else {
+    notifyTableChange(table);
   }
 }
 
@@ -569,6 +603,7 @@ export async function deleteDoc(docRef: DocRef): Promise<void> {
   const table = docRef.table;
   const idCol = table === 'system_settings' ? 'key' : 'id';
   await supabase.from(table).delete().eq(idCol, docRef.id);
+  notifyTableChange(table);
 }
 
 function normalizeValueForDb(val: any): any {
@@ -598,6 +633,7 @@ export function onSnapshot(
   let active = true;
 
   const runFetch = async () => {
+    if (!active) return;
     try {
       if (target.type === 'doc') {
         const snap = await getDoc(target);
@@ -611,11 +647,38 @@ export function onSnapshot(
     }
   };
 
+  // Immediate initial load
   runFetch();
 
   const table = target.type === 'doc' ? target.table : (target.type === 'query' ? target.collection.table : target.table);
-  const channelName = `realtime_${table}_${Math.random().toString(36).substring(2, 9)}`;
 
+  // 1. In-Memory Instant Bus (0ms same-tab reactivity when mutations occur)
+  if (!syncListeners.has(table)) {
+    syncListeners.set(table, new Set());
+  }
+  const listenerSet = syncListeners.get(table)!;
+  listenerSet.add(runFetch);
+
+  // 2. Tab focus / visibility change refresh
+  const onFocusOrVisible = () => {
+    if (document.visibilityState === 'visible') {
+      runFetch();
+    }
+  };
+  if (typeof window !== 'undefined') {
+    window.addEventListener('focus', onFocusOrVisible);
+    document.addEventListener('visibilitychange', onFocusOrVisible);
+  }
+
+  // 3. Periodic micro-sync (2.5s) for instant sync across other devices / users without refresh
+  const pollTimer = setInterval(() => {
+    if (active && typeof document !== 'undefined' && document.visibilityState === 'visible') {
+      runFetch();
+    }
+  }, 2500);
+
+  // 4. Supabase Realtime WebSocket channel (PostgreSQL level)
+  const channelName = `realtime_${table}_${Math.random().toString(36).substring(2, 9)}`;
   const channel = supabase
     .channel(channelName)
     .on('postgres_changes', { event: '*', schema: 'public', table }, () => {
@@ -625,6 +688,12 @@ export function onSnapshot(
 
   return () => {
     active = false;
+    listenerSet.delete(runFetch);
+    clearInterval(pollTimer);
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('focus', onFocusOrVisible);
+      document.removeEventListener('visibilitychange', onFocusOrVisible);
+    }
     supabase.removeChannel(channel);
   };
 }
@@ -632,24 +701,27 @@ export function onSnapshot(
 // ─── Batch Writes ────────────────────────────────────────────────────────────
 
 export function writeBatch(_db?: any) {
-  const operations: Array<() => Promise<any>> = [];
+  const operations: Array<{ fn: () => Promise<any>; table: string }> = [];
   return {
     set(docRef: DocRef, data: any, options?: { merge?: boolean }) {
-      operations.push(() => setDoc(docRef, data, options));
+      operations.push({ fn: () => setDoc(docRef, data, options), table: docRef.table });
       return this;
     },
     update(docRef: DocRef, data: any) {
-      operations.push(() => updateDoc(docRef, data));
+      operations.push({ fn: () => updateDoc(docRef, data), table: docRef.table });
       return this;
     },
     delete(docRef: DocRef) {
-      operations.push(() => deleteDoc(docRef));
+      operations.push({ fn: () => deleteDoc(docRef), table: docRef.table });
       return this;
     },
     async commit() {
+      const affectedTables = new Set<string>();
       for (const op of operations) {
-        await op();
+        await op.fn();
+        affectedTables.add(op.table);
       }
+      affectedTables.forEach((t) => notifyTableChange(t));
     },
   };
 }
