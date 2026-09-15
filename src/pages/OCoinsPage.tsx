@@ -120,7 +120,10 @@ const TRANSACTION_TYPE_CONFIG: Record<
 
 export function OCoinsPage() {
   const { userProfile } = useAuth();
-  const canManage = userProfile ? isAdminRole(userProfile.role) : false;
+  const role = userProfile?.role;
+  const isTopLeader = role === 'lead' || role === 'co_lead';
+  const isHead = role === 'head';
+  const canManage = isTopLeader || isHead;
 
   const [allTransactions, setAllTransactions] = useState<OCoinTransaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -257,6 +260,22 @@ export function OCoinsPage() {
       return;
     }
 
+    // Role-based security check
+    if (isHead) {
+      if (adjustTarget.uid === userProfile.uid) {
+        toast.error('❌ محظور نهائياً: لا يمكن لرئيس اللجنة منح كوينز لنفسه. مكافآت القيادة تمنح بواسطة القائد العام فقط.');
+        return;
+      }
+      const sameCommittee = Boolean(
+        (adjustTarget.committeeId && userProfile.committeeId && adjustTarget.committeeId === userProfile.committeeId) ||
+        (adjustTarget.committeeName && userProfile.committeeName && adjustTarget.committeeName.trim().toLowerCase() === userProfile.committeeName.trim().toLowerCase())
+      );
+      if (!sameCommittee || (adjustTarget.role !== 'member' && adjustTarget.role !== 'vice_head')) {
+        toast.error('❌ صلاحيتك كرئيس لجنة تقتصر حصراً على أعضاء ونائب رئيس لجنتك فقط.');
+        return;
+      }
+    }
+
     setAdjusting(true);
     try {
       const actorId = (userProfile.email || userProfile.username || 'admin').toLowerCase();
@@ -327,7 +346,21 @@ export function OCoinsPage() {
     }
   };
 
-  const filteredTargetUsers = allUsers.filter(
+  // Filter users based on role permissions
+  const manageableUsers = allUsers.filter((u) => {
+    if (isTopLeader) return true;
+    if (isHead) {
+      if (u.uid === userProfile?.uid) return false; // Head NEVER grants coins to himself
+      const sameCommittee = Boolean(
+        (u.committeeId && userProfile?.committeeId && u.committeeId === userProfile.committeeId) ||
+        (u.committeeName && userProfile?.committeeName && u.committeeName.trim().toLowerCase() === userProfile.committeeName.trim().toLowerCase())
+      );
+      return sameCommittee && (u.role === 'member' || u.role === 'vice_head');
+    }
+    return false;
+  });
+
+  const filteredTargetUsers = manageableUsers.filter(
     (u) =>
       (u.displayName || '').toLowerCase().includes(userSearch.toLowerCase()) ||
       (u.email || '').toLowerCase().includes(userSearch.toLowerCase()) ||
@@ -373,16 +406,32 @@ export function OCoinsPage() {
         <div className="card p-5 rounded-2xl flex items-center justify-between shadow-xs border-[var(--brand-warm)]/30">
           <div>
             <p className="text-xs font-bold text-[var(--text-muted)]">
-              {canManage && selectedUser ? `رصيد (${selectedUser.displayName})` : 'الرصيد الكلي المتاح'}
+              {canManage && selectedUser
+                ? `رصيد (${selectedUser.displayName})`
+                : isTopLeader
+                ? 'رصيد القيادة العليا (خزينة المنظومة)'
+                : 'الرصيد الكلي المتاح'}
             </p>
-            <p className="text-3xl font-black text-[var(--text-primary)] mt-1">
-              {formatOCoins(
-                canManage && selectedUser
-                  ? selectedUser.oCoinsBalance ?? 0
-                  : userProfile?.oCoinsBalance ?? 0
+            <div className="mt-1 flex items-baseline gap-2">
+              {canManage && selectedUser ? (
+                <p className="text-3xl font-black text-[var(--text-primary)]">
+                  {formatOCoins(selectedUser.oCoinsBalance ?? 0)}
+                  <span className="text-sm font-bold text-[var(--brand-warm)] mr-1.5">OC</span>
+                </p>
+              ) : isTopLeader ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-4xl font-black text-[var(--brand-warm)]">∞</span>
+                  <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                    خزينة لا نهائية
+                  </span>
+                </div>
+              ) : (
+                <p className="text-3xl font-black text-[var(--text-primary)]">
+                  {formatOCoins(userProfile?.oCoinsBalance ?? 0)}
+                  <span className="text-sm font-bold text-[var(--brand-warm)] mr-1.5">OC</span>
+                </p>
               )}
-              <span className="text-sm font-bold text-[var(--brand-warm)] mr-1.5">OC</span>
-            </p>
+            </div>
           </div>
           <div className="w-12 h-12 bg-[var(--brand-warm)]/15 text-[var(--brand-warm)] rounded-2xl flex items-center justify-center border border-[var(--brand-warm)]/30 shrink-0">
             <Coins className="h-6 w-6" />
@@ -419,11 +468,11 @@ export function OCoinsPage() {
       </div>
 
       {/* Admin Employee Filter Carousel */}
-      {canManage && allUsers.length > 0 && (
+      {canManage && (isTopLeader ? allUsers.length > 0 : manageableUsers.length > 0) && (
         <div className="card p-4 rounded-2xl space-y-2.5 shadow-xs">
           <div className="flex items-center justify-between">
             <h2 className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
-              تصفية السجل المالي حسب عضو الفريق:
+              {isHead ? `تصفية حسب أعضاء لجنة ${userProfile?.committeeName || ''}:` : 'تصفية السجل المالي حسب عضو الفريق:'}
             </h2>
             {selectedUser && (
               <button
@@ -444,9 +493,9 @@ export function OCoinsPage() {
                   : 'bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               )}
             >
-              كافة أعضاء الفريق ({allUsers.length})
+              {isHead ? `كافة أعضاء اللجنة (${manageableUsers.length})` : `كافة أعضاء الفريق (${allUsers.length})`}
             </button>
-            {allUsers.map((u) => (
+            {(isHead ? manageableUsers : allUsers).map((u) => (
               <button
                 key={u.uid}
                 onClick={() => setSelectedUser(selectedUser?.uid === u.uid ? null : u)}
@@ -766,10 +815,19 @@ export function OCoinsPage() {
         }
       >
         <div className="space-y-4 text-right font-sans dir-rtl">
+          {isHead && (
+            <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-800 dark:text-amber-200 font-bold flex items-start gap-2.5">
+              <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+              <div className="leading-relaxed">
+                <span>صلاحيتك كرئيس لجنة <strong>{userProfile?.committeeName || ''}</strong>: تقتصر حصراً على أعضاء ونائب رئيس لجنتك. محظور صرف كوينز لنفسك أو خارج لجنتك.</span>
+              </div>
+            </div>
+          )}
+
           {/* Target employee */}
           <div>
             <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1">
-              اختر عضو الفريق المستهدف *
+              {isHead ? `اختر عضو لجنة ${userProfile?.committeeName || ''} المستهدف *` : 'اختر عضو الفريق المستهدف *'}
             </label>
             <div className="border border-[var(--border-subtle)] rounded-2xl overflow-hidden bg-[var(--bg-surface)]">
               <div className="p-2 border-b border-[var(--border-subtle)] bg-[var(--bg-elevated)]/40">

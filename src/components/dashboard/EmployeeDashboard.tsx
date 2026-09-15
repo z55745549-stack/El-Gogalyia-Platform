@@ -6,7 +6,8 @@ import {
 import {
   CheckSquare, Clock, Upload, CheckCircle2, AlertTriangle,
   Coins, Calendar, ChevronLeft,
-  TrendingUp, Sparkles, LifeBuoy, CalendarDays, Bell
+  TrendingUp, Sparkles, LifeBuoy, CalendarDays, Bell,
+  UserCheck, QrCode, Flame, Target, Award
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useNotifications } from '@/hooks/useNotifications';
@@ -36,6 +37,9 @@ export function EmployeeDashboard() {
   const [recentTransactions, setRecentTransactions] = useState<OCoinTransaction[]>([]);
   const [upcomingMeetings, setUpcomingMeetings] = useState<Meeting[]>([]);
   const [supportTickets, setSupportTickets] = useState<SupportTicket[]>([]);
+  const [todayAttendance, setTodayAttendance] = useState<any>(null);
+  const [checkingAttendance, setCheckingAttendance] = useState(true);
+  const [committeeTasks, setCommitteeTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<string>('all');
   const [activeBan, setActiveBan] = useState<any>(null);
@@ -145,6 +149,44 @@ export function EmployeeDashboard() {
     return () => { if (unsub) unsub(); };
   }, [userProfile?.uid]);
 
+  const isViceHead = userProfile?.role === 'vice_head';
+
+  // 1. Subscribe to Today's Attendance Record
+  useEffect(() => {
+    if (!userProfile?.uid) return;
+    const todayStr = new Date().toISOString().split('T')[0];
+    const q = query(
+      collection(db, 'attendance_records'),
+      where('employeeId', '==', userProfile.uid),
+      where('date', '==', todayStr),
+      limit(1)
+    );
+    const unsub = onSnapshot(q, (snap) => {
+      if (!snap.empty) {
+        setTodayAttendance(snap.docs[0].data());
+      } else {
+        setTodayAttendance(null);
+      }
+      setCheckingAttendance(false);
+    }, () => setCheckingAttendance(false));
+    return () => unsub();
+  }, [userProfile?.uid]);
+
+  // 2. If Vice-Head: Subscribe to Committee Tasks for Peer Coordination
+  useEffect(() => {
+    if (!isViceHead || (!userProfile?.committeeId && !userProfile?.committeeName)) return;
+    const q = query(collection(db, 'tasks'), orderBy('createdAt', 'desc'));
+    const unsub = onSnapshot(q, (snap) => {
+      const all = snap.docs.map(d => ({ id: d.id, ...d.data() } as Task));
+      const inComm = all.filter(t =>
+        (t.committeeId && userProfile.committeeId && t.committeeId === userProfile.committeeId) ||
+        (t.committeeName && userProfile.committeeName && t.committeeName.trim().toLowerCase() === userProfile.committeeName.trim().toLowerCase())
+      );
+      setCommitteeTasks(inComm);
+    }, (err) => console.warn('Vice Head committee tasks notice:', err));
+    return () => unsub();
+  }, [isViceHead, userProfile?.committeeId, userProfile?.committeeName]);
+
   const overdueTasks = tasks.filter((t) => {
     const st = getUserTaskStatus(t, uniqueIds).status;
     return isOverdue(t.deadline, st as any);
@@ -191,6 +233,30 @@ export function EmployeeDashboard() {
     .filter((tx) => tx.amount > 0)
     .reduce((sum, tx) => sum + tx.amount, 0);
 
+  // Level & Milestone Progress Gamification
+  const completedTasksCount = stats.completed;
+  let levelTitle = 'عضو جديد 🚀';
+  let nextTarget = 2;
+  let levelProgress = Math.min(100, Math.round((completedTasksCount / 2) * 100));
+
+  if (completedTasksCount >= 20) {
+    levelTitle = 'أسطورة الجوجالية 👑';
+    nextTarget = 30;
+    levelProgress = 100;
+  } else if (completedTasksCount >= 10) {
+    levelTitle = 'نجم المنظومة ⭐';
+    nextTarget = 20;
+    levelProgress = Math.min(100, Math.round(((completedTasksCount - 10) / 10) * 100));
+  } else if (completedTasksCount >= 5) {
+    levelTitle = 'عضو متميز 🔥';
+    nextTarget = 10;
+    levelProgress = Math.min(100, Math.round(((completedTasksCount - 5) / 5) * 100));
+  } else if (completedTasksCount >= 2) {
+    levelTitle = 'عضو نشط ⚡';
+    nextTarget = 5;
+    levelProgress = Math.min(100, Math.round(((completedTasksCount - 2) / 3) * 100));
+  }
+
   if (activeBan) {
     const end = activeBan.endAt?.toDate ? activeBan.endAt.toDate() : new Date(activeBan.endAt);
     return (
@@ -212,7 +278,6 @@ export function EmployeeDashboard() {
     );
   }
 
-  const isViceHead = userProfile?.role === 'vice_head';
   const roleBadgeText = isViceHead
     ? `🔹 VICE-HEAD · نائب رئيس لجنة ${userProfile?.committeeName || 'اللجنة'}`
     : `👤 عضو لجنة ${userProfile?.committeeName || 'المنظومة'}`;
@@ -349,6 +414,175 @@ export function EmployeeDashboard() {
           </div>
         </div>
       </div>
+
+      {/* ─── 2.5 Quick Attendance Status & Level Progress Gamification Grid ────────── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4">
+        {/* Attendance Check-in Widget */}
+        <div className="card p-5 space-y-3.5 relative overflow-hidden">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="p-1.5 rounded-lg bg-[var(--brand-primary)]/10 text-[var(--brand-primary)]">
+                <UserCheck className="h-4 w-4" />
+              </span>
+              <div>
+                <h3 className="text-xs sm:text-sm font-bold text-[var(--text-primary)]">
+                  حالة تسجيل حضور اليوم
+                </h3>
+                <p className="text-[10px] text-[var(--text-muted)] font-mono">
+                  كود الحضور: {userProfile?.employeeCode || 'جاري التوليد...'}
+                </p>
+              </div>
+            </div>
+            <Link to="/attendance" className="text-xs font-bold text-[var(--brand-primary)] hover:underline flex items-center gap-1">
+              <span>سجل الحضور</span>
+              <ChevronLeft className="h-3 w-3" />
+            </Link>
+          </div>
+
+          {checkingAttendance ? (
+            <div className="p-3 bg-[var(--bg-elevated)] rounded-xl animate-pulse text-xs text-[var(--text-muted)] text-center">
+              جاري فحص حالة الحضور...
+            </div>
+          ) : todayAttendance ? (
+            <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                  <CheckCircle2 className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-emerald-800 dark:text-emerald-200">
+                    تم تسجيل حضورك بنجاح اليوم ✅
+                  </p>
+                  <p className="text-[11px] text-emerald-700/80 dark:text-emerald-300/80 mt-0.5">
+                    وقت التسجيل: {todayAttendance.checkInTime} ({todayAttendance.status === 'late' ? 'متأخر' : 'في الموعد'})
+                  </p>
+                </div>
+              </div>
+              <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 shrink-0">
+                حاضر
+              </span>
+            </div>
+          ) : (
+            <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                  <Clock className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-amber-800 dark:text-amber-200">
+                    لم تقم بتسجيل حضور اليوم بعد ⏰
+                  </p>
+                  <p className="text-[10px] text-amber-700/80 dark:text-amber-300/80 mt-0.5">
+                    الجلسات متاحة الآن للتسجيل برمزك الشخصي
+                  </p>
+                </div>
+              </div>
+              <Link to="/attendance-check-in">
+                <Button size="sm" variant="primary" className="font-bold text-xs gap-1 cursor-pointer shrink-0">
+                  <QrCode className="h-3.5 w-3.5" />
+                  <span>تسجيل الآن</span>
+                </Button>
+              </Link>
+            </div>
+          )}
+        </div>
+
+        {/* Level & Milestone Progress Bar Card */}
+        <div className="card p-5 space-y-3.5 relative overflow-hidden">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="p-1.5 rounded-lg bg-amber-500/15 text-amber-600 dark:text-amber-400">
+                <Flame className="h-4 w-4" />
+              </span>
+              <div>
+                <h3 className="text-xs sm:text-sm font-bold text-[var(--text-primary)]">
+                  مستوى الأداء والترقية المستمرة
+                </h3>
+                <p className="text-[10px] text-[var(--text-muted)]">
+                  نظام التميز المؤسسي ونقاط الأداء
+                </p>
+              </div>
+            </div>
+            <span className="text-xs font-black px-2.5 py-1 rounded-full bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] border border-[var(--brand-primary)]/25">
+              {levelTitle}
+            </span>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-[var(--text-secondary)] font-bold">
+                المهام المعتمدة: <strong>{completedTasksCount}</strong> مهمة
+              </span>
+              <span className="text-[var(--brand-warm)] font-bold text-[11px]">
+                {completedTasksCount >= 20 ? 'أعلى مستوى تميز 👑' : `متبقي ${Math.max(0, nextTarget - completedTasksCount)} مهام للترقية القادمة`}
+              </span>
+            </div>
+
+            <div className="w-full h-2 rounded-full bg-[var(--border-subtle)] overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-500 bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-accent)]"
+                style={{ width: `${levelProgress}%` }}
+              />
+            </div>
+
+            <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
+              💡 كل مهمة تعتمدها تمنحك O-Coins وترفع تصنيفك نحو المستوى التالي وشارة النجم الذهبي!
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* ─── VICE-HEAD EXCLUSIVE: Committee Tasks Pulse ──────────────────────── */}
+      {isViceHead && (
+        <div className="card p-5 sm:p-6 space-y-4 border-l-4 border-l-emerald-500">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="p-1.5 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                <Target className="h-4 w-4" />
+              </span>
+              <div>
+                <h2 className="section-title text-sm sm:text-base text-[var(--text-primary)]">
+                  متابعة مهام زملاء لجنة {userProfile?.committeeName || ''}
+                </h2>
+                <p className="text-[11px] text-[var(--text-muted)]">
+                  نظرة عامة لمتابعة سير تكليفات أعضاء لجنتك وتنسيق العمل مع رئيس اللجنة
+                </p>
+              </div>
+            </div>
+            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+              {committeeTasks.length} مهام باللجنة
+            </span>
+          </div>
+
+          {committeeTasks.length === 0 ? (
+            <p className="text-xs text-[var(--text-muted)] py-4 text-center">لا توجد مهام مسجلة للجنة حالياً.</p>
+          ) : (
+            <div className="divide-y divide-[var(--border-subtle)] rounded-2xl border border-[var(--border-subtle)] overflow-hidden bg-[var(--bg-surface)]">
+              {committeeTasks.slice(0, 5).map((t) => {
+                const overdue = isOverdue(t.deadline, t.status);
+                return (
+                  <div key={t.id} className="p-3 sm:p-4 flex items-center justify-between gap-3 hover:bg-[var(--bg-elevated)]/50 transition-colors">
+                    <div className="min-w-0 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <PriorityBadge priority={t.priority} />
+                        <span className="text-xs font-bold text-[var(--text-primary)] truncate">{t.title}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-[10px] text-[var(--text-muted)]">
+                        <span>المكلف: {t.assignedToNames?.[0] || 'عضو اللجنة'}</span>
+                        <span>·</span>
+                        <span>الموعد: {formatDate(t.deadline)}</span>
+                        <span>·</span>
+                        <span className="text-[var(--brand-warm)] font-bold">🪙 {t.oCoinsReward} OC</span>
+                      </div>
+                    </div>
+                    <StatusBadge status={t.status} overdue={overdue} />
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ─── 3. Upcoming Meetings, Notifications & Support Tickets Row ────────────────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-4">

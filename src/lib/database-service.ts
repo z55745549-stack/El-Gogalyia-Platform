@@ -102,6 +102,47 @@ export async function markNotificationAsRead(notificationId: string) {
   }
 }
 
+export async function broadcastNotificationToAll(params: {
+  title: string;
+  message: string;
+  createdByName: string;
+  type?: NotificationType;
+}) {
+  try {
+    const usersSnap = await getDocs(collection(db, 'users'));
+    const promises = usersSnap.docs.map((uDoc) => {
+      const u = uDoc.data();
+      const emailOrUser = (u.email || u.username || '').toLowerCase();
+      if (!emailOrUser) return Promise.resolve();
+      return addDoc(collection(db, 'notifications'), {
+        recipientEmail: emailOrUser,
+        recipientUid: uDoc.id,
+        type: params.type || 'system_announcement',
+        title: `📢 ${params.title}`,
+        message: params.message,
+        relatedEntityType: 'system',
+        actionUrl: '/dashboard',
+        read: false,
+        createdAt: serverTimestamp(),
+      });
+    });
+    await Promise.all(promises);
+
+    await logActivity({
+      actor: params.createdByName,
+      actorName: params.createdByName,
+      action: 'user.status_changed' as ActivityLog['action'],
+      targetType: 'system',
+      targetId: 'broadcast',
+      targetName: `إذاعة: ${params.title}`,
+      metadata: { broadcastTitle: params.title, broadcastMessage: params.message },
+    });
+  } catch (err) {
+    console.error('Failed to broadcast notification:', err);
+    throw err;
+  }
+}
+
 // ─── Task Management ──────────────────────────────────────────────────────────
 
 export async function createTask(

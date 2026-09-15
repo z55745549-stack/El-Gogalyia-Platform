@@ -1,5 +1,7 @@
-import { Menu, Sun, Moon } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Menu, Sun, Moon, Bell } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
+import { useNotificationCount } from '@/hooks/useNotifications';
 
 interface HeaderProps {
   onMobileMenuClick: () => void;
@@ -7,6 +9,7 @@ interface HeaderProps {
 
 export function Header({ onMobileMenuClick }: HeaderProps) {
   const { theme, toggleTheme } = useTheme();
+  const unreadCount = useNotificationCount();
 
   return (
     <header
@@ -43,12 +46,35 @@ export function Header({ onMobileMenuClick }: HeaderProps) {
         </div>
       </div>
 
-      {/* Right side: ONLY Theme Toggle (Light / Dark Mode) */}
+      {/* Right side: Notifications Bell + Theme Toggle */}
       <div className="flex items-center gap-2">
+        {/* Notification Bell */}
+        <Link
+          to="/notifications"
+          title="مركز الإشعارات والتنبيهات"
+          className="relative p-2 rounded-xl transition-all cursor-pointer hover:scale-105 active:scale-95 flex items-center justify-center"
+          style={{
+            color: 'var(--text-secondary)',
+            background: 'var(--surface-elevated)',
+            border: '1px solid var(--border-subtle)',
+          }}
+          aria-label="مركز الإشعارات"
+        >
+          <Bell className="h-4 w-4" />
+          {unreadCount > 0 && (
+            <span
+              className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-rose-500 text-white text-[10px] font-black rounded-full flex items-center justify-center shadow-xs animate-pulse ring-2 ring-[var(--surface)]"
+            >
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </span>
+          )}
+        </Link>
+
+        {/* Theme Toggle (Light / Dark Mode) */}
         <button
           onClick={toggleTheme}
           title={theme === 'dark' ? 'التبديل إلى الوضع الفاتح' : 'التبديل إلى الوضع الليلي'}
-          className="p-2 rounded-xl transition-colors cursor-pointer hover:scale-105 active:scale-95"
+          className="p-2 rounded-xl transition-all cursor-pointer hover:scale-105 active:scale-95 flex items-center justify-center"
           style={{
             color: 'var(--text-secondary)',
             background: 'var(--surface-elevated)',

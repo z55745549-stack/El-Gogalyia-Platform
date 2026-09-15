@@ -194,8 +194,8 @@ function HeroPanel({ isDark }: { isDark: boolean }) {
       style={{
         background: isDark
           ? 'linear-gradient(150deg, #0D0D20 0%, #12122E 50%, #090916 100%)'
-          : 'linear-gradient(150deg, #4338CA 0%, #4F46E5 55%, #3730A3 100%)',
-        borderRight: isDark ? '1px solid rgba(255,255,255,0.06)' : 'none',
+          : 'linear-gradient(150deg, #FFFFFF 0%, #F5F7FF 50%, #F1F4FD 100%)',
+        borderLeft: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(226,232,240,0.85)',
       }}
     >
       {/* Subtle ambient lighting */}
@@ -203,14 +203,14 @@ function HeroPanel({ isDark }: { isDark: boolean }) {
         <div
           className="absolute w-72 h-72 rounded-full top-[-10%] right-[-10%]"
           style={{
-            background: isDark ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.12)',
+            background: isDark ? 'rgba(99,102,241,0.2)' : 'rgba(99,102,241,0.08)',
             filter: 'blur(50px)',
           }}
         />
         <div
           className="absolute w-60 h-60 rounded-full bottom-[-8%] left-[-8%]"
           style={{
-            background: isDark ? 'rgba(34,211,238,0.18)' : 'rgba(255,255,255,0.08)',
+            background: isDark ? 'rgba(34,211,238,0.18)' : 'rgba(6,182,212,0.06)',
             filter: 'blur(45px)',
           }}
         />
@@ -221,16 +221,16 @@ function HeroPanel({ isDark }: { isDark: boolean }) {
         <div className="flex items-center gap-2">
           <span
             className="text-2xl font-black tracking-tight"
-            style={{ color: '#FFFFFF' }}
+            style={{ color: isDark ? '#FFFFFF' : '#0F172A' }}
           >
             منصة الجوجالية
           </span>
           <span
             className="text-[10px] font-black px-2 py-0.5 rounded-md"
             style={{
-              background: isDark ? 'rgba(99,102,241,0.25)' : 'rgba(255,255,255,0.22)',
-              border: isDark ? '1px solid rgba(99,102,241,0.4)' : '1px solid rgba(255,255,255,0.3)',
-              color: isDark ? '#A78BFA' : '#FFFFFF',
+              background: isDark ? 'rgba(99,102,241,0.25)' : 'rgba(99,102,241,0.08)',
+              border: isDark ? '1px solid rgba(99,102,241,0.4)' : '1px solid rgba(99,102,241,0.2)',
+              color: isDark ? '#A78BFA' : '#4F46E5',
             }}
           >
             المنظومة الرسمية
@@ -238,7 +238,7 @@ function HeroPanel({ isDark }: { isDark: boolean }) {
         </div>
         <p
           className="text-xs font-semibold mt-1"
-          style={{ color: isDark ? 'rgba(148,163,184,0.85)' : 'rgba(255,255,255,0.82)' }}
+          style={{ color: isDark ? 'rgba(148,163,184,0.85)' : '#64748B' }}
         >
           مجتمع الإبداع والريادة التقنية
         </p>
@@ -249,9 +249,9 @@ function HeroPanel({ isDark }: { isDark: boolean }) {
         <div
           className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[11px] font-bold"
           style={{
-            background: isDark ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.18)',
-            border: isDark ? '1px solid rgba(16,185,129,0.3)' : '1px solid rgba(255,255,255,0.35)',
-            color: isDark ? '#6EE7B7' : '#FFFFFF',
+            background: isDark ? 'rgba(16,185,129,0.15)' : 'rgba(16,185,129,0.1)',
+            border: isDark ? '1px solid rgba(16,185,129,0.3)' : '1px solid rgba(16,185,129,0.25)',
+            color: isDark ? '#6EE7B7' : '#059669',
           }}
         >
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -263,26 +263,35 @@ function HeroPanel({ isDark }: { isDark: boolean }) {
           style={{
             fontSize: 'clamp(1.75rem, 3vw, 2.3rem)',
             lineHeight: 1.35,
-            color: '#FFFFFF',
+            color: isDark ? '#FFFFFF' : '#0F172A',
           }}
         >
           اصنع الأثر،{' '}
-          <span
-            style={{
-              color: isDark ? '#38BDF8' : '#FDE047',
-              textShadow: isDark
-                ? '0 0 24px rgba(56,189,248,0.5)'
-                : '0 0 20px rgba(253,224,71,0.45)',
-            }}
-          >
-            طوّر ذاتك،
-          </span>{' '}
+          {isDark ? (
+            <span
+              style={{
+                color: '#38BDF8',
+                textShadow: '0 0 24px rgba(56,189,248,0.5)',
+              }}
+            >
+              طوّر ذاتك،
+            </span>
+          ) : (
+            <span
+              className="text-transparent bg-clip-text font-black"
+              style={{
+                backgroundImage: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #0284C7 100%)',
+              }}
+            >
+              طوّر ذاتك،
+            </span>
+          )}{' '}
           وقُد المستقبل.
         </h2>
 
         <p
           className="text-sm leading-relaxed max-w-sm"
-          style={{ color: isDark ? 'rgba(203,213,225,0.9)' : 'rgba(255,255,255,0.82)' }}
+          style={{ color: isDark ? 'rgba(203,213,225,0.9)' : '#475569' }}
         >
           بيئة رقمية حديثة تجمع فرق العمل، وتدير التكليفات والمسابقات والمكافآت بوضوح واحترافية متناهية.
         </p>
@@ -294,15 +303,17 @@ function HeroPanel({ isDark }: { isDark: boolean }) {
               key={label}
               className="flex items-center gap-2.5 p-3 rounded-xl transition-all"
               style={{
-                background: isDark ? 'rgba(255,255,255,0.035)' : 'rgba(255,255,255,0.14)',
-                border: isDark ? '1px solid rgba(255,255,255,0.07)' : '1px solid rgba(255,255,255,0.22)',
+                background: isDark ? 'rgba(255,255,255,0.035)' : 'rgba(255,255,255,0.85)',
+                border: isDark ? '1px solid rgba(255,255,255,0.07)' : '1px solid rgba(226,232,240,0.85)',
+                boxShadow: isDark ? 'none' : '0 2px 6px rgba(15,23,42,0.03)',
               }}
             >
               <div
                 className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
                 style={{
-                  background: isDark ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.2)',
-                  color: isDark ? '#A78BFA' : '#FFFFFF',
+                  background: isDark ? 'rgba(99,102,241,0.2)' : 'rgba(99,102,241,0.08)',
+                  color: isDark ? '#A78BFA' : '#4F46E5',
+                  border: isDark ? 'none' : '1px solid rgba(99,102,241,0.15)',
                 }}
               >
                 <Icon className="h-4 w-4" />
@@ -310,13 +321,13 @@ function HeroPanel({ isDark }: { isDark: boolean }) {
               <div className="min-w-0">
                 <div
                   className="text-xs font-black truncate"
-                  style={{ color: '#FFFFFF' }}
+                  style={{ color: isDark ? '#FFFFFF' : '#0F172A' }}
                 >
                   {label}
                 </div>
                 <div
                   className="text-[10px] truncate"
-                  style={{ color: isDark ? 'rgba(148,163,184,0.8)' : 'rgba(255,255,255,0.7)' }}
+                  style={{ color: isDark ? 'rgba(148,163,184,0.8)' : '#64748B' }}
                 >
                   {sub}
                 </div>
@@ -327,13 +338,16 @@ function HeroPanel({ isDark }: { isDark: boolean }) {
       </div>
 
       {/* Clean Footer Note */}
-      <div className="relative z-10 flex items-center justify-between text-[11px] pt-4 border-t border-white/10">
-        <span style={{ color: isDark ? 'rgba(148,163,184,0.7)' : 'rgba(255,255,255,0.7)' }}>
+      <div
+        className="relative z-10 flex items-center justify-between text-[11px] pt-4"
+        style={{ borderTop: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(226,232,240,0.85)' }}
+      >
+        <span style={{ color: isDark ? 'rgba(148,163,184,0.7)' : '#64748B' }}>
           منصة الجوجالية &copy; 2026
         </span>
         <span
           className="font-bold"
-          style={{ color: isDark ? '#A78BFA' : '#FFFFFF' }}
+          style={{ color: isDark ? '#A78BFA' : '#4F46E5' }}
         >
           مجتمع رقمي موحد
         </span>
@@ -496,7 +510,7 @@ export function LoginPage() {
       style={{
         background: isDark
           ? 'linear-gradient(135deg, #07070E 0%, #0C0C1C 50%, #06060D 100%)'
-          : 'linear-gradient(135deg, #EEF2FF 0%, #F1F5F9 50%, #F8FAFC 100%)',
+          : 'linear-gradient(135deg, #F0F4F8 0%, #F6F8FC 50%, #EDF2F7 100%)',
       }}
       dir="rtl"
     >
@@ -507,7 +521,7 @@ export function LoginPage() {
           style={{
             background: isDark
               ? 'radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%)'
-              : 'radial-gradient(circle, rgba(79,70,229,0.08) 0%, transparent 70%)',
+              : 'radial-gradient(circle, rgba(99,102,241,0.09) 0%, transparent 70%)',
           }}
         />
         <div
@@ -515,7 +529,7 @@ export function LoginPage() {
           style={{
             background: isDark
               ? 'radial-gradient(circle, rgba(34,211,238,0.08) 0%, transparent 70%)'
-              : 'radial-gradient(circle, rgba(6,182,212,0.06) 0%, transparent 70%)',
+              : 'radial-gradient(circle, rgba(6,182,212,0.07) 0%, transparent 70%)',
           }}
         />
       </div>
@@ -548,7 +562,7 @@ export function LoginPage() {
         style={{
           boxShadow: isDark
             ? '0 30px 90px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.06)'
-            : '0 24px 70px rgba(15,23,42,0.12), 0 0 0 1px rgba(203,213,225,0.6)',
+            : '0 25px 65px -12px rgba(15,23,42,0.09), 0 0 0 1px rgba(226,232,240,0.85)',
           minHeight: '580px',
         }}
       >
@@ -558,7 +572,7 @@ export function LoginPage() {
         {/* Right Form Panel */}
         <div
           className="flex-1 flex flex-col justify-center px-8 py-10 sm:px-12 xl:px-14 relative"
-          style={{ background: isDark ? 'rgba(10,10,20,0.98)' : 'rgba(255,255,255,0.99)' }}
+          style={{ background: isDark ? 'rgba(10,10,20,0.98)' : '#FFFFFF' }}
         >
           <AnimatePresence mode="wait">
 

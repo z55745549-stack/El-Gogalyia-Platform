@@ -59,7 +59,7 @@
   }
 
   /* ── LIGHT MODE ───────────────────────────────────────────────────────
-     Palette: Warm Ivory + Deep Indigo — premium, clean, trustworthy
+     Palette: Pure Silk & Architectural Porcelain — pristine, layered, luxury
      ─────────────────────────────────────────────────────────────────── */
   .light, html:not(.dark) {
     /* Brand — same core identity, adjusted for light */
@@ -72,33 +72,33 @@
     --brand-warning:   #D97706;
 
     /* Surfaces — clean architectural porcelain & silk white */
-    --app-bg:            #F8FAFC;   /* Crisp slate-50 background */
+    --app-bg:            #F6F8FC;   /* Crisp, soft tinted background */
     --surface:           #FFFFFF;
-    --surface-secondary: #F1F5F9;   /* Slate-100 */
+    --surface-secondary: #F8FAFC;   /* Slate-50 */
     --surface-elevated:  #FFFFFF;
     --surface-overlay:   #FFFFFF;
-    --surface-glass:     rgba(255, 255, 255, 0.92);
+    --surface-glass:     rgba(255, 255, 255, 0.88);
 
-    /* Borders — clean and well-defined */
-    --border-subtle:  rgba(203, 213, 225, 0.8);  /* slate-300 soft */
-    --border-default: rgba(148, 163, 184, 0.45); /* slate-400 */
-    --border-strong:  rgba(100, 116, 139, 0.6);  /* slate-500 */
-    --border-glow:    rgba(79, 70, 229, 0.35);
+    /* Borders — clean, subtle, luxurious */
+    --border-subtle:  rgba(226, 232, 240, 0.85); /* Slate-200 refined */
+    --border-default: rgba(203, 213, 225, 0.75); /* Slate-300 */
+    --border-strong:  rgba(148, 163, 184, 0.55); /* Slate-400 */
+    --border-glow:    rgba(99, 102, 241, 0.35);
 
     /* Text — razor sharp contrast */
     --text-primary:   #0F172A;   /* Slate-900 */
-    --text-secondary: #334155;   /* Slate-700 */
+    --text-secondary: #475569;   /* Slate-600 */
     --text-muted:     #64748B;   /* Slate-500 */
     --text-inverse:   #FFFFFF;
 
-    /* Shadows — soft, multi-tier */
-    --shadow-xs: 0 1px 3px rgba(15, 23, 42, 0.05);
-    --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.06);
-    --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.08);
-    --shadow-lg: 0 20px 45px rgba(15, 23, 42, 0.1);
-    --shadow-glow-primary: 0 0 20px rgba(79, 70, 229, 0.15);
-    --shadow-glow-accent:  0 0 20px rgba(2, 132, 199, 0.12);
-    --shadow-glow-warm:    0 0 16px rgba(217, 119, 6, 0.15);
+    /* Shadows — ultra-smooth multi-tier architectural elevation */
+    --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
+    --shadow-sm: 0 2px 8px -1px rgba(15, 23, 42, 0.05), 0 1px 3px -1px rgba(15, 23, 42, 0.03);
+    --shadow-md: 0 8px 24px -4px rgba(15, 23, 42, 0.07), 0 3px 8px -2px rgba(15, 23, 42, 0.03);
+    --shadow-lg: 0 20px 45px -8px rgba(15, 23, 42, 0.09), 0 8px 16px -4px rgba(15, 23, 42, 0.03);
+    --shadow-glow-primary: 0 0 20px rgba(99, 102, 241, 0.15);
+    --shadow-glow-accent:  0 0 20px rgba(6, 182, 212, 0.12);
+    --shadow-glow-warm:    0 0 16px rgba(217, 119, 6, 0.14);
   }
 
   /* ── GLOBAL BASE ──────────────────────────────────────────────────────*/
@@ -127,6 +127,13 @@
     transition: background-color 0.25s var(--ease-smooth),
                 color 0.25s var(--ease-smooth);
     min-height: 100dvh;
+  }
+
+  html:not(.dark) body {
+    background-image:
+      radial-gradient(ellipse 90% 55% at 50% -10%, rgba(99, 102, 241, 0.035), transparent),
+      radial-gradient(ellipse 65% 40% at 90% 90%, rgba(6, 182, 212, 0.03), transparent);
+    background-attachment: fixed;
   }
 
   /* All text: Cairo for Arabic, Inter for Latin */
@@ -650,9 +657,9 @@ html:not(.dark) .sidebar-nav-item-active {
 html:not(.dark) .mesh-bg, .light .mesh-bg {
   background-color: #FFFFFF;
   background-image:
-    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(79, 70, 229, 0.07), transparent),
-    radial-gradient(ellipse 60% 40% at 80% 80%, rgba(2, 132, 199, 0.05), transparent),
-    radial-gradient(ellipse 50% 60% at 10% 60%, rgba(124, 58, 237, 0.04), transparent);
+    radial-gradient(ellipse 90% 60% at 50% -20%, rgba(99, 102, 241, 0.08), transparent),
+    radial-gradient(ellipse 65% 45% at 85% 85%, rgba(6, 182, 212, 0.06), transparent),
+    radial-gradient(ellipse 55% 55% at 10% 60%, rgba(168, 85, 247, 0.05), transparent);
 }
 
 /* Grid pattern overlay */

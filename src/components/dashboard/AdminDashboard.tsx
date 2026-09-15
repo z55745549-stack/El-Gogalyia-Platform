@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react';
 import { collection, query, onSnapshot, orderBy, limit, getDocs, db } from '@/lib/supabase';
 import {
   Users, Upload, Clock, AlertTriangle, CheckCircle2,
-  Coins, Activity, ArrowUpRight, Plus, Shield, Inbox, Calendar, Sparkles, Bell
+  Coins, Activity, ArrowUpRight, Plus, Shield, Inbox, Calendar, Sparkles, Bell,
+  Radio, Gift, Megaphone, AlertCircle, ChevronLeft
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { useNotifications } from '@/hooks/useNotifications';
 import { StatCard } from '@/components/ui/stat-card';
@@ -12,8 +14,12 @@ import { SkeletonCard } from '@/components/ui/loading-spinner';
 import { StatusBadge, PriorityBadge } from '@/components/ui/status-badge';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { formatDate, formatOCoins, formatRelative, isOverdue, getNotificationEmoji, cn } from '@/utils';
-import type { Task, OCoinTransaction, ActivityLog } from '@/types';
+import { Modal } from '@/components/ui/modal';
+import { Input } from '@/components/ui/input';
+import { formatDate, formatOCoins, formatRelative, isOverdue, getNotificationEmoji, cn, formatFullName } from '@/utils';
+import { broadcastNotificationToAll, manualOCoinAdjustment } from '@/lib/database-service';
+import { DEFAULT_COMMITTEES } from '@/types';
+import type { Task, OCoinTransaction, ActivityLog, UserProfile } from '@/types';
 
 export function AdminDashboard() {
   const { userProfile } = useAuth();
@@ -21,7 +27,21 @@ export function AdminDashboard() {
   const [recentActivity, setRecentActivity] = useState<ActivityLog[]>([]);
   const [recentTransactions, setRecentTransactions] = useState<OCoinTransaction[]>([]);
   const [totalEmployees, setTotalEmployees] = useState(0);
+  const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Broadcast Modal State (Lead / Co-Lead)
+  const [showBroadcastModal, setShowBroadcastModal] = useState(false);
+  const [broadcastTitle, setBroadcastTitle] = useState('');
+  const [broadcastMessage, setBroadcastMessage] = useState('');
+  const [broadcasting, setBroadcasting] = useState(false);
+
+  // Head Quick Reward Modal State
+  const [showRewardModal, setShowRewardModal] = useState(false);
+  const [rewardTargetUser, setRewardTargetUser] = useState<UserProfile | null>(null);
+  const [rewardAmount, setRewardAmount] = useState('');
+  const [rewardReason, setRewardReason] = useState('');
+  const [rewarding, setRewarding] = useState(false);
 
   useEffect(() => {
     const taskUnsub = onSnapshot(
@@ -46,7 +66,10 @@ export function AdminDashboard() {
     );
 
     getDocs(collection(db, 'users'))
-      .then((s) => setTotalEmployees(s.size))
+      .then((s) => {
+        setTotalEmployees(s.size);
+        setAllUsers(s.docs.map((d) => ({ uid: d.id, ...d.data() } as UserProfile)));
+      })
       .catch((err) => console.error('Employees count error:', err));
 
     return () => { taskUnsub(); actUnsub(); txUnsub(); };
@@ -70,6 +93,105 @@ export function AdminDashboard() {
   const isCoLead = role === 'co_lead';
   const isHead = role === 'head';
   const isTopLeader = isLead || isCoLead;
+
+  // Committee calculations for Head
+  const myCommitteeUsers = allUsers.filter(u =>
+    Boolean(
+      (u.committeeId && userProfile?.committeeId && u.committeeId === userProfile.committeeId) ||
+      (u.committeeName && userProfile?.committeeName && u.committeeName.trim().toLowerCase() === userProfile.committeeName.trim().toLowerCase())
+    )
+  );
+  const myCommitteeSubordinates = myCommitteeUsers.filter(
+    u => u.uid !== userProfile?.uid && (u.role === 'member' || u.role === 'vice_head')
+  );
+  const myCommitteeTasks = tasks.filter(t =>
+    Boolean(
+      (t.committeeId && userProfile?.committeeId && t.committeeId === userProfile.committeeId) ||
+      (t.committeeName && userProfile?.committeeName && t.committeeName.trim().toLowerCase() === userProfile.committeeName.trim().toLowerCase())
+    )
+  );
+  const myCommitteeSubmitted = myCommitteeTasks.filter(t => t.status === 'submitted');
+
+  // Committees performance stats for Top Leaders
+  const committeesStats = DEFAULT_COMMITTEES.map(comm => {
+    const commTasks = tasks.filter(t =>
+      t.committeeId === comm.id ||
+      (t.committeeName && t.committeeName.trim().toLowerCase() === comm.name.trim().toLowerCase())
+    );
+    const commCompleted = commTasks.filter(t => t.status === 'approved' || t.status === 'completed').length;
+    const commMembers = allUsers.filter(u =>
+      u.committeeId === comm.id ||
+      (u.committeeName && u.committeeName.trim().toLowerCase() === comm.name.trim().toLowerCase())
+    ).length;
+    const rate = commTasks.length > 0 ? Math.round((commCompleted / commTasks.length) * 100) : 0;
+    return {
+      ...comm,
+      totalTasks: commTasks.length,
+      completedTasks: commCompleted,
+      membersCount: commMembers,
+      completionRate: rate,
+    };
+  });
+
+  // Handlers
+  const handleSendBroadcast = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!broadcastTitle.trim() || !broadcastMessage.trim() || !userProfile) return;
+    setBroadcasting(true);
+    try {
+      await broadcastNotificationToAll({
+        title: broadcastTitle.trim(),
+        message: broadcastMessage.trim(),
+        createdByName: userProfile.displayName || userProfile.username,
+      });
+      toast.success('تمت إذاعة التنبيه بنجاح لجميع أعضاء المنظومة! 📢');
+      setShowBroadcastModal(false);
+      setBroadcastTitle('');
+      setBroadcastMessage('');
+    } catch (err: any) {
+      toast.error(err?.message || 'فشلت إذاعة التنبيه.');
+    } finally {
+      setBroadcasting(false);
+    }
+  };
+
+  const handleHeadReward = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!rewardTargetUser || !rewardAmount || !rewardReason.trim() || !userProfile) return;
+    if (rewardTargetUser.uid === userProfile.uid) {
+      toast.error('❌ محظور: لا يمكنك منح كوينز لنفسك.');
+      return;
+    }
+    const amt = parseInt(rewardAmount, 10);
+    if (isNaN(amt) || amt <= 0) {
+      toast.error('يرجى إدخال عدد كوينز صحيح موجب.');
+      return;
+    }
+    setRewarding(true);
+    try {
+      await manualOCoinAdjustment({
+        targetUser: rewardTargetUser,
+        amount: amt,
+        type: 'manual_reward',
+        reason: rewardReason.trim(),
+        description: `مكافأة لجنة من رئيس اللجنة (${userProfile.displayName})`,
+        actor: {
+          email: userProfile.email || userProfile.username,
+          displayName: userProfile.displayName,
+          photoURL: userProfile.photoURL,
+        },
+      });
+      toast.success(`تم صرف +${amt} OC للمحفظة (${rewardTargetUser.displayName}) بنجاح! 🌟`);
+      setShowRewardModal(false);
+      setRewardTargetUser(null);
+      setRewardAmount('');
+      setRewardReason('');
+    } catch (err: any) {
+      toast.error(err?.message || 'فشل صرف المكافأة.');
+    } finally {
+      setRewarding(false);
+    }
+  };
 
   // Role-specific badge and subtitle
   const roleBadgeText = isLead
@@ -112,14 +234,14 @@ export function AdminDashboard() {
                 <span>{roleBadgeText}</span>
               </div>
 
-              {/* Personal O-Coins Chip */}
+              {/* O-Coins Chip */}
               <Link
                 to="/ocoins"
                 className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-[var(--brand-warm)]/15 text-[var(--brand-warm)] border border-[var(--brand-warm)]/30 hover:bg-[var(--brand-warm)]/25 transition-colors"
-                title="محفظة O-Coins الشخصية"
+                title="محفظة O-Coins"
               >
                 <span>🪙</span>
-                <span>رصيدك: {formatOCoins(userProfile?.oCoinsBalance ?? 0)} OC</span>
+                <span>{isTopLeader ? 'خزينة المنظومة: ∞ OC' : `رصيدك: ${formatOCoins(userProfile?.oCoinsBalance ?? 0)} OC`}</span>
               </Link>
             </div>
 
@@ -134,18 +256,43 @@ export function AdminDashboard() {
 
           {/* Action CTAs */}
           <div className="flex items-center gap-2 flex-wrap shrink-0">
-            {stats.submitted > 0 && (
+            {isTopLeader && (
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={() => setShowBroadcastModal(true)}
+                className="font-bold text-xs gap-1.5 shadow-sm cursor-pointer"
+              >
+                <Radio className="h-3.5 w-3.5 animate-pulse text-white" />
+                <span>إذاعة تنبيه للمنظومة</span>
+              </Button>
+            )}
+
+            {isHead && (
+              <Button
+                size="sm"
+                onClick={() => setShowRewardModal(true)}
+                className="font-bold text-xs gap-1.5 shadow-sm cursor-pointer text-white bg-amber-600 hover:bg-amber-700"
+              >
+                <Gift className="h-3.5 w-3.5" />
+                <span>مكافأة سريعة لعضو بلجنتي</span>
+              </Button>
+            )}
+
+            {(isHead ? myCommitteeSubmitted.length > 0 : stats.submitted > 0) && (
               <Link to="/submitted-tasks">
                 <Button variant="reward" size="sm" className="font-bold text-xs gap-1.5 shadow-sm">
-                  <Inbox className="h-3.5 w-3.5" /> مراجعة التسليمات ({stats.submitted})
+                  <Inbox className="h-3.5 w-3.5" /> مراجعة التسليمات ({isHead ? myCommitteeSubmitted.length : stats.submitted})
                 </Button>
               </Link>
             )}
+
             <Link to="/tasks">
               <Button variant="primary" size="sm" className="font-bold text-xs gap-1.5 shadow-sm">
                 <Plus className="h-3.5 w-3.5" /> إنشاء مهمة جديدة
               </Button>
             </Link>
+
             {isTopLeader && (
               <Link to="/employees">
                 <Button variant="outline" size="sm" className="font-semibold text-xs gap-1.5">
@@ -153,6 +300,7 @@ export function AdminDashboard() {
                 </Button>
               </Link>
             )}
+
             <Link to="/meetings">
               <Button variant="outline" size="sm" className="font-semibold text-xs gap-1.5">
                 <Calendar className="h-3.5 w-3.5" /> الاجتماعات
@@ -162,53 +310,176 @@ export function AdminDashboard() {
         </div>
       </div>
 
-      {/* Semantic KPI Cards Grid */}
+      {/* Semantic KPI Cards Grid — Tailored for Head or Top Leaders */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-3.5">
         <StatCard
-          title="فريق العمل"
-          value={totalEmployees}
+          title={isHead ? "أعضاء لجنتي" : "فريق العمل"}
+          value={isHead ? myCommitteeUsers.length : totalEmployees}
           variant="primary"
           icon={<Users className="h-4 w-4" />}
-          subtext="الأعضاء النشطين"
+          subtext={isHead ? `أعضاء ${userProfile?.committeeName || 'اللجنة'}` : "الأعضاء النشطين"}
         />
         <StatCard
-          title="تسليمات معلقة"
-          value={stats.submitted}
-          variant={stats.submitted > 0 ? 'warm' : 'default'}
+          title={isHead ? "تسليمات لجنتي" : "تسليمات معلقة"}
+          value={isHead ? myCommitteeSubmitted.length : stats.submitted}
+          variant={(isHead ? myCommitteeSubmitted.length : stats.submitted) > 0 ? 'warm' : 'default'}
           icon={<Upload className="h-4 w-4" />}
           subtext="تحتاج مراجعة وقبول"
         />
         <StatCard
-          title="قيد التنفيذ"
-          value={stats.inProgress}
+          title={isHead ? "مهام لجنتي الجارية" : "قيد التنفيذ"}
+          value={isHead ? myCommitteeTasks.filter(t => t.status === 'in_progress').length : stats.inProgress}
           variant="accent"
           icon={<Clock className="h-4 w-4" />}
           subtext="يعمل عليها الفريق"
         />
         <StatCard
-          title="مهام متأخرة"
-          value={stats.overdue}
-          variant={stats.overdue > 0 ? 'default' : 'default'}
+          title={isHead ? "مهام متأخرة بلجنتي" : "مهام متأخرة"}
+          value={isHead ? myCommitteeTasks.filter(t => isOverdue(t.deadline, t.status)).length : stats.overdue}
+          variant="default"
           icon={<AlertTriangle className="h-4 w-4" />}
-          iconBg={stats.overdue > 0 ? "bg-[var(--brand-danger)]/15 text-[var(--brand-danger)]" : undefined}
-          className={stats.overdue > 0 ? 'border-[var(--brand-danger)]/40' : ''}
+          iconBg={(isHead ? myCommitteeTasks.filter(t => isOverdue(t.deadline, t.status)).length : stats.overdue) > 0 ? "bg-[var(--brand-danger)]/15 text-[var(--brand-danger)]" : undefined}
           subtext="تجاوزت الموعد"
         />
         <StatCard
-          title="مهام معتمدة"
-          value={stats.approved}
+          title={isHead ? "مهام معتمدة بلجنتي" : "مهام معتمدة"}
+          value={isHead ? myCommitteeTasks.filter(t => t.status === 'approved' || t.status === 'completed').length : stats.approved}
           variant="success"
           icon={<CheckCircle2 className="h-4 w-4" />}
           subtext="مكتملة ومصروفة"
         />
         <StatCard
           title="مكافآت O Coins"
-          value={formatOCoins(totalCoinsDistributed)}
+          value={isTopLeader ? "∞" : formatOCoins(isHead ? (userProfile?.oCoinsBalance ?? 0) : totalCoinsDistributed)}
           variant="warm"
           icon={<Coins className="h-4 w-4" />}
-          subtext="إجمالي المكافآت"
+          subtext={isTopLeader ? "خزينة لا نهائية" : isHead ? "رصيد محفظتك الشخصية" : "إجمالي المكافآت"}
         />
       </div>
+
+      {/* ─── LEAD & CO-LEAD EXCLUSIVE: Committees Health Overview ────────────── */}
+      {isTopLeader && (
+        <div className="card p-5 sm:p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="p-1.5 rounded-lg bg-[var(--brand-primary)]/10 text-[var(--brand-primary)]">
+                <Shield className="h-4 w-4" />
+              </span>
+              <div>
+                <h2 className="section-title text-sm sm:text-base text-[var(--text-primary)]">
+                  مؤشر نبض وأداء اللجان في المنظومة
+                </h2>
+                <p className="text-[11px] text-[var(--text-muted)]">
+                  متابعة حية لمعدلات إنجاز المهام وعدد الأعضاء في كل لجنة
+                </p>
+              </div>
+            </div>
+            <Link to="/tasks" className="text-xs font-bold text-[var(--brand-primary)] hover:underline flex items-center gap-1">
+              <span>إدارة مهام اللجان</span>
+              <ArrowUpRight className="h-3 w-3" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+            {committeesStats.map((c) => (
+              <div
+                key={c.id}
+                className="p-4 rounded-2xl bg-[var(--bg-elevated)]/50 border border-[var(--border-subtle)] space-y-3 hover:border-[var(--brand-primary)]/40 transition-all"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <h3 className="text-xs font-bold text-[var(--text-primary)]">{c.name}</h3>
+                    <p className="text-[10px] text-[var(--text-muted)] mt-0.5">{c.membersCount} أعضاء مسجلين</p>
+                  </div>
+                  <span className={cn(
+                    "text-xs font-black px-2 py-0.5 rounded-lg",
+                    c.completionRate >= 75
+                      ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                      : c.completionRate >= 40
+                      ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                      : "bg-rose-500/15 text-rose-600 dark:text-rose-400"
+                  )}>
+                    {c.completionRate}%
+                  </span>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="w-full h-1.5 rounded-full bg-[var(--border-subtle)] overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{
+                        width: `${c.completionRate}%`,
+                        background: c.completionRate >= 75
+                          ? 'var(--brand-success)'
+                          : c.completionRate >= 40
+                          ? 'var(--brand-warm)'
+                          : 'var(--brand-danger)',
+                      }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-[10px] text-[var(--text-muted)] font-medium">
+                    <span>{c.completedTasks} مهمة منجزة</span>
+                    <span>من أصل {c.totalTasks}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ─── HEAD EXCLUSIVE: Committee Review Queue ──────────────────────────── */}
+      {isHead && (
+        <div className="card p-5 sm:p-6 space-y-4 border-l-4 border-l-[var(--brand-primary)]">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="p-1.5 rounded-lg bg-[var(--brand-primary)]/10 text-[var(--brand-primary)]">
+                <Inbox className="h-4 w-4" />
+              </span>
+              <div>
+                <h2 className="section-title text-sm sm:text-base text-[var(--text-primary)]">
+                  طابور مراجعة واعتماد تسليمات لجنة {userProfile?.committeeName || ''}
+                </h2>
+                <p className="text-[11px] text-[var(--text-muted)]">
+                  التسليمات المرفوعة من أعضاء لجنتك بانتظار فحصك واعتماد صرف المكافأة
+                </p>
+              </div>
+            </div>
+            <Link to="/submitted-tasks" className="text-xs font-bold text-[var(--brand-primary)] hover:underline flex items-center gap-1">
+              <span>صفحة التسليمات الكاملة</span>
+              <ArrowUpRight className="h-3 w-3" />
+            </Link>
+          </div>
+
+          {myCommitteeSubmitted.length === 0 ? (
+            <div className="p-6 text-center rounded-2xl bg-[var(--bg-elevated)]/30 border border-dashed border-[var(--border-subtle)] space-y-1">
+              <p className="text-xs font-bold text-[var(--text-primary)]">🎉 رائع! لا توجد تسليمات معلقة في لجنتك حالياً.</p>
+              <p className="text-[11px] text-[var(--text-muted)]">كافة التكليفات المسلّمة تم فحصها واعتمادها بنجاح.</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-[var(--border-subtle)] rounded-2xl border border-[var(--border-subtle)] overflow-hidden bg-[var(--bg-surface)]">
+              {myCommitteeSubmitted.slice(0, 5).map((t) => (
+                <div key={t.id} className="p-3.5 sm:p-4 flex items-center justify-between gap-3 hover:bg-[var(--bg-elevated)]/50 transition-colors">
+                  <div className="min-w-0 space-y-1">
+                    <p className="text-xs sm:text-sm font-bold text-[var(--text-primary)] truncate">{t.title}</p>
+                    <div className="flex items-center gap-2 text-[11px] text-[var(--text-muted)]">
+                      <span>بواسطة: {t.assignedToNames?.[0] || 'أحد أعضاء اللجنة'}</span>
+                      <span>·</span>
+                      <span className="text-[var(--brand-warm)] font-bold">مكافأة: {t.oCoinsReward} OC</span>
+                    </div>
+                  </div>
+                  <Link to="/submitted-tasks">
+                    <Button size="sm" variant="reward" className="font-bold text-xs gap-1 cursor-pointer">
+                      <span>فحص واعتماد</span>
+                      <ChevronLeft className="h-3.5 w-3.5" />
+                    </Button>
+                  </Link>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Main Split Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
@@ -386,6 +657,153 @@ export function AdminDashboard() {
           </div>
         </div>
       </div>
+
+      {/* ─── Broadcast Announcement Modal (Lead / Co-Lead) ─────────────────── */}
+      <Modal
+        open={showBroadcastModal}
+        onClose={() => setShowBroadcastModal(false)}
+        title="📢 إذاعة تنبيه وتوجيه عام للمنظومة"
+        description="سيتم إرسال هذا التنبيه الفوري لجميع الأعضاء والفرق المسجلة في منصة الجوجالية دفعة واحدة."
+      >
+        <form onSubmit={handleSendBroadcast} className="space-y-4 text-right dir-rtl font-sans">
+          <div>
+            <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1">
+              عنوان التنبيه أو الإعلان *
+            </label>
+            <Input
+              value={broadcastTitle}
+              onChange={(e) => setBroadcastTitle(e.target.value)}
+              placeholder="مثال: اجتماع طارئ لجميع الفرق اليوم الساعة 8 مساءً"
+              required
+              autoFocus
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1">
+              نص الرسالة أو التوجيه *
+            </label>
+            <textarea
+              value={broadcastMessage}
+              onChange={(e) => setBroadcastMessage(e.target.value)}
+              placeholder="اكتب التوجيهات أو التعليمات بالتفصيل هنا..."
+              required
+              rows={4}
+              className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] resize-none"
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowBroadcastModal(false)}
+              className="font-bold text-xs"
+            >
+              إلغاء
+            </Button>
+            <Button
+              type="submit"
+              variant="danger"
+              size="sm"
+              loading={broadcasting}
+              className="font-bold text-xs gap-1.5"
+            >
+              <Radio className="h-3.5 w-3.5" />
+              <span>إذاعة التنبيه فوراً</span>
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* ─── Head Quick Reward Modal ────────────────────────────────────────── */}
+      <Modal
+        open={showRewardModal}
+        onClose={() => setShowRewardModal(false)}
+        title={`🌟 صرف مكافأة سريعة لعضو بلجنة ${userProfile?.committeeName || ''}`}
+        description="اختر أحد أعضاء لجنتك لمنحه مكافأة O-Coins تقديرية لجهوده وتميزه."
+      >
+        <form onSubmit={handleHeadReward} className="space-y-4 text-right dir-rtl font-sans">
+          <div>
+            <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1">
+              عضو اللجنة المستهدف *
+            </label>
+            {myCommitteeSubordinates.length === 0 ? (
+              <p className="text-xs text-[var(--text-muted)] p-3 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)]">
+                لا يوجد أعضاء مسجلين في لجنتك حالياً.
+              </p>
+            ) : (
+              <select
+                value={rewardTargetUser?.uid || ''}
+                onChange={(e) => {
+                  const found = myCommitteeSubordinates.find(u => u.uid === e.target.value);
+                  setRewardTargetUser(found || null);
+                }}
+                required
+                className="w-full px-3 py-2.5 rounded-xl text-xs bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]"
+              >
+                <option value="">-- اختر عضو اللجنة --</option>
+                {myCommitteeSubordinates.map(u => (
+                  <option key={u.uid} value={u.uid}>
+                    {formatFullName(u.displayName)} (@{u.username || u.email}) — رصيده: {u.oCoinsBalance ?? 0} OC
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1">
+              عدد عملات O Coins *
+            </label>
+            <Input
+              type="number"
+              min="1"
+              max="500"
+              placeholder="مثال: 50"
+              value={rewardAmount}
+              onChange={(e) => setRewardAmount(e.target.value)}
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1">
+              سبب منح المكافأة *
+            </label>
+            <Input
+              placeholder="مثال: تسليم متميز وسريع لمهمة التصميم الأسبوعية"
+              value={rewardReason}
+              onChange={(e) => setRewardReason(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowRewardModal(false)}
+              className="font-bold text-xs"
+            >
+              إلغاء
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              size="sm"
+              loading={rewarding}
+              disabled={!rewardTargetUser || !rewardAmount || !rewardReason.trim()}
+              className="font-bold text-xs gap-1.5"
+            >
+              <Gift className="h-3.5 w-3.5" />
+              <span>تأكيد صرف المكافأة</span>
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }
