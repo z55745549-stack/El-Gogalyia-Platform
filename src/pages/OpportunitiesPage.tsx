@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   GraduationCap,
@@ -230,24 +230,26 @@ export function OpportunitiesPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Filter list
-  const filteredOpportunities = opportunities.filter((opp) => {
+  // Filter list with memoization for snappy performance
+  const filteredOpportunities = useMemo(() => {
     const queryStr = search.toLowerCase().trim();
-    const matchSearch =
-      !queryStr ||
-      opp.title.toLowerCase().includes(queryStr) ||
-      opp.provider.toLowerCase().includes(queryStr) ||
-      opp.description.toLowerCase().includes(queryStr);
+    return opportunities.filter((opp) => {
+      const matchSearch =
+        !queryStr ||
+        opp.title.toLowerCase().includes(queryStr) ||
+        opp.provider.toLowerCase().includes(queryStr) ||
+        opp.description.toLowerCase().includes(queryStr);
 
-    const matchCategory = selectedCategory === 'all' || opp.category === selectedCategory;
+      const matchCategory = selectedCategory === 'all' || opp.category === selectedCategory;
 
-    const countdown = getOpportunityCountdown(opp.deadline);
-    let matchStatus = true;
-    if (statusFilter === 'active') matchStatus = !countdown.isExpired;
-    if (statusFilter === 'expired') matchStatus = countdown.isExpired;
+      const countdown = getOpportunityCountdown(opp.deadline);
+      let matchStatus = true;
+      if (statusFilter === 'active') matchStatus = !countdown.isExpired;
+      if (statusFilter === 'expired') matchStatus = countdown.isExpired;
 
-    return matchSearch && matchCategory && matchStatus;
-  });
+      return matchSearch && matchCategory && matchStatus;
+    });
+  }, [opportunities, search, selectedCategory, statusFilter]);
 
   return (
     <div className="space-y-6 font-sans text-right dir-rtl">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   collection,
   query,
@@ -17,8 +17,10 @@ import {
   MessageSquare,
   Sparkles,
   ChevronLeft,
-  Send
+  Send,
+  Bot
 } from 'lucide-react';
+import { AIAssistantChat } from '@/components/support/AIAssistantChat';
 import { useAuth } from '@/context/AuthContext';
 import { createSupportTicket } from '@/lib/support';
 import { Button } from '@/components/ui/button';
@@ -66,6 +68,8 @@ const FAQS = [
 export function SupportPage() {
   const { userProfile } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') === 'tickets' ? 'tickets' : 'ai';
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -191,6 +195,46 @@ export function SupportPage() {
         <div className="absolute right-20 -top-10 w-48 h-48 bg-[var(--brand-primary)]/15 rounded-full blur-3xl pointer-events-none" />
       </div>
 
+      {/* Segmented Switcher */}
+      <div className="flex items-center gap-1.5 p-1.5 rounded-2xl bg-[var(--surface-elevated)] border border-[var(--border-subtle)] w-fit">
+        <button
+          type="button"
+          onClick={() => setSearchParams({ tab: 'ai' })}
+          className={cn(
+            'px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2',
+            activeTab === 'ai'
+              ? 'bg-[var(--brand-primary)] text-white shadow-md'
+              : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface)]'
+          )}
+        >
+          <Bot className="h-4 w-4" />
+          <span>المساعد الذكي</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setSearchParams({ tab: 'tickets' })}
+          className={cn(
+            'px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2',
+            activeTab === 'tickets'
+              ? 'bg-[var(--brand-primary)] text-white shadow-md'
+              : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface)]'
+          )}
+        >
+          <LifeBuoy className="h-4 w-4" />
+          <span>تذاكر الدعم والأسئلة الشائعة ({tickets.length})</span>
+        </button>
+      </div>
+
+      {activeTab === 'ai' ? (
+        <AIAssistantChat
+          onOpenTicket={() => {
+            setSearchParams({ tab: 'tickets' });
+            setShowCreateModal(true);
+          }}
+        />
+      ) : (
+        <>
       {/* KPI Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="card p-5 rounded-2xl flex items-center justify-between">
@@ -402,6 +446,8 @@ export function SupportPage() {
           </div>
         )}
       </div>
+        </>
+      )}
 
       {/* Modal: Create Support Ticket */}
       <Modal
