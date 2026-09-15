@@ -58,6 +58,7 @@ export default function App() {
             <Route element={<AppLayout />}>
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/ocoins" element={<OCoinsPage />} />
+              <Route path="/wallet" element={<OCoinsPage />} />
               <Route path="/discounts" element={<Navigate to="/ocoins?tab=store" replace />} />
               <Route path="/courses" element={<CoursesPage />} />
               <Route path="/courses/:courseId/learn" element={<CoursePlayerPage />} />

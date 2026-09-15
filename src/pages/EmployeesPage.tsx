@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { collection, onSnapshot, doc, setDoc, updateDoc, deleteDoc, getDocs, query, where, serverTimestamp, db } from '@/lib/supabase';
 import { motion } from 'framer-motion';
 import {
@@ -671,10 +671,10 @@ export function EmployeesPage() {
       {/* ── Approved Members Table (Desktop) ───────────────────────── */}
       {viewTab === 'approved' && (
         <>
-          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden hidden lg:block">
+          <div className="bg-[var(--surface)] rounded-2xl border border-[var(--border-subtle)] shadow-sm overflow-hidden hidden lg:block">
             <div className="overflow-x-auto">
               <table className="w-full text-right text-xs sm:text-sm">
-                <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold">
+                <thead className="bg-[var(--surface-elevated)] border-b border-[var(--border-subtle)] text-[var(--text-muted)] font-bold">
                   <tr>
                     <th className="p-4">العضو</th>
                     <th className="p-4">اسم المستخدم (Username)</th>
@@ -685,25 +685,25 @@ export function EmployeesPage() {
                     <th className="p-4 text-left">الإجراءات</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 font-medium">
+                <tbody className="divide-y divide-[var(--border-subtle)] font-medium">
                   {filteredEmployees.map((emp) => (
-                    <tr key={emp.uid} className="hover:bg-slate-50/80 transition-colors">
+                    <tr key={emp.uid} className="hover:bg-[var(--surface-elevated)]/40 transition-colors">
                       <td className="p-4">
                         <div className="flex items-center gap-3">
                           <Avatar name={formatFullName(emp.displayName)} src={emp.photoURL} size="sm" />
                           <div>
                             <div className="flex items-center gap-2">
-                              <p className="font-bold text-slate-900">{formatFullName(emp.displayName)}</p>
-                              <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200">
+                              <p className="font-bold text-[var(--text-primary)]">{formatFullName(emp.displayName)}</p>
+                              <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-500 border border-purple-500/20">
                                 {emp.employeeCode || generateEmployeeCode(emp.username || emp.uid)}
                               </span>
                             </div>
-                            {emp.email && <p className="text-[11px] text-slate-400">{emp.email}</p>}
+                            {emp.email && <p className="text-[11px] text-[var(--text-muted)]">{emp.email}</p>}
                           </div>
                         </div>
                       </td>
 
-                      <td className="p-4 font-mono font-bold text-indigo-600">
+                      <td className="p-4 font-mono font-bold text-indigo-400">
                         @{emp.username || 'n/a'}
                       </td>
 
@@ -727,15 +727,15 @@ export function EmployeesPage() {
                       <td className="p-4">
                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold ${
                           emp.status === 'active'
-                            ? 'bg-emerald-100 text-emerald-700'
-                            : 'bg-rose-100 text-rose-700'
+                            ? 'bg-emerald-500/15 text-emerald-500'
+                            : 'bg-rose-500/15 text-rose-500'
                         }`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${emp.status === 'active' ? 'bg-emerald-500' : 'bg-rose-500'}`} />
                           {emp.status === 'active' ? 'نشط (Active)' : emp.status === 'suspended' ? 'معطّل (Suspended)' : 'غير نشط (Inactive)'}
                         </span>
                       </td>
 
-                      <td className="p-4 font-bold text-slate-800">
+                      <td className="p-4 font-bold text-[var(--text-primary)]">
                         🪙 {hasUnlimitedCoins(emp.role) ? '∞' : (emp.oCoinsBalance ?? 0)}
                       </td>
 
@@ -749,15 +749,15 @@ export function EmployeesPage() {
                           </div>
                         ) : canManageRole(userProfile?.role ?? 'member', emp.role) ? (
                           <div className="flex items-center justify-end gap-1">
-                            <button onClick={() => handleOpenEdit(emp)} title="تعديل" className="p-2 hover:bg-slate-100 rounded-lg text-slate-600 cursor-pointer"><Edit3 className="h-4 w-4" /></button>
-                            <button onClick={() => { setSelectedUser(emp); setShowPassModal(true); }} title="كلمة المرور" className="p-2 hover:bg-amber-50 rounded-lg text-amber-600 cursor-pointer"><KeyRound className="h-4 w-4" /></button>
+                            <button onClick={() => handleOpenEdit(emp)} title="تعديل" className="p-2 hover:bg-[var(--surface-elevated)] rounded-lg text-[var(--text-muted)] cursor-pointer"><Edit3 className="h-4 w-4" /></button>
+                            <button onClick={() => { setSelectedUser(emp); setShowPassModal(true); }} title="كلمة المرور" className="p-2 hover:bg-amber-500/10 rounded-lg text-amber-500 cursor-pointer"><KeyRound className="h-4 w-4" /></button>
                             {(() => { const ab = getActiveBan(bans, emp.uid); return ab ? (
-                              <button onClick={() => handleEndBan(emp)} title={`Suspended until ${new Date(ab.endAt as any).toLocaleDateString()} — click to lift`} className="p-2 bg-rose-100 hover:bg-emerald-50 rounded-lg text-rose-700 hover:text-emerald-700 flex items-center gap-1 text-[10px] font-bold cursor-pointer"><BanIcon className="h-3.5 w-3.5" /> Lift</button>
+                              <button onClick={() => handleEndBan(emp)} title={`Suspended until ${new Date(ab.endAt as any).toLocaleDateString()} — click to lift`} className="p-2 bg-rose-500/10 hover:bg-emerald-500/10 rounded-lg text-rose-500 hover:text-emerald-500 flex items-center gap-1 text-[10px] font-bold cursor-pointer"><BanIcon className="h-3.5 w-3.5" /> Lift</button>
                             ) : (
-                              <button onClick={() => openBanModal(emp)} title="Suspend member" className="p-2 hover:bg-[#F5004F]/10 rounded-lg text-[#F5004F] cursor-pointer"><Gavel className="h-4 w-4" /></button>
+                              <button onClick={() => openBanModal(emp)} title="Suspend member" className="p-2 hover:bg-rose-500/10 rounded-lg text-rose-500 cursor-pointer"><Gavel className="h-4 w-4" /></button>
                             );})()}
-                            <button onClick={() => handleToggleStatus(emp)} title={emp.status === 'active' ? 'تعطيل' : 'تفعيل'} className={`p-2 rounded-lg cursor-pointer ${emp.status === 'active' ? 'hover:bg-rose-50 text-rose-600' : 'hover:bg-emerald-50 text-emerald-600'}`}>{emp.status === 'active' ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}</button>
-                            <button onClick={() => { setSelectedUser(emp); setShowDeleteModal(true); }} title="حذف" className="p-2 hover:bg-rose-50 rounded-lg text-rose-600 cursor-pointer"><Trash2 className="h-4 w-4" /></button>
+                            <button onClick={() => handleToggleStatus(emp)} title={emp.status === 'active' ? 'تعطيل' : 'تفعيل'} className={`p-2 rounded-lg cursor-pointer ${emp.status === 'active' ? 'hover:bg-rose-500/10 text-rose-500' : 'hover:bg-emerald-500/10 text-emerald-500'}`}>{emp.status === 'active' ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}</button>
+                            <button onClick={() => { setSelectedUser(emp); setShowDeleteModal(true); }} title="حذف" className="p-2 hover:bg-rose-500/10 rounded-lg text-rose-500 cursor-pointer"><Trash2 className="h-4 w-4" /></button>
                           </div>
                         ) : null}
                       </td>
@@ -771,28 +771,28 @@ export function EmployeesPage() {
           {/* Approved Members Cards (Mobile) */}
           <div className="lg:hidden space-y-3">
             {filteredEmployees.map((emp) => (
-              <div key={`m-${emp.uid}`} className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm text-right">
+              <div key={`m-${emp.uid}`} className="bg-[var(--surface)] rounded-2xl border border-[var(--border-subtle)] p-4 shadow-sm text-right">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <Avatar name={formatFullName(emp.displayName)} src={emp.photoURL} size="sm" />
                     <div>
                       <div className="flex items-center gap-2">
-                        <p className="font-bold text-slate-900 text-sm">{formatFullName(emp.displayName)}</p>
-                        <span className="font-mono text-[9px] font-bold px-1.5 py-0.2 rounded bg-purple-50 text-purple-700 border border-purple-200">
+                        <p className="font-bold text-[var(--text-primary)] text-sm">{formatFullName(emp.displayName)}</p>
+                        <span className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">
                           {emp.employeeCode || generateEmployeeCode(emp.username || emp.uid)}
                         </span>
                       </div>
-                      <p className="text-xs font-mono text-indigo-600">@{emp.username}</p>
+                      <p className="text-xs font-mono text-indigo-400">@{emp.username}</p>
                       {emp.committeeName && (
-                        <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold border" style={{ backgroundColor: committees.find(c=>c.id===emp.committeeId)?.color + '12' || '#f3f0ff', color: committees.find(c=>c.id===emp.committeeId)?.color || '#7C00FE', borderColor: committees.find(c=>c.id===emp.committeeId)?.color + '30' || '#e9e5ff' }}>{emp.committeeName}</span>
+                        <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold border" style={{ backgroundColor: committees.find(c=>c.id===emp.committeeId)?.color + '20' || '#7c3aed20', color: committees.find(c=>c.id===emp.committeeId)?.color || '#7C3AED', borderColor: committees.find(c=>c.id===emp.committeeId)?.color + '40' || '#7c3aed40' }}>{emp.committeeName}</span>
                       )}
                     </div>
                   </div>
-                  <span className="text-xs font-black px-2 py-1 rounded-lg bg-amber-50 text-amber-700 border border-amber-200">🪙 {hasUnlimitedCoins(emp.role) ? '∞' : (emp.oCoinsBalance ?? 0)}</span>
+                  <span className="text-xs font-black px-2 py-1 rounded-lg bg-amber-500/15 text-amber-500 border border-amber-500/20">🪙 {hasUnlimitedCoins(emp.role) ? '∞' : (emp.oCoinsBalance ?? 0)}</span>
                 </div>
                 <div className="flex items-center gap-2 mt-3 flex-wrap">
                   <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${getRoleColor(emp.role)}`}>{getRoleLabel(emp.role)}</span>
-                  <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${emp.status === 'active' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>{emp.status}</span>
+                  <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${emp.status === 'active' ? 'bg-emerald-500/15 text-emerald-500' : 'bg-rose-500/15 text-rose-500'}`}>{emp.status}</span>
                 </div>
                 {emp.uid === userProfile?.uid ? (
                   <div className="mt-3 p-2 text-center rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-xs font-bold text-blue-700 dark:text-blue-300 flex items-center justify-center gap-2 shadow-sm">
@@ -801,20 +801,20 @@ export function EmployeesPage() {
                   </div>
                 ) : canManageRole(userProfile?.role ?? 'member', emp.role) ? (
                   <div className="grid grid-cols-5 gap-1.5 mt-3">
-                    <button onClick={() => handleOpenEdit(emp)} className="py-2 rounded-xl bg-slate-50 hover:bg-[#7C00FE]/10 text-slate-700 flex flex-col items-center gap-1 text-[10px] font-bold"><Edit3 className="h-4 w-4" /> تعديل</button>
-                    <button onClick={() => { setSelectedUser(emp); setShowPassModal(true); }} className="py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 flex flex-col items-center gap-1 text-[10px] font-bold"><KeyRound className="h-4 w-4" /> كلمة السر</button>
+                    <button onClick={() => handleOpenEdit(emp)} className="py-2 rounded-xl bg-[var(--surface-elevated)] hover:bg-[var(--brand-primary)]/10 text-[var(--text-secondary)] flex flex-col items-center gap-1 text-[10px] font-bold"><Edit3 className="h-4 w-4" /> تعديل</button>
+                    <button onClick={() => { setSelectedUser(emp); setShowPassModal(true); }} className="py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 flex flex-col items-center gap-1 text-[10px] font-bold"><KeyRound className="h-4 w-4" /> كلمة السر</button>
                     {(() => { const ab = getActiveBan(bans, emp.uid); return ab ? (
-                      <button onClick={() => handleEndBan(emp)} className="py-2 rounded-xl bg-emerald-50 text-emerald-700 flex flex-col items-center gap-1 text-[10px] font-bold"><BanIcon className="h-4 w-4" /> رفع الحظر</button>
+                      <button onClick={() => handleEndBan(emp)} className="py-2 rounded-xl bg-emerald-500/10 text-emerald-500 flex flex-col items-center gap-1 text-[10px] font-bold"><BanIcon className="h-4 w-4" /> رفع الحظر</button>
                     ) : (
-                      <button onClick={() => openBanModal(emp)} className="py-2 rounded-xl bg-[#F5004F]/10 text-[#F5004F] flex flex-col items-center gap-1 text-[10px] font-bold"><Gavel className="h-4 w-4" /> حظر</button>
+                      <button onClick={() => openBanModal(emp)} className="py-2 rounded-xl bg-rose-500/10 text-rose-500 flex flex-col items-center gap-1 text-[10px] font-bold"><Gavel className="h-4 w-4" /> حظر</button>
                     );})()}
-                    <button onClick={() => handleToggleStatus(emp)} className={`py-2 rounded-xl flex flex-col items-center gap-1 text-[10px] font-bold ${emp.status === 'active' ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'}`}>{emp.status === 'active' ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}{emp.status === 'active' ? 'تعطيل' : 'تفعيل'}</button>
-                    <button onClick={() => { setSelectedUser(emp); setShowDeleteModal(true); }} className="py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 flex flex-col items-center gap-1 text-[10px] font-bold"><Trash2 className="h-4 w-4" /> حذف</button>
+                    <button onClick={() => handleToggleStatus(emp)} className={`py-2 rounded-xl flex flex-col items-center gap-1 text-[10px] font-bold ${emp.status === 'active' ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'}`}>{emp.status === 'active' ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}{emp.status === 'active' ? 'تعطيل' : 'تفعيل'}</button>
+                    <button onClick={() => { setSelectedUser(emp); setShowDeleteModal(true); }} className="py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 flex flex-col items-center gap-1 text-[10px] font-bold"><Trash2 className="h-4 w-4" /> حذف</button>
                   </div>
                 ) : null}
               </div>
             ))}
-            {filteredEmployees.length === 0 && <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-400">لا يوجد أعضاء يطابقون خيارات البحث</div>}
+            {filteredEmployees.length === 0 && <div className="bg-[var(--surface)] rounded-2xl border border-dashed border-[var(--border-subtle)] p-8 text-center text-sm text-[var(--text-muted)]">لا يوجد أعضاء يطابقون خيارات البحث</div>}
           </div>
         </>
       )}
@@ -896,18 +896,18 @@ export function EmployeesPage() {
           )}
 
           {/* Permissions Checkboxes */}
-          <div className="pt-3 border-t border-slate-100 space-y-2">
-            <label className="form-label text-xs font-bold text-slate-700">الصلاحيات التفصيلية (Permissions)</label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-1 border border-slate-200 rounded-xl bg-slate-50">
+          <div className="pt-3 border-t border-[var(--border-subtle)] space-y-2">
+            <label className="form-label text-xs font-bold text-[var(--text-secondary)]">الصلاحيات التفصيلية (Permissions)</label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-1 border border-[var(--border-subtle)] rounded-xl bg-[var(--surface-elevated)]">
               {AVAILABLE_PERMISSIONS.map((p) => (
-                <label key={p.key} className="flex items-center gap-2 p-2 rounded-lg bg-white border border-slate-200/60 cursor-pointer hover:bg-blue-50/50 text-xs">
+                <label key={p.key} className="flex items-center gap-2 p-2 rounded-lg bg-[var(--surface)] border border-[var(--border-subtle)] cursor-pointer hover:bg-[var(--brand-primary)]/5 text-xs">
                   <input
                     type="checkbox"
                     checked={formPermissions.includes(p.key)}
                     onChange={() => handleTogglePermission(p.key)}
-                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 h-4 w-4"
+                    className="rounded border-[var(--border-subtle)] text-[var(--brand-primary)] focus:ring-[var(--brand-primary)] h-4 w-4"
                   />
-                  <span className="font-semibold text-slate-800">{p.label}</span>
+                  <span className="font-semibold text-[var(--text-primary)]">{p.label}</span>
                 </label>
               ))}
             </div>
@@ -979,18 +979,18 @@ export function EmployeesPage() {
             />
           )}
 
-          <div className="pt-3 border-t border-slate-100 space-y-2">
-            <label className="form-label text-xs font-bold text-slate-700">الصلاحيات التفصيلية (Permissions)</label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-1 border border-slate-200 rounded-xl bg-slate-50">
+          <div className="pt-3 border-t border-[var(--border-subtle)] space-y-2">
+            <label className="form-label text-xs font-bold text-[var(--text-secondary)]">الصلاحيات التفصيلية (Permissions)</label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-1 border border-[var(--border-subtle)] rounded-xl bg-[var(--surface-elevated)]">
               {AVAILABLE_PERMISSIONS.map((p) => (
-                <label key={p.key} className="flex items-center gap-2 p-2 rounded-lg bg-white border border-slate-200/60 cursor-pointer hover:bg-blue-50/50 text-xs">
+                <label key={p.key} className="flex items-center gap-2 p-2 rounded-lg bg-[var(--surface)] border border-[var(--border-subtle)] cursor-pointer hover:bg-[var(--brand-primary)]/5 text-xs">
                   <input
                     type="checkbox"
                     checked={formPermissions.includes(p.key)}
                     onChange={() => handleTogglePermission(p.key)}
-                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 h-4 w-4"
+                    className="rounded border-[var(--border-subtle)] text-[var(--brand-primary)] focus:ring-[var(--brand-primary)] h-4 w-4"
                   />
-                  <span className="font-semibold text-slate-800">{p.label}</span>
+                  <span className="font-semibold text-[var(--text-primary)]">{p.label}</span>
                 </label>
               ))}
             </div>
@@ -1099,7 +1099,7 @@ export function EmployeesPage() {
                 { v: '30', l: '1 Month' },
                 { v: 'custom', l: 'Custom' },
               ].map((o) => (
-                <button key={o.v} type="button" onClick={() => setBanDuration(o.v)} className={`py-2.5 rounded-xl text-xs font-bold border-2 ${banDuration===o.v ? 'bg-[#7C00FE] text-white border-[#7C00FE]' : 'bg-white text-slate-700 border-slate-200 hover:border-[#7C00FE]/30'}`}>{o.l}</button>
+                <button key={o.v} type="button" onClick={() => setBanDuration(o.v)} className={`py-2.5 rounded-xl text-xs font-bold border-2 ${banDuration===o.v ? 'bg-[var(--brand-primary)] text-white border-[var(--brand-primary)]' : 'bg-[var(--surface)] text-[var(--text-secondary)] border-[var(--border-subtle)] hover:border-[var(--brand-primary)]/30'}`}>{o.l}</button>
               ))}
             </div>
           </div>
@@ -1114,7 +1114,7 @@ export function EmployeesPage() {
             <label className="form-label">Internal note (optional)</label>
             <Input placeholder="Private admin note..." value={banNote} onChange={(e) => setBanNote(e.target.value)} />
           </div>
-          <div className="text-[11px] text-slate-500 bg-slate-50 p-3 rounded-xl border">
+          <div className="text-[11px] text-[var(--text-muted)] bg-[var(--surface-elevated)] p-3 rounded-xl border border-[var(--border-subtle)]">
             Start: now • End: {banDuration === 'custom' ? (banCustomEnd ? new Date(banCustomEnd).toLocaleString() : '—') : `${banDuration} day(s) from now`} • Auto-expires without manual unban.
           </div>
         </div>
