@@ -110,7 +110,7 @@ export function DiscountsPage() {
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-xs font-bold border border-white/20">
               <Gift className="h-3.5 w-3.5 text-[var(--brand-accent)]" />
-              <span>مكافآت وامتيازات أعضاء GDG HITU</span>
+              <span>مكافآت وامتيازات أعضاء منصة الجوجالية</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
               متجر الخصومات والعروض الحصرية
@@ -222,7 +222,7 @@ export function DiscountsPage() {
             description={
               search
                 ? 'لم يتم العثور على نتائج تطابق معايير البحث المحددة.'
-                : 'سيتم إضافة عروض وقسائم خصم جديدة قريباً من قِبل إدارة GDG HITU.'
+                : 'سيتم إضافة عروض وقسائم خصم جديدة قريباً من قِبل إدارة منصة الجوجالية.'
             }
           />
         </div>

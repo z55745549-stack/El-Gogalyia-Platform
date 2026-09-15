@@ -15,7 +15,7 @@ export type UserRole =
   | 'head'       // HEAD - رئيس لجنة (مثل السوبر أدمن سابقاً - إدارة كل شيء أسفله)
   | 'vice_head'  // VICE-HEAD - نائب رئيس لجنة (متساوي مع العضو تماماً مثل صلاحيات الموظف)
   | 'member';    // MEMBER - عضو (البديل الفعلي للموظف)
-export type UserStatus = 'active' | 'inactive' | 'suspended';
+export type UserStatus = 'active' | 'inactive' | 'suspended' | 'pending';
 
 export interface AuthorizedUser {
   email?: string;

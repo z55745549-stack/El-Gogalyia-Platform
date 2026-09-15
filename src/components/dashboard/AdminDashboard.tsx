@@ -72,7 +72,7 @@ export function AdminDashboard() {
           <div className="space-y-1.5">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full badge-primary text-xs font-bold">
               <Shield className="h-3.5 w-3.5" />
-              لوحة الإشراف المركزية · GDG HITU
+              لوحة الإشراف والقيادة المركزية · منصة الجوجالية
             </div>
             <h1 className="page-title text-xl sm:text-2xl font-extrabold text-[var(--text-primary)]">
               مرحباً، {userProfile?.displayName?.split(' ')[0] || 'المشرف'} 👋

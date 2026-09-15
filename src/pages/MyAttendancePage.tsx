@@ -59,7 +59,7 @@ export function MyAttendancePage() {
             </span>
           </div>
           <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mt-1">
-            سجل موثق لجميع فعاليات واجتماعات GDG HITU التي سجلت حضورك بها عبر نظام الباركود QR.
+            سجل موثق لجميع فعاليات واجتماعات منصة الجوجالية التي سجلت حضورك بها عبر نظام الباركود QR.
           </p>
         </div>
       </div>

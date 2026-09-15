@@ -191,7 +191,7 @@ const ELTMSAH_PROFILE: UserProfile = {
   status: 'active',
   committeeId: 'tech-dev',
   committeeName: 'Tech Dev',
-  employeeCode: 'GDG-LEAD-01',
+  employeeCode: 'JOGAL-LEAD-01',
   oCoinsBalance: 10000,
   createdAt: new Date().toISOString(),
 };
@@ -225,6 +225,14 @@ interface AuthContextValue {
   signInWithUsername: (username: string, password: string) => Promise<boolean | { requires2FA: true; linkedEmail: string; profile: UserProfile }>;
   complete2FALogin: (profile: UserProfile) => Promise<boolean>;
   signInWithGoogleAdmin: () => Promise<boolean>;
+  registerMember: (data: {
+    fullName: string;
+    username: string;
+    email: string;
+    password: string;
+    committeeId: string;
+    committeeName: string;
+  }) => Promise<void>;
   updateCurrentUserProfile: (updated: Partial<UserProfile>) => Promise<void>;
   signOut: () => Promise<void>;
   hasPermission: (perm: Permission) => boolean;
@@ -428,6 +436,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Account status check
+    if (matchedProfile.status === 'pending') {
+      throw new Error('حسابك قيد المراجعة والاعتماد من قِبل قيادة الجوجالية. ستتمكن من تسجيل الدخول فور الموافقة وتفعيل الحساب.');
+    }
     if (matchedProfile.status === 'suspended' || matchedProfile.status === 'inactive') {
       throw new Error('حسابك معطّل حالياً. يرجى مراجعة إدارة المنصة.');
     }
@@ -549,6 +560,76 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [userProfile]
   );
 
+  // -------------------------------------------------------------------
+  // registerMember — Self Registration for Members (Status: Pending)
+  // -------------------------------------------------------------------
+  const registerMember = useCallback(async (data: {
+    fullName: string;
+    username: string;
+    email: string;
+    password: string;
+    committeeId: string;
+    committeeName: string;
+  }): Promise<void> => {
+    const unameClean = data.username.trim().toLowerCase();
+    const emailClean = data.email.trim().toLowerCase();
+    const nameClean = data.fullName.trim();
+    const passClean = data.password.trim();
+
+    if (!unameClean || !emailClean || !nameClean || !passClean) {
+      throw new Error('يرجى ملء جميع الحقول المطلوبة.');
+    }
+
+    if (passClean.length < 6) {
+      throw new Error('كلمة المرور يجب أن تكون 6 أحرف على الأقل.');
+    }
+
+    // Check if username or email is already taken
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('id, username, email')
+      .or(`username.eq.${unameClean},email.eq.${emailClean}`)
+      .limit(1)
+      .maybeSingle();
+
+    if (existingUser) {
+      if (existingUser.username?.toLowerCase() === unameClean) {
+        throw new Error('اسم المستخدم مستخدم بالفعل، يرجى اختيار اسم مستخدم آخر.');
+      }
+      throw new Error('البريد الإلكتروني مسجل بالفعل في منصة الجوجالية.');
+    }
+
+    const salt = generateSalt();
+    const passwordHash = await hashPassword(passClean, salt);
+    const genId = 'user_reg_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
+    const codeNum = Math.floor(1000 + Math.random() * 9000);
+    const employeeCode = `GOGA-${codeNum}`;
+
+    const newProfile = {
+      id: genId,
+      username: unameClean,
+      display_name: nameClean,
+      email: emailClean,
+      role: 'member',
+      status: 'pending',
+      committee_id: data.committeeId || 'tech-dev',
+      committee_name: data.committeeName || 'Tech Dev',
+      employee_code: employeeCode,
+      ocoins_balance: 0,
+      permissions: [],
+      password_hash: passwordHash,
+      salt: salt,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error: insErr } = await supabase.from('users').insert(newProfile);
+    if (insErr) {
+      logError('registerMember insert', insErr);
+      throw new Error(insErr.message || 'حدث خطأ أثناء إرسال طلب الانضمام.');
+    }
+  }, []);
+
   return (
     <AuthContext.Provider value={{
       user,
@@ -558,6 +639,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signInWithUsername,
       complete2FALogin,
       signInWithGoogleAdmin,
+      registerMember,
       updateCurrentUserProfile,
       signOut,
       hasPermission

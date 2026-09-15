@@ -165,7 +165,7 @@ export function SupportPage() {
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full badge-primary text-xs font-bold mb-3">
               <LifeBuoy className="h-4 w-4 text-[var(--brand-accent)]" />
-              <span>مركز المساعدة والدعم الفني المباشر · GDG HITU</span>
+              <span>مركز المساعدة والدعم الفني المباشر · منصة الجوجالية</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-[var(--text-primary)]">
               كيف يمكننا مساعدتك اليوم؟

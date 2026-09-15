@@ -41,6 +41,8 @@ export function EmployeesPage() {
   const [bans, setBans] = useState<BanRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [viewTab, setViewTab] = useState<'approved' | 'pending'>('approved');
+  const [pendingRoles, setPendingRoles] = useState<Record<string, UserRole>>({});
 
   // Modals
   const [showAddModal, setShowAddModal] = useState(false);
@@ -406,7 +408,37 @@ export function EmployeesPage() {
     finally { setSubmitting(false); }
   };
 
-  const filteredEmployees = employees.filter((e) => {
+  // Pending Approval Handlers
+  const handleApprovePending = async (emp: UserProfile) => {
+    const assignedRole = pendingRoles[emp.uid] || emp.role || 'member';
+    try {
+      await updateDoc(doc(db, 'users', emp.uid), {
+        status: 'active',
+        role: assignedRole,
+        ocoins_balance: emp.oCoinsBalance ? emp.oCoinsBalance : 50,
+        updated_at: new Date().toISOString(),
+      });
+      toast.success(`تم قبول واعتماد ${emp.displayName} كـ ${getRoleLabel(assignedRole)} بنجاح! 🎉`);
+    } catch (err: any) {
+      toast.error('حدث خطأ أثناء اعتماد الحساب.');
+    }
+  };
+
+  const handleRejectPending = async (emp: UserProfile) => {
+    try {
+      await deleteDoc(doc(db, 'users', emp.uid));
+      toast.success(`تم رفض وحذف طلب ${emp.displayName}.`);
+    } catch (err: any) {
+      toast.error('حدث خطأ أثناء رفض الطلب.');
+    }
+  };
+
+  const pendingMembers = employees.filter((e) => e.status === 'pending');
+  const approvedMembers = employees.filter((e) => e.status !== 'pending');
+
+  const currentList = viewTab === 'pending' ? pendingMembers : approvedMembers;
+
+  const filteredEmployees = currentList.filter((e) => {
     const matchSearch = !search || (e.displayName || '').toLowerCase().includes(search.toLowerCase()) || (e.username || '').toLowerCase().includes(search.toLowerCase()) || (e.committeeName || '').toLowerCase().includes(search.toLowerCase());
     const matchCommittee = !committeeFilter || e.committeeId === committeeFilter;
     return matchSearch && matchCommittee;
@@ -418,20 +450,57 @@ export function EmployeesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
         <div>
           <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2.5">
-            <Users className="h-7 w-7 text-blue-600" />
-            إدارة الموظفين (Employee Management)
+            <Users className="h-7 w-7 text-indigo-600" />
+            إدارة أعضاء منصة الجوجالية (Team & Members)
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            إضافة وتعديل حسابات الموظفين، إسناد الصلاحيات، وإدارة حالات الدخول
+            إدارة وتفعيل حسابات أعضاء مجتمع الجوجالية، اعتماد طلبات الانضمام، وإسناد الصلاحيات واللجان
           </p>
         </div>
 
         <Button
           onClick={() => { resetForm(); setShowAddModal(true); }}
-          className="gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs py-3 rounded-xl shadow-md shadow-blue-600/20"
+          className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs py-3 rounded-xl shadow-md shadow-indigo-600/20"
         >
-          <UserPlus className="h-4 w-4" /> إضافة موظف جديد
+          <UserPlus className="h-4 w-4" /> إضافة عضو جديد
         </Button>
+      </div>
+
+      {/* View Tabs: Approved Members vs Pending Requests */}
+      <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+        <button
+          type="button"
+          onClick={() => setViewTab('approved')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+            viewTab === 'approved'
+              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/25'
+              : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+          }`}
+        >
+          <Users className="h-4 w-4" />
+          <span>الأعضاء المعتمدون</span>
+          <span className="px-2 py-0.5 rounded-full text-[10px] bg-black/20 text-white font-mono">
+            {approvedMembers.length}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setViewTab('pending')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 relative ${
+            viewTab === 'pending'
+              ? 'bg-amber-500 text-white shadow-md shadow-amber-500/25'
+              : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+          }`}
+        >
+          <UserPlus className="h-4 w-4" />
+          <span>طلبات الانضمام المعلقة</span>
+          {pendingMembers.length > 0 && (
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-500 text-white animate-pulse font-mono">
+              {pendingMembers.length}
+            </span>
+          )}
+        </button>
       </div>
 
       {/* Search + Committee Filter */}
@@ -474,139 +543,236 @@ export function EmployeesPage() {
         ))}
       </div>
 
-      {/* Employees Table - Desktop */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden hidden lg:block">
-        <div className="overflow-x-auto">
-          <table className="w-full text-right text-xs sm:text-sm">
-            <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold">
-              <tr>
-                <th className="p-4">الموظف</th>
-                <th className="p-4">اسم المستخدم (Username)</th>
-                <th className="p-4 hidden md:table-cell">اللجنة (Committee)</th>
-                <th className="p-4">الرتبة (Role)</th>
-                <th className="p-4">الحالة (Status)</th>
-                <th className="p-4">رصيد O Coins</th>
-                <th className="p-4 text-left">الإجراءات</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 font-medium">
+      {/* ── Pending Requests View ───────────────────────────────── */}
+      {viewTab === 'pending' && (
+        <div className="space-y-4">
+          {filteredEmployees.length === 0 ? (
+            <div className="bg-white p-12 text-center rounded-2xl border border-slate-200/80 shadow-sm space-y-3">
+              <div className="w-16 h-16 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center mx-auto text-amber-500">
+                <UserCheck className="h-8 w-8" />
+              </div>
+              <h3 className="text-base font-bold text-slate-800">لا توجد طلبات انضمام معلقة حالياً</h3>
+              <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                جميع طلبات الانضمام المرسلة عبر صفحة التسجيل تم مراجعتها واعتمادها بنجاح.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {filteredEmployees.map((emp) => (
-                <tr key={emp.uid} className="hover:bg-slate-50/80 transition-colors">
-                  <td className="p-4">
+                <div
+                  key={emp.uid}
+                  className="bg-white rounded-2xl border-2 border-amber-200/80 p-5 shadow-sm space-y-4 hover:shadow-md transition-shadow relative overflow-hidden text-right"
+                >
+                  <div className="absolute top-0 right-0 w-2 h-full bg-amber-400" />
+
+                  <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <Avatar name={emp.displayName} src={emp.photoURL} size="sm" />
+                      <Avatar name={emp.displayName} size="md" />
                       <div>
-                        <div className="flex items-center gap-2">
-                          <p className="font-bold text-slate-900">{emp.displayName}</p>
-                          <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200">
-                            {emp.employeeCode || generateEmployeeCode(emp.username || emp.uid)}
-                          </span>
+                        <h4 className="font-bold text-slate-900 text-sm sm:text-base">
+                          {emp.displayName}
+                        </h4>
+                        <div className="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
+                          <span className="font-mono font-bold text-indigo-600">@{emp.username}</span>
+                          {emp.email && <span>• {emp.email}</span>}
                         </div>
-                        {emp.email && <p className="text-[11px] text-slate-400">{emp.email}</p>}
                       </div>
                     </div>
-                  </td>
-
-                  <td className="p-4 font-mono font-bold text-blue-600">
-                    @{emp.username || 'n/a'}
-                  </td>
-
-                  <td className="p-4 hidden md:table-cell">
-                    {emp.committeeName ? (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border" style={{ backgroundColor: committees.find(c=>c.id===emp.committeeId)?.color + '15' || '#f3f0ff', borderColor: committees.find(c=>c.id===emp.committeeId)?.color || '#7C00FE', color: committees.find(c=>c.id===emp.committeeId)?.color || '#7C00FE' }}>
-                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: committees.find(c=>c.id===emp.committeeId)?.color || '#7C00FE' }} />
-                        {emp.committeeName}
-                      </span>
-                    ) : (
-                      <span className="text-[11px] text-slate-400">—</span>
-                    )}
-                  </td>
-
-                  <td className="p-4">
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold ${getRoleColor(emp.role)}`}>
-                      {getRoleLabel(emp.role)}
-                    </span>
-                  </td>
-
-                  <td className="p-4">
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold ${
-                      emp.status === 'active'
-                        ? 'bg-emerald-100 text-emerald-700'
-                        : 'bg-rose-100 text-rose-700'
-                    }`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${emp.status === 'active' ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-                      {emp.status === 'active' ? 'نشط (Active)' : emp.status === 'suspended' ? 'معطّل (Suspended)' : 'غير نشط (Inactive)'}
-                    </span>
-                  </td>
-
-                  <td className="p-4 font-bold text-slate-800">
-                    🪙 {emp.oCoinsBalance ?? 0}
-                  </td>
-
-                  <td className="p-4 text-left">
-                    {canManageRole(userProfile?.role ?? 'member', emp.role) && (
-                      <div className="flex items-center justify-end gap-1">
-                        <button onClick={() => handleOpenEdit(emp)} title="تعديل" className="p-2 hover:bg-slate-100 rounded-lg text-slate-600"><Edit3 className="h-4 w-4" /></button>
-                        <button onClick={() => { setSelectedUser(emp); setShowPassModal(true); }} title="كلمة المرور" className="p-2 hover:bg-amber-50 rounded-lg text-amber-600"><KeyRound className="h-4 w-4" /></button>
-                        {(() => { const ab = getActiveBan(bans, emp.uid); return ab ? (
-                          <button onClick={() => handleEndBan(emp)} title={`Suspended until ${new Date(ab.endAt as any).toLocaleDateString()} — click to lift`} className="p-2 bg-rose-100 hover:bg-emerald-50 rounded-lg text-rose-700 hover:text-emerald-700 flex items-center gap-1 text-[10px] font-bold"><BanIcon className="h-3.5 w-3.5" /> Lift</button>
-                        ) : (
-                          <button onClick={() => openBanModal(emp)} title="Suspend employee" className="p-2 hover:bg-[#F5004F]/10 rounded-lg text-[#F5004F]"><Gavel className="h-4 w-4" /></button>
-                        );})()}
-                        <button onClick={() => handleToggleStatus(emp)} title={emp.status === 'active' ? 'تعطيل' : 'تفعيل'} className={`p-2 rounded-lg ${emp.status === 'active' ? 'hover:bg-rose-50 text-rose-600' : 'hover:bg-emerald-50 text-emerald-600'}`}>{emp.status === 'active' ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}</button>
-                        <button onClick={() => { setSelectedUser(emp); setShowDeleteModal(true); }} title="حذف" className="p-2 hover:bg-rose-50 rounded-lg text-rose-600"><Trash2 className="h-4 w-4" /></button>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-      {/* Employees Cards - Mobile */}
-      <div className="lg:hidden space-y-3">
-        {filteredEmployees.map((emp) => (
-          <div key={`m-${emp.uid}`} className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <Avatar name={emp.displayName} src={emp.photoURL} size="sm" />
-                <div>
-                  <div className="flex items-center gap-2">
-                    <p className="font-bold text-slate-900 text-sm">{emp.displayName}</p>
-                    <span className="font-mono text-[9px] font-bold px-1.5 py-0.2 rounded bg-purple-50 text-purple-700 border border-purple-200">
-                      {emp.employeeCode || generateEmployeeCode(emp.username || emp.uid)}
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                      طلب انضمام جديد ⏳
                     </span>
                   </div>
-                  <p className="text-xs font-mono text-[#7C00FE]">@{emp.username}</p>
-                  {emp.committeeName && (
-                    <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold border" style={{ backgroundColor: committees.find(c=>c.id===emp.committeeId)?.color + '12' || '#f3f0ff', color: committees.find(c=>c.id===emp.committeeId)?.color || '#7C00FE', borderColor: committees.find(c=>c.id===emp.committeeId)?.color + '30' || '#e9e5ff' }}>{emp.committeeName}</span>
-                  )}
+
+                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/60 flex items-center justify-between text-xs">
+                    <div>
+                      <span className="text-slate-400 block text-[10px]">اللجنة المطلوبة:</span>
+                      <span className="font-bold text-slate-700">{emp.committeeName || 'Tech Dev'}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10px]">كود العضوية المقترح:</span>
+                      <span className="font-mono font-bold text-purple-700">{emp.employeeCode || 'GOGA-NEW'}</span>
+                    </div>
+                  </div>
+
+                  {/* Role assignment & Actions */}
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-2 border-t border-slate-100">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-slate-600 whitespace-nowrap">الرتبة:</span>
+                      <select
+                        value={pendingRoles[emp.uid] || 'member'}
+                        onChange={(e) => setPendingRoles({ ...pendingRoles, [emp.uid]: e.target.value as UserRole })}
+                        className="bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-800"
+                      >
+                        <option value="member">عضو (MEMBER)</option>
+                        <option value="vice_head">نائب لجنة (VICE-HEAD)</option>
+                        {isTopTier && <option value="head">رئيس لجنة (HEAD)</option>}
+                        {isTopTier && <option value="co_lead">نائب قائد (CO-LEAD)</option>}
+                      </select>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => handleApprovePending(emp)}
+                        className="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm shadow-emerald-600/20 cursor-pointer"
+                      >
+                        <UserCheck className="h-3.5 w-3.5 ml-1" /> اعتماد وتفعيل الحساب
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleRejectPending(emp)}
+                        className="flex-1 sm:flex-none border-rose-200 text-rose-600 hover:bg-rose-50 text-xs rounded-xl cursor-pointer"
+                      >
+                        <Trash2 className="h-3.5 w-3.5 ml-1" /> رفض
+                      </Button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <span className="text-xs font-black px-2 py-1 rounded-lg bg-amber-50 text-amber-700 border border-amber-200">🪙 {emp.oCoinsBalance ?? 0}</span>
+              ))}
             </div>
-            <div className="flex items-center gap-2 mt-3 flex-wrap">
-              <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${getRoleColor(emp.role)}`}>{getRoleLabel(emp.role)}</span>
-              <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${emp.status === 'active' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>{emp.status}</span>
+          )}
+        </div>
+      )}
+
+      {/* ── Approved Members Table (Desktop) ───────────────────────── */}
+      {viewTab === 'approved' && (
+        <>
+          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden hidden lg:block">
+            <div className="overflow-x-auto">
+              <table className="w-full text-right text-xs sm:text-sm">
+                <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold">
+                  <tr>
+                    <th className="p-4">العضو</th>
+                    <th className="p-4">اسم المستخدم (Username)</th>
+                    <th className="p-4 hidden md:table-cell">اللجنة (Committee)</th>
+                    <th className="p-4">الرتبة (Role)</th>
+                    <th className="p-4">الحالة (Status)</th>
+                    <th className="p-4">رصيد O Coins</th>
+                    <th className="p-4 text-left">الإجراءات</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 font-medium">
+                  {filteredEmployees.map((emp) => (
+                    <tr key={emp.uid} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="p-4">
+                        <div className="flex items-center gap-3">
+                          <Avatar name={emp.displayName} src={emp.photoURL} size="sm" />
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <p className="font-bold text-slate-900">{emp.displayName}</p>
+                              <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200">
+                                {emp.employeeCode || generateEmployeeCode(emp.username || emp.uid)}
+                              </span>
+                            </div>
+                            {emp.email && <p className="text-[11px] text-slate-400">{emp.email}</p>}
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="p-4 font-mono font-bold text-indigo-600">
+                        @{emp.username || 'n/a'}
+                      </td>
+
+                      <td className="p-4 hidden md:table-cell">
+                        {emp.committeeName ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border" style={{ backgroundColor: committees.find(c=>c.id===emp.committeeId)?.color + '15' || '#f3f0ff', borderColor: committees.find(c=>c.id===emp.committeeId)?.color || '#7C00FE', color: committees.find(c=>c.id===emp.committeeId)?.color || '#7C00FE' }}>
+                            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: committees.find(c=>c.id===emp.committeeId)?.color || '#7C00FE' }} />
+                            {emp.committeeName}
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-slate-400">—</span>
+                        )}
+                      </td>
+
+                      <td className="p-4">
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold ${getRoleColor(emp.role)}`}>
+                          {getRoleLabel(emp.role)}
+                        </span>
+                      </td>
+
+                      <td className="p-4">
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold ${
+                          emp.status === 'active'
+                            ? 'bg-emerald-100 text-emerald-700'
+                            : 'bg-rose-100 text-rose-700'
+                        }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${emp.status === 'active' ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                          {emp.status === 'active' ? 'نشط (Active)' : emp.status === 'suspended' ? 'معطّل (Suspended)' : 'غير نشط (Inactive)'}
+                        </span>
+                      </td>
+
+                      <td className="p-4 font-bold text-slate-800">
+                        🪙 {emp.oCoinsBalance ?? 0}
+                      </td>
+
+                      <td className="p-4 text-left">
+                        {canManageRole(userProfile?.role ?? 'member', emp.role) && (
+                          <div className="flex items-center justify-end gap-1">
+                            <button onClick={() => handleOpenEdit(emp)} title="تعديل" className="p-2 hover:bg-slate-100 rounded-lg text-slate-600 cursor-pointer"><Edit3 className="h-4 w-4" /></button>
+                            <button onClick={() => { setSelectedUser(emp); setShowPassModal(true); }} title="كلمة المرور" className="p-2 hover:bg-amber-50 rounded-lg text-amber-600 cursor-pointer"><KeyRound className="h-4 w-4" /></button>
+                            {(() => { const ab = getActiveBan(bans, emp.uid); return ab ? (
+                              <button onClick={() => handleEndBan(emp)} title={`Suspended until ${new Date(ab.endAt as any).toLocaleDateString()} — click to lift`} className="p-2 bg-rose-100 hover:bg-emerald-50 rounded-lg text-rose-700 hover:text-emerald-700 flex items-center gap-1 text-[10px] font-bold cursor-pointer"><BanIcon className="h-3.5 w-3.5" /> Lift</button>
+                            ) : (
+                              <button onClick={() => openBanModal(emp)} title="Suspend member" className="p-2 hover:bg-[#F5004F]/10 rounded-lg text-[#F5004F] cursor-pointer"><Gavel className="h-4 w-4" /></button>
+                            );})()}
+                            <button onClick={() => handleToggleStatus(emp)} title={emp.status === 'active' ? 'تعطيل' : 'تفعيل'} className={`p-2 rounded-lg cursor-pointer ${emp.status === 'active' ? 'hover:bg-rose-50 text-rose-600' : 'hover:bg-emerald-50 text-emerald-600'}`}>{emp.status === 'active' ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}</button>
+                            <button onClick={() => { setSelectedUser(emp); setShowDeleteModal(true); }} title="حذف" className="p-2 hover:bg-rose-50 rounded-lg text-rose-600 cursor-pointer"><Trash2 className="h-4 w-4" /></button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-            {canManageRole(userProfile?.role ?? 'member', emp.role) && (
-              <div className="grid grid-cols-5 gap-1.5 mt-3">
-                <button onClick={() => handleOpenEdit(emp)} className="py-2 rounded-xl bg-slate-50 hover:bg-[#7C00FE]/10 text-slate-700 flex flex-col items-center gap-1 text-[10px] font-bold"><Edit3 className="h-4 w-4" /> Edit</button>
-                <button onClick={() => { setSelectedUser(emp); setShowPassModal(true); }} className="py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 flex flex-col items-center gap-1 text-[10px] font-bold"><KeyRound className="h-4 w-4" /> Pass</button>
-                {(() => { const ab = getActiveBan(bans, emp.uid); return ab ? (
-                  <button onClick={() => handleEndBan(emp)} className="py-2 rounded-xl bg-emerald-50 text-emerald-700 flex flex-col items-center gap-1 text-[10px] font-bold"><BanIcon className="h-4 w-4" /> Unban</button>
-                ) : (
-                  <button onClick={() => openBanModal(emp)} className="py-2 rounded-xl bg-[#F5004F]/10 text-[#F5004F] flex flex-col items-center gap-1 text-[10px] font-bold"><Gavel className="h-4 w-4" /> Ban</button>
-                );})()}
-                <button onClick={() => handleToggleStatus(emp)} className={`py-2 rounded-xl flex flex-col items-center gap-1 text-[10px] font-bold ${emp.status === 'active' ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'}`}>{emp.status === 'active' ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}{emp.status === 'active' ? 'Off' : 'On'}</button>
-                <button onClick={() => { setSelectedUser(emp); setShowDeleteModal(true); }} className="py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 flex flex-col items-center gap-1 text-[10px] font-bold"><Trash2 className="h-4 w-4" /> Del</button>
-              </div>
-            )}
           </div>
-        ))}
-        {filteredEmployees.length === 0 && <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-400">No employees match your filters</div>}
-      </div>
+
+          {/* Approved Members Cards (Mobile) */}
+          <div className="lg:hidden space-y-3">
+            {filteredEmployees.map((emp) => (
+              <div key={`m-${emp.uid}`} className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm text-right">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <Avatar name={emp.displayName} src={emp.photoURL} size="sm" />
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="font-bold text-slate-900 text-sm">{emp.displayName}</p>
+                        <span className="font-mono text-[9px] font-bold px-1.5 py-0.2 rounded bg-purple-50 text-purple-700 border border-purple-200">
+                          {emp.employeeCode || generateEmployeeCode(emp.username || emp.uid)}
+                        </span>
+                      </div>
+                      <p className="text-xs font-mono text-indigo-600">@{emp.username}</p>
+                      {emp.committeeName && (
+                        <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold border" style={{ backgroundColor: committees.find(c=>c.id===emp.committeeId)?.color + '12' || '#f3f0ff', color: committees.find(c=>c.id===emp.committeeId)?.color || '#7C00FE', borderColor: committees.find(c=>c.id===emp.committeeId)?.color + '30' || '#e9e5ff' }}>{emp.committeeName}</span>
+                      )}
+                    </div>
+                  </div>
+                  <span className="text-xs font-black px-2 py-1 rounded-lg bg-amber-50 text-amber-700 border border-amber-200">🪙 {emp.oCoinsBalance ?? 0}</span>
+                </div>
+                <div className="flex items-center gap-2 mt-3 flex-wrap">
+                  <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${getRoleColor(emp.role)}`}>{getRoleLabel(emp.role)}</span>
+                  <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${emp.status === 'active' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>{emp.status}</span>
+                </div>
+                {canManageRole(userProfile?.role ?? 'member', emp.role) && (
+                  <div className="grid grid-cols-5 gap-1.5 mt-3">
+                    <button onClick={() => handleOpenEdit(emp)} className="py-2 rounded-xl bg-slate-50 hover:bg-[#7C00FE]/10 text-slate-700 flex flex-col items-center gap-1 text-[10px] font-bold"><Edit3 className="h-4 w-4" /> تعديل</button>
+                    <button onClick={() => { setSelectedUser(emp); setShowPassModal(true); }} className="py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 flex flex-col items-center gap-1 text-[10px] font-bold"><KeyRound className="h-4 w-4" /> كلمة السر</button>
+                    {(() => { const ab = getActiveBan(bans, emp.uid); return ab ? (
+                      <button onClick={() => handleEndBan(emp)} className="py-2 rounded-xl bg-emerald-50 text-emerald-700 flex flex-col items-center gap-1 text-[10px] font-bold"><BanIcon className="h-4 w-4" /> رفع الحظر</button>
+                    ) : (
+                      <button onClick={() => openBanModal(emp)} className="py-2 rounded-xl bg-[#F5004F]/10 text-[#F5004F] flex flex-col items-center gap-1 text-[10px] font-bold"><Gavel className="h-4 w-4" /> حظر</button>
+                    );})()}
+                    <button onClick={() => handleToggleStatus(emp)} className={`py-2 rounded-xl flex flex-col items-center gap-1 text-[10px] font-bold ${emp.status === 'active' ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'}`}>{emp.status === 'active' ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}{emp.status === 'active' ? 'تعطيل' : 'تفعيل'}</button>
+                    <button onClick={() => { setSelectedUser(emp); setShowDeleteModal(true); }} className="py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 flex flex-col items-center gap-1 text-[10px] font-bold"><Trash2 className="h-4 w-4" /> حذف</button>
+                  </div>
+                )}
+              </div>
+            ))}
+            {filteredEmployees.length === 0 && <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-400">لا يوجد أعضاء يطابقون خيارات البحث</div>}
+          </div>
+        </>
+      )}
 
       {/* Modal: Add Employee */}
       <Modal

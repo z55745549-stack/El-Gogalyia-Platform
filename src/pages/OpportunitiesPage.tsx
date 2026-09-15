@@ -257,7 +257,7 @@ export function OpportunitiesPage() {
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-xl badge-accent font-black text-xs mb-2.5 backdrop-blur-xs">
               <Sparkles className="h-3.5 w-3.5" />
-              <span>محتوى حصري ومخصص لأعضاء فريق GDG HITU</span>
+              <span>محتوى حصري ومخصص لأعضاء فريق منصة الجوجالية</span>
             </div>
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-[var(--text-primary)]">
               الفرص والتدريبات الحصرية (Opportunities & Internships)
@@ -558,7 +558,7 @@ export function OpportunitiesPage() {
                 </div>
                 <div>
                   <p className="text-xs sm:text-sm font-black text-amber-900 dark:text-amber-200">
-                    مخصص لأعضاء فريق GDG HITU فقط 🔒
+                    مخصص لأعضاء فريق منصة الجوجالية فقط 🔒
                   </p>
                   <p className="text-[11px] text-amber-700 dark:text-amber-300/90 font-medium">
                     هذه الفرصة تم جلبها ومراجعتها خصيصاً لدعم مسارك المهني والتقني مع الفريق.

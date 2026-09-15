@@ -72,20 +72,38 @@ interface SidebarProps {
   onMobileClose: () => void;
 }
 
-function GDGLogoMark() {
+function GogalyiaLogoMark() {
   return (
-    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="sbLogoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#6C63FF" />
-          <stop offset="100%" stopColor="#22D3EE" />
-        </linearGradient>
-      </defs>
-      <rect width="32" height="32" rx="9" fill="url(#sbLogoGrad)" />
-      <text x="50%" y="55%" textAnchor="middle" dominantBaseline="middle"
-        fill="white" fontSize="13" fontWeight="900"
-        fontFamily="Inter, Cairo, sans-serif" letterSpacing="-0.5">G</text>
-    </svg>
+    <div className="relative inline-flex items-center justify-center">
+      <div
+        className="absolute -inset-1 rounded-xl blur-sm opacity-50 pointer-events-none"
+        style={{
+          background: 'linear-gradient(135deg, #7C3AED 0%, #06B6D4 100%)',
+        }}
+      />
+      <svg width="34" height="34" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg" className="relative z-10">
+        <defs>
+          <linearGradient id="sbLogoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#7C3AED" />
+            <stop offset="50%" stopColor="#6366F1" />
+            <stop offset="100%" stopColor="#06B6D4" />
+          </linearGradient>
+          <linearGradient id="sbGold" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#FDE047" />
+            <stop offset="100%" stopColor="#F59E0B" />
+          </linearGradient>
+        </defs>
+        <rect width="34" height="34" rx="10" fill="url(#sbLogoGrad)" />
+        <rect x="1" y="1" width="32" height="32" rx="9" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
+        <path
+          d="M23 11C23 11 20 9.5 15.5 9.5C10.5 9.5 9 13 9 17C9 21.5 12.5 25 18 25C23 25 24.5 21.5 24.5 20"
+          stroke="white"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+        />
+        <circle cx="17" cy="17" r="2.2" fill="url(#sbGold)" />
+      </svg>
+    </div>
   );
 }
 
@@ -119,11 +137,11 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
         style={{ borderBottom: '1px solid var(--border-subtle)' }}
       >
         <div className="flex items-center gap-3">
-          <GDGLogoMark />
+          <GogalyiaLogoMark />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5">
-              <span className="font-black text-sm tracking-tight" style={{ color: 'var(--text-primary)' }}>
-                GDG HITU
+              <span className="font-black text-sm tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-indigo-200">
+                منصة الجوجالية
               </span>
               <span
                 className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
@@ -133,11 +151,11 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
                   border: '1px solid rgba(108,99,255,0.2)',
                 }}
               >
-                Platform
+                2026
               </span>
             </div>
             <div className="text-[10px] font-medium" style={{ color: 'var(--text-muted)' }}>
-              Google Developer Group
+              مجتمع الجوجالية الرسمي
             </div>
           </div>
         </div>

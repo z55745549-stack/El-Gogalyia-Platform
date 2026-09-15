@@ -8,418 +8,674 @@ import { useTheme } from '@/context/ThemeContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
-  Lock, User, Shield, ShieldAlert, Sun, Moon, ArrowRight, KeyRound
+  Lock, User, Mail, Sparkles, ShieldCheck, Sun, Moon, ArrowRight,
+  CheckCircle2, Eye, EyeOff, Layers, Award, Zap, HeartHandshake
 } from 'lucide-react';
-import type { UserProfile } from '@/types';
+import { DEFAULT_COMMITTEES } from '@/types';
 
-/* ── GDG HITU Brand Logo SVG ───────────────────────────────────────── */
-function GDGLogo({ size = 36 }: { size?: number }) {
+/* ── Luxury Brand Logo SVG for منصة الجوجالية ───────────────────────── */
+function GogalyiaLogo({ size = 48 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#6C63FF" />
-          <stop offset="50%" stopColor="#A78BFA" />
-          <stop offset="100%" stopColor="#22D3EE" />
-        </linearGradient>
-      </defs>
-      <rect width="36" height="36" rx="10" fill="url(#logoGrad)" />
-      <text
-        x="50%" y="55%"
-        textAnchor="middle"
-        dominantBaseline="middle"
-        fill="white"
-        fontSize="14"
-        fontWeight="900"
-        fontFamily="Inter, Cairo, sans-serif"
-        letterSpacing="-0.5"
-      >G</text>
-    </svg>
+    <div className="relative inline-flex items-center justify-center select-none">
+      <div
+        className="absolute -inset-2 rounded-2xl blur-lg opacity-60 animate-pulse pointer-events-none"
+        style={{
+          background: 'linear-gradient(135deg, #6C63FF 0%, #22D3EE 50%, #10B981 100%)',
+        }}
+      />
+      <svg width={size} height={size} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="relative z-10">
+        <defs>
+          <linearGradient id="gogLogoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#7C3AED" />
+            <stop offset="50%" stopColor="#6366F1" />
+            <stop offset="100%" stopColor="#06B6D4" />
+          </linearGradient>
+          <linearGradient id="goldAccent" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#FDE047" />
+            <stop offset="100%" stopColor="#F59E0B" />
+          </linearGradient>
+        </defs>
+        {/* Rounded Diamond Badge Base */}
+        <rect width="48" height="48" rx="15" fill="url(#gogLogoGrad)" />
+        <rect x="1" y="1" width="46" height="46" rx="14" stroke="rgba(255,255,255,0.25)" strokeWidth="1.5" />
+        {/* Stylized Arabic "ج" & Star */}
+        <path
+          d="M32 15C32 15 28 13 22 13C15 13 13 18 13 24C13 30 18 35 26 35C33 35 35 30 35 28"
+          stroke="white"
+          strokeWidth="3.5"
+          strokeLinecap="round"
+        />
+        {/* Crown / Accent Dot in Gold */}
+        <circle cx="24" cy="24" r="3" fill="url(#goldAccent)" />
+      </svg>
+    </div>
   );
 }
 
-/* ── Feature bullets ────────────────────────────────────────────────── */
-const features = [
-  { title: 'إدارة المهام والتكليفات', desc: 'تسليم ومراجعة فورية بين الأعضاء والمشرفين' },
-  { title: 'محفظة O Coins', desc: 'نظام نقاط ومكافآت مدروس لتحفيز الفريق' },
-  { title: 'الدورات والتدريبات', desc: 'تعلّم وتتبع تقدمك مع محتوى YouTube مدمج' },
-  { title: 'حماية وأمان متعدد الطبقات', desc: 'صلاحيات منفصلة + تحقق ثنائي للمشرفين' },
-];
-
-/* ── Animated background orb ────────────────────────────────────────── */
-function Orb({ className, delay = 0 }: { className: string; delay?: number }) {
+/* ── Atmospheric dynamic orbs ────────────────────────────────────────── */
+function AmbientOrb({ className, delay = 0 }: { className: string; delay?: number }) {
   return (
     <motion.div
       className={`absolute rounded-full blur-3xl pointer-events-none ${className}`}
-      animate={{ opacity: [0.4, 0.7, 0.4], scale: [1, 1.08, 1] }}
-      transition={{ duration: 5 + delay, repeat: Infinity, ease: 'easeInOut', delay }}
+      animate={{ opacity: [0.35, 0.65, 0.35], scale: [1, 1.12, 1] }}
+      transition={{ duration: 6 + delay, repeat: Infinity, ease: 'easeInOut', delay }}
     />
   );
 }
 
+/* ── Value Propositions for الجوجالية ───────────────────────────────── */
+const highlights = [
+  {
+    icon: Zap,
+    title: 'إدارة المهام والتكليفات',
+    desc: 'متابعة لحظية وتسليم رقمي مرن بين الأعضاء ورؤساء اللجان',
+    color: '#8B5CF6',
+  },
+  {
+    icon: Award,
+    title: 'محفظة نقاط O Coins',
+    desc: 'نظام مكافآت تنافسي ذكي يُقدّر إنجازات وتفاني كل عضو',
+    color: '#F59E0B',
+  },
+  {
+    icon: Layers,
+    title: 'المسارات والدورات التدريبية',
+    desc: 'ورش عمل تقنية متقدمة ومحتوى تعليمي حصري للمجتمع',
+    color: '#06B6D4',
+  },
+  {
+    icon: ShieldCheck,
+    title: 'منظومة حماية وصلاحيات موثوقة',
+    desc: 'إشراف قيادي محكم وبيئة عمل احترافية مبنية بأحدث المعايير',
+    color: '#10B981',
+  },
+];
+
 export function LoginPage() {
-  const { signInWithUsername, complete2FALogin } = useAuth();
+  const { signInWithUsername, registerMember } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
+  // Mode: 'login' | 'register' | 'registered_success'
+  const [mode, setMode] = useState<'login' | 'register' | 'registered_success'>('login');
+
+  // Login form state
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // 2FA
-  const [pending2FA, setPending2FA] = useState<{ profile: UserProfile; linkedEmail: string } | null>(null);
-  const [twoFactorLoading, setTwoFactorLoading] = useState(false);
+  // Registration form state
+  const [regFullName, setRegFullName] = useState('');
+  const [regUsername, setRegUsername] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regPassword, setRegPassword] = useState('');
+  const [regConfirmPassword, setRegConfirmPassword] = useState('');
+  const [regCommittee, setRegCommittee] = useState(DEFAULT_COMMITTEES[0]?.id || 'tech-dev');
+  const [regSubmitting, setRegSubmitting] = useState(false);
+  const [showRegPassword, setShowRegPassword] = useState(false);
 
-  const handleMemberSignIn = async (e: React.FormEvent) => {
+  // ── Handle Sign In ──────────────────────────────────────────────────
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
     const u = username.trim(), p = password.trim();
-    if (!u || !p) { toast.error('يرجى إدخال اسم المستخدم وكلمة المرور.'); return; }
+    if (!u || !p) {
+      toast.error('يرجى كتابة اسم المستخدم أو البريد الإلكتروني وكلمة المرور.');
+      return;
+    }
     setLoading(true);
     try {
-      const res = await signInWithUsername(u, p);
-      if (typeof res === 'object' && res.requires2FA) {
-        setPending2FA({ profile: res.profile, linkedEmail: res.linkedEmail });
-        toast.info('حسابك محمي بالتحقق الثنائي. يرجى تأكيد الهوية عبر Google.');
-        return;
-      }
-      toast.success('تم تسجيل الدخول بنجاح!');
+      await signInWithUsername(u, p);
+      toast.success('مرحباً بك في منصة الجوجالية!');
       navigate('/dashboard');
     } catch (err: any) {
       setErrorMsg(err?.message || 'اسم المستخدم أو كلمة المرور غير صحيحة.');
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleConfirm2FA = async () => {
-    if (!pending2FA) return;
+  // ── Handle Join Request (Registration) ──────────────────────────────
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg(null);
+
+    const name = regFullName.trim();
+    const uname = regUsername.trim();
+    const email = regEmail.trim();
+    const pass = regPassword.trim();
+    const confirmPass = regConfirmPassword.trim();
+
+    if (!name || !uname || !email || !pass) {
+      toast.error('يرجى تعبئة كافة الحقول المطلوبة.');
+      return;
+    }
+
+    if (pass.length < 6) {
+      setErrorMsg('كلمة المرور يجب ألا تقل عن 6 خانات.');
+      return;
+    }
+
+    if (pass !== confirmPass) {
+      setErrorMsg('كلمة المرور وتأكيد كلمة المرور غير متطابقين.');
+      return;
+    }
+
+    const selectedCommObj = DEFAULT_COMMITTEES.find(c => c.id === regCommittee);
+    const committeeName = selectedCommObj ? selectedCommObj.name : 'Tech Dev';
+
+    setRegSubmitting(true);
     try {
-      await complete2FALogin(pending2FA.profile);
-      toast.success('تم التحقق بنجاح!');
-      navigate('/dashboard');
+      await registerMember({
+        fullName: name,
+        username: uname,
+        email: email,
+        password: pass,
+        committeeId: regCommittee,
+        committeeName: committeeName,
+      });
+
+      setMode('registered_success');
+      toast.success('تم إرسال طلب انضمامك بنجاح!');
     } catch (err: any) {
-      setErrorMsg(err?.message || 'فشل التحقق.');
+      setErrorMsg(err?.message || 'تعذر إرسال طلب الانضمام، يرجى المحاولة لاحقاً.');
+    } finally {
+      setRegSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row font-sans transition-colors"
-      style={{ backgroundColor: 'var(--app-bg)', color: 'var(--text-primary)' }}>
+    <div
+      className="min-h-screen w-full flex flex-col lg:flex-row font-sans relative overflow-hidden select-none transition-colors"
+      style={{
+        backgroundColor: 'var(--app-bg)',
+        color: 'var(--text-primary)',
+      }}
+      dir="rtl"
+    >
+      {/* Dynamic ambient glowing backgrounds */}
+      <AmbientOrb className="w-[500px] h-[500px] -top-32 -right-32 bg-[#6366F1]/20" delay={0} />
+      <AmbientOrb className="w-[420px] h-[420px] top-1/2 -left-20 bg-[#06B6D4]/15" delay={2} />
+      <AmbientOrb className="w-[380px] h-[380px] -bottom-20 right-1/4 bg-[#10B981]/15" delay={4} />
 
-      {/* ── LEFT PANEL — Visual Identity ─────────────────────────────── */}
+      {/* Subtle modern cyber grid pattern */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:3.5rem_3.5rem] pointer-events-none" />
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          LEFT / SHOWCASE HERO PANEL (Desktop)
+         ═══════════════════════════════════════════════════════════════════ */}
       <motion.div
-        initial={{ opacity: 0, x: -30 }}
+        initial={{ opacity: 0, x: 40 }}
         animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
-        className="hidden lg:flex lg:w-[46%] flex-col justify-between p-12 xl:p-16 relative overflow-hidden mesh-bg"
+        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        className="hidden lg:flex lg:w-[48%] flex-col justify-between p-12 xl:p-16 relative z-10 border-l border-white/[0.06] backdrop-blur-sm"
       >
-        {/* Animated ambient orbs */}
-        <Orb className="w-96 h-96 -top-20 -right-20 bg-[#6C63FF]/20" delay={0} />
-        <Orb className="w-72 h-72 bottom-10 -left-10 bg-[#22D3EE]/12" delay={1.5} />
-        <Orb className="w-56 h-56 top-1/2 left-1/3 bg-[#A78BFA]/10" delay={3} />
-
-        {/* Subtle grid */}
-        <div className="absolute inset-0 grid-pattern opacity-100" />
-
-        {/* Logo & Brand */}
-        <div className="relative z-10">
-          <div className="flex items-center gap-3.5">
-            <GDGLogo size={42} />
+        {/* Top Branding */}
+        <div>
+          <div className="flex items-center gap-4">
+            <GogalyiaLogo size={46} />
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-black text-xl tracking-tight" style={{ color: 'var(--text-primary)' }}>
-                  GDG HITU
-                </span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                  style={{
-                    background: 'rgba(108,99,255,0.15)',
-                    color: '#A78BFA',
-                    border: '1px solid rgba(108,99,255,0.25)'
-                  }}>
-                  Platform
+                <h1 className="text-2xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-indigo-200">
+                  منصة الجوجالية
+                </h1>
+                <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-gradient-to-r from-violet-500/20 to-cyan-500/20 border border-violet-400/30 text-cyan-300">
+                  الإصدار الرسمي 2026
                 </span>
               </div>
-              <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>
-                Google Developer Group · جامعة HITU
-              </span>
+              <p className="text-xs text-slate-400 font-medium mt-0.5">
+                مجتمع الإبداع والريادة التقنية المشتركة
+              </p>
             </div>
           </div>
         </div>
 
-        {/* Hero Content */}
-        <div className="relative z-10 space-y-8">
-          {/* Tag */}
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold"
-            style={{
-              background: 'rgba(34,211,238,0.08)',
-              border: '1px solid rgba(34,211,238,0.18)',
-              color: '#67E8F9'
-            }}>
-            <span className="w-1.5 h-1.5 rounded-full bg-[#22D3EE] animate-pulse" />
-            منصة المجتمع التقني الرسمية
+        {/* Hero Narrative */}
+        <div className="space-y-8 my-auto py-10">
+          <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full text-xs font-bold bg-white/[0.04] border border-white/[0.1] text-cyan-300 backdrop-blur-md">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+            <span>بوابة التميز المؤسسي لأعضاء فريق الجوجالية</span>
           </div>
 
-          {/* Headline */}
-          <div className="space-y-3">
-            <h1 className="text-3xl xl:text-4xl font-black leading-tight" style={{ color: 'var(--text-primary)' }}>
-              اصنع،{' '}
-              <span className="text-gradient">تعلّم،</span>
-              {' '}وأثِّر.
-            </h1>
-            <p className="text-sm leading-relaxed max-w-xs" style={{ color: 'var(--text-secondary)' }}>
-              منظومة متكاملة تجمع إدارة المهام، التعلّم المستمر، والمكافآت في مكان واحد لفريق GDG HITU.
+          <div className="space-y-3 max-w-md">
+            <h2 className="text-4xl xl:text-5xl font-black leading-[1.2] text-white">
+              اصنع الأثر،{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-purple-300 to-cyan-400">
+                طوّر ذاتك،
+              </span>{' '}
+              وقُد المستقبل.
+            </h2>
+            <p className="text-sm text-slate-300/80 leading-relaxed">
+              منصة مركزية متقدمة صُممت خصيصاً لمجتمع الجوجالية لتوحيد المهام، والتعليم المستمر، والتحفيز بنقاط O Coins بأعلى درجات الاحترافية.
             </p>
           </div>
 
-          {/* Feature grid */}
-          <div className="grid grid-cols-2 gap-2.5">
-            {features.map((f, i) => (
-              <motion.div
-                key={f.title}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 + i * 0.08, duration: 0.4 }}
-                className="p-3.5 rounded-xl"
-                style={{
-                  background: 'rgba(255,255,255,0.03)',
-                  border: '1px solid rgba(255,255,255,0.07)',
-                  backdropFilter: 'blur(8px)',
-                }}
-              >
-                <p className="text-xs font-bold mb-1" style={{ color: 'var(--text-primary)' }}>
-                  {f.title}
-                </p>
-                <p className="text-[11px] leading-snug" style={{ color: 'var(--text-muted)' }}>
-                  {f.desc}
-                </p>
-              </motion.div>
-            ))}
+          {/* Value props grid */}
+          <div className="grid grid-cols-2 gap-3.5 max-w-lg">
+            {highlights.map((item, index) => {
+              const IconComp = item.icon;
+              return (
+                <motion.div
+                  key={item.title}
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 + index * 0.08, duration: 0.45 }}
+                  className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.07] hover:border-white/20 transition-all group backdrop-blur-md"
+                >
+                  <div className="flex items-center gap-2.5 mb-1.5">
+                    <div
+                      className="w-7 h-7 rounded-lg flex items-center justify-center text-white"
+                      style={{ backgroundColor: `${item.color}25` }}
+                    >
+                      <IconComp className="h-4 w-4" style={{ color: item.color }} />
+                    </div>
+                    <h3 className="text-xs font-black text-slate-100 group-hover:text-white transition-colors">
+                      {item.title}
+                    </h3>
+                  </div>
+                  <p className="text-[11px] text-slate-400 leading-snug">
+                    {item.desc}
+                  </p>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="relative z-10 flex items-center justify-between">
-          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-            © 2026 GDG HITU · جامعة حلوان التكنولوجية الدولية
-          </span>
-          <div className="flex gap-1.5">
-            {['#6C63FF','#22D3EE','#F59E0B','#10B981'].map((c) => (
-              <span key={c} className="w-2 h-2 rounded-full" style={{ backgroundColor: c, opacity: 0.7 }} />
-            ))}
+        {/* Footer info */}
+        <div className="flex items-center justify-between text-xs text-slate-400 border-t border-white/[0.06] pt-5">
+          <span>© 2026 منصة الجوجالية · جميع الحقوق محفوظة</span>
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-violet-500" />
+            <span className="w-2 h-2 rounded-full bg-cyan-400" />
+            <span className="w-2 h-2 rounded-full bg-emerald-400" />
+            <span className="w-2 h-2 rounded-full bg-amber-400" />
           </div>
         </div>
       </motion.div>
 
-      {/* ── RIGHT PANEL — Login Form ──────────────────────────────────── */}
-      <div className="flex-1 flex flex-col justify-between p-6 sm:p-10 lg:p-14 relative">
-        {/* Top bar */}
-        <div className="flex items-center justify-between">
-          {/* Mobile logo */}
-          <div className="lg:hidden flex items-center gap-2.5">
-            <GDGLogo size={34} />
-            <span className="font-black text-base" style={{ color: 'var(--text-primary)' }}>
-              GDG HITU
-            </span>
+      {/* ═══════════════════════════════════════════════════════════════════
+          RIGHT PANEL — $10M Ultra-Glass Login / Register Form
+         ═══════════════════════════════════════════════════════════════════ */}
+      <div className="flex-1 flex flex-col justify-between p-6 sm:p-10 lg:p-12 relative z-10">
+        {/* Top Header bar */}
+        <div className="flex items-center justify-between w-full">
+          {/* Mobile Logo */}
+          <div className="lg:hidden flex items-center gap-3">
+            <GogalyiaLogo size={36} />
+            <div>
+              <span className="font-black text-base text-white">منصة الجوجالية</span>
+              <span className="block text-[10px] text-slate-400">مجتمع الإبداع والريادة</span>
+            </div>
           </div>
 
-          {/* Theme toggle */}
-          <div className="mr-auto">
-            <button
-              onClick={toggleTheme}
-              className="p-2.5 rounded-xl transition-all cursor-pointer"
-              style={{
-                background: 'var(--surface-elevated)',
-                border: '1px solid var(--border-default)',
-                color: 'var(--text-secondary)',
-              }}
-              title="تبديل المظهر"
-            >
-              {theme === 'dark'
-                ? <Sun className="h-4 w-4" style={{ color: '#F59E0B' }} />
-                : <Moon className="h-4 w-4" style={{ color: '#6C63FF' }} />
-              }
-            </button>
-          </div>
+          {/* Theme switcher */}
+          <button
+            onClick={toggleTheme}
+            className="mr-auto p-2.5 rounded-xl border border-white/10 bg-white/[0.04] text-slate-300 hover:text-white hover:bg-white/[0.08] transition-all cursor-pointer"
+            title="تبديل المظهر"
+          >
+            {theme === 'dark' ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-violet-400" />}
+          </button>
         </div>
 
-        {/* Center container */}
-        <div className="w-full max-w-md mx-auto my-auto py-8 space-y-5">
+        {/* Center Container: Glassmorphism Card */}
+        <div className="w-full max-w-md mx-auto my-auto py-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="rounded-3xl p-7 sm:p-9 bg-slate-900/60 backdrop-blur-2xl border border-white/[0.1] shadow-[0_25px_80px_rgba(0,0,0,0.85)] relative"
+          >
+            {/* Ambient inner glow */}
+            <div className="absolute top-0 right-1/4 w-32 h-32 bg-violet-600/20 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute bottom-0 left-1/4 w-32 h-32 bg-cyan-600/20 rounded-full blur-2xl pointer-events-none" />
 
-          {/* Error banner */}
-          <AnimatePresence>
-            {errorMsg && (
-              <motion.div
-                key="error"
-                initial={{ opacity: 0, y: -10, scale: 0.98 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -10, scale: 0.98 }}
-                className="p-4 rounded-2xl flex items-start gap-3"
-                style={{
-                  background: 'rgba(244,63,94,0.08)',
-                  border: '1px solid rgba(244,63,94,0.2)',
-                }}
-              >
-                <ShieldAlert className="h-4 w-4 flex-shrink-0 mt-0.5" style={{ color: '#F43F5E' }} />
-                <div className="flex-1 text-xs leading-relaxed" style={{ color: '#FDA4AF' }}>
-                  <p className="font-bold mb-0.5" style={{ color: '#F43F5E' }}>تعذر تسجيل الدخول</p>
-                  <p>{errorMsg}</p>
-                </div>
-                <button onClick={() => setErrorMsg(null)}
-                  className="text-xs font-bold cursor-pointer hover:opacity-80 transition-opacity"
-                  style={{ color: '#F43F5E' }}>✕</button>
-              </motion.div>
+            {/* Mode Switcher Tabs (Sign In vs Join Request) */}
+            {mode !== 'registered_success' && (
+              <div className="grid grid-cols-2 p-1 rounded-2xl bg-black/40 border border-white/[0.08] mb-6 relative">
+                <button
+                  type="button"
+                  onClick={() => { setMode('login'); setErrorMsg(null); }}
+                  className={`py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                    mode === 'login'
+                      ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg shadow-violet-600/30'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  تسجيل الدخول
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setMode('register'); setErrorMsg(null); }}
+                  className={`py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                    mode === 'register'
+                      ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg shadow-cyan-600/30'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  طلب انضمام جديد
+                </button>
+              </div>
             )}
-          </AnimatePresence>
 
-          {/* Header */}
-          <div className="text-center sm:text-right">
-            <h2 className="text-2xl sm:text-3xl font-black tracking-tight" style={{ color: 'var(--text-primary)' }}>
-              {pending2FA ? 'التحقق الثنائي' : 'مرحباً بك 👋'}
-            </h2>
-            <p className="text-sm mt-1.5" style={{ color: 'var(--text-secondary)' }}>
-              {pending2FA
-                ? 'حسابك محمي بخطوة تحقق إضافية عبر Google'
-                : 'سجّل دخولك للوصول إلى منصة GDG HITU'
-              }
-            </p>
-          </div>
+            {/* Error Banner */}
+            <AnimatePresence>
+              {errorMsg && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="mb-5 p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-start gap-2.5"
+                >
+                  <span className="text-rose-400 font-bold mt-0.5">⚠️</span>
+                  <div className="flex-1 leading-relaxed">
+                    <p className="font-bold text-rose-400">تنبيه:</p>
+                    <p>{errorMsg}</p>
+                  </div>
+                  <button onClick={() => setErrorMsg(null)} className="text-rose-400 font-bold text-sm">✕</button>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-          {/* ── 2FA Screen ────────────────────────────────────────────── */}
-          <AnimatePresence mode="wait">
-            {pending2FA ? (
+            {/* ── MODE 1: SIGN IN ────────────────────────────────────────── */}
+            {mode === 'login' && (
               <motion.div
-                key="2fa"
-                initial={{ opacity: 0, scale: 0.97 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.97 }}
-                className="p-6 sm:p-7 rounded-2xl space-y-5 text-center"
-                style={{
-                  background: 'var(--surface-elevated)',
-                  border: '1px solid var(--border-default)',
-                  boxShadow: 'var(--shadow-md)',
-                }}
+                key="login-view"
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 10 }}
+                className="space-y-5"
               >
-                <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto icon-box-danger">
-                  <KeyRound className="h-7 w-7" />
-                </div>
-
-                <div className="space-y-1.5">
-                  <h3 className="text-base font-black" style={{ color: 'var(--text-primary)' }}>
-                    مرحباً، {pending2FA.profile.displayName}
+                <div>
+                  <h3 className="text-2xl font-black text-white tracking-tight">
+                    مرحباً بك مجدداً 👋
                   </h3>
-                  <p className="text-xs leading-relaxed max-w-xs mx-auto" style={{ color: 'var(--text-secondary)' }}>
-                    حسابك مُفعَّل عليه التحقق الثنائي. أكّد هويتك بحساب Google المرتبط:
+                  <p className="text-xs text-slate-400 mt-1">
+                    أدخل بيانات حسابك للوصول إلى منصة الجوجالية
                   </p>
                 </div>
 
-                {/* Linked email */}
-                <div className="p-3.5 rounded-xl flex items-center justify-between text-right"
-                  style={{ background: 'var(--surface-overlay)', border: '1px solid var(--border-subtle)' }}>
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center icon-box-success font-bold text-sm">
-                      ✓
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-bold block uppercase" style={{ color: 'var(--text-muted)' }}>
-                        حساب Google المرتبط
-                      </span>
-                      <span className="text-xs font-black font-mono" style={{ color: 'var(--text-primary)' }}>
-                        {pending2FA.linkedEmail}
-                      </span>
-                    </div>
-                  </div>
-                  <span className="badge badge-success text-[10px]">موثق</span>
-                </div>
-
-                <div className="space-y-2 pt-1">
-                  <Button type="button" onClick={handleConfirm2FA} variant="default" size="lg"
-                    className="w-full flex items-center justify-center gap-3 font-black shadow-sm"
-                    loading={twoFactorLoading}>
-                    <GoogleSVG />
-                    تأكيد الهوية عبر Google
-                  </Button>
-                  <Button type="button" variant="ghost" size="sm"
-                    onClick={() => { setPending2FA(null); setErrorMsg(null); }}
-                    className="w-full text-xs">
-                    <ArrowRight className="h-3.5 w-3.5 ml-1" /> الرجوع وإلغاء تسجيل الدخول
-                  </Button>
-                </div>
-              </motion.div>
-
-            ) : (
-              <motion.div
-                key="login"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                className="space-y-5"
-              >
-              <motion.div
-                key="login"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                className="space-y-5"
-              >
-                <form
-                  onSubmit={handleMemberSignIn}
-                  className="space-y-4"
-                >
+                <form onSubmit={handleSignIn} className="space-y-4">
                   <div>
-                    <label className="form-label font-bold text-xs">اسم المستخدم أو البريد الإلكتروني</label>
-                    <Input
-                      type="text"
-                      placeholder="e.g. eltmsah أو admin أو البريد الإلكتروني"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      leftIcon={<User className="h-4 w-4" />}
-                      autoFocus
-                      required
-                    />
+                    <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                      اسم المستخدم أو البريد الإلكتروني
+                    </label>
+                    <div className="relative">
+                      <Input
+                        type="text"
+                        placeholder="e.g. eltmsah أو البريد الإلكتروني"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        className="bg-black/30 border-white/10 text-white placeholder:text-slate-500 rounded-xl h-11 pr-10 focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
+                        autoFocus
+                        required
+                      />
+                      <User className="absolute right-3.5 top-3.5 h-4 w-4 text-slate-400 pointer-events-none" />
+                    </div>
                   </div>
+
                   <div>
-                    <label className="form-label font-bold text-xs">كلمة المرور</label>
-                    <Input
-                      type="password"
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      leftIcon={<Lock className="h-4 w-4" />}
-                      required
-                    />
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-xs font-bold text-slate-300">
+                        كلمة المرور
+                      </label>
+                    </div>
+                    <div className="relative">
+                      <Input
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="bg-black/30 border-white/10 text-white placeholder:text-slate-500 rounded-xl h-11 pr-10 pl-10 focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
+                        required
+                      />
+                      <Lock className="absolute right-3.5 top-3.5 h-4 w-4 text-slate-400 pointer-events-none" />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute left-3.5 top-3.5 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
                   </div>
+
                   <Button
                     type="submit"
                     variant="default"
                     size="lg"
-                    className="w-full mt-2 font-bold btn-primary"
+                    className="w-full h-12 rounded-xl font-black text-sm bg-gradient-to-r from-violet-600 via-indigo-600 to-cyan-500 hover:opacity-95 shadow-xl shadow-violet-600/30 transition-all cursor-pointer mt-2"
                     loading={loading}
                   >
                     تسجيل الدخول للمنصة
                   </Button>
                 </form>
-              </motion.div>
+
+                <div className="pt-2 text-center border-t border-white/[0.06]">
+                  <p className="text-xs text-slate-400">
+                    عضو جديد وتريد الانضمام للفريق؟{' '}
+                    <button
+                      type="button"
+                      onClick={() => { setMode('register'); setErrorMsg(null); }}
+                      className="font-bold text-cyan-400 hover:underline cursor-pointer"
+                    >
+                      قدّم طلب انضمام الآن 🚀
+                    </button>
+                  </p>
+                </div>
               </motion.div>
             )}
-          </AnimatePresence>
+
+            {/* ── MODE 2: REGISTER / JOIN REQUEST ────────────────────────── */}
+            {mode === 'register' && (
+              <motion.div
+                key="register-view"
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                className="space-y-4"
+              >
+                <div>
+                  <h3 className="text-xl font-black text-white tracking-tight flex items-center gap-2">
+                    طلب انضمام جديد 🚀
+                  </h3>
+                  <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                    أنشئ حسابك وسيقوم قائد الجوجالية بمراجعته واعتماده للتفعيل
+                  </p>
+                </div>
+
+                <form onSubmit={handleRegister} className="space-y-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                      الاسم بالكامل (ثلاثي أو رباعي)
+                    </label>
+                    <div className="relative">
+                      <Input
+                        type="text"
+                        placeholder="e.g. محمد أحمد علي"
+                        value={regFullName}
+                        onChange={(e) => setRegFullName(e.target.value)}
+                        className="bg-black/30 border-white/10 text-white placeholder:text-slate-500 rounded-xl h-10 pr-9 text-xs"
+                        required
+                      />
+                      <User className="absolute right-3 top-3 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                        اسم المستخدم (Username)
+                      </label>
+                      <Input
+                        type="text"
+                        placeholder="e.g. mohamed_ali"
+                        value={regUsername}
+                        onChange={(e) => setRegUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                        className="bg-black/30 border-white/10 text-white placeholder:text-slate-500 rounded-xl h-10 text-xs font-mono"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                        اللجنة التابع لها
+                      </label>
+                      <select
+                        value={regCommittee}
+                        onChange={(e) => setRegCommittee(e.target.value)}
+                        className="w-full h-10 bg-black/40 border border-white/10 text-white rounded-xl px-2.5 text-xs focus:border-cyan-500 cursor-pointer"
+                      >
+                        {DEFAULT_COMMITTEES.map((comm) => (
+                          <option key={comm.id} value={comm.id} className="bg-slate-900 text-white">
+                            {comm.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                      البريد الإلكتروني (Gmail / الجامعي)
+                    </label>
+                    <div className="relative">
+                      <Input
+                        type="email"
+                        placeholder="name@gmail.com"
+                        value={regEmail}
+                        onChange={(e) => setRegEmail(e.target.value)}
+                        className="bg-black/30 border-white/10 text-white placeholder:text-slate-500 rounded-xl h-10 pr-9 text-xs"
+                        required
+                      />
+                      <Mail className="absolute right-3 top-3 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                        كلمة المرور
+                      </label>
+                      <div className="relative">
+                        <Input
+                          type={showRegPassword ? 'text' : 'password'}
+                          placeholder="••••••••"
+                          value={regPassword}
+                          onChange={(e) => setRegPassword(e.target.value)}
+                          className="bg-black/30 border-white/10 text-white placeholder:text-slate-500 rounded-xl h-10 pr-3 pl-8 text-xs"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowRegPassword(!showRegPassword)}
+                          className="absolute left-2.5 top-3 text-slate-400 hover:text-white cursor-pointer"
+                        >
+                          {showRegPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                        </button>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                        تأكيد كلمة المرور
+                      </label>
+                      <Input
+                        type="password"
+                        placeholder="••••••••"
+                        value={regConfirmPassword}
+                        onChange={(e) => setRegConfirmPassword(e.target.value)}
+                        className="bg-black/30 border-white/10 text-white placeholder:text-slate-500 rounded-xl h-10 text-xs"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <Button
+                    type="submit"
+                    variant="default"
+                    size="lg"
+                    className="w-full h-11 rounded-xl font-black text-xs bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 hover:opacity-95 shadow-xl shadow-cyan-600/30 transition-all cursor-pointer mt-2"
+                    loading={regSubmitting}
+                  >
+                    إرسال طلب الانضمام والاعتماد ✨
+                  </Button>
+                </form>
+
+                <div className="pt-2 text-center border-t border-white/[0.06]">
+                  <p className="text-xs text-slate-400">
+                    لديك حساب بالفعل؟{' '}
+                    <button
+                      type="button"
+                      onClick={() => { setMode('login'); setErrorMsg(null); }}
+                      className="font-bold text-violet-400 hover:underline cursor-pointer"
+                    >
+                      تسجيل الدخول 🔐
+                    </button>
+                  </p>
+                </div>
+              </motion.div>
+            )}
+
+            {/* ── MODE 3: SUCCESS CONFIRMATION ───────────────────────────── */}
+            {mode === 'registered_success' && (
+              <motion.div
+                key="success-view"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="text-center space-y-4 py-4"
+              >
+                <div className="w-16 h-16 rounded-full bg-emerald-500/20 border-2 border-emerald-400 flex items-center justify-center mx-auto text-emerald-400 shadow-xl shadow-emerald-500/30 animate-bounce">
+                  <CheckCircle2 className="h-8 w-8" />
+                </div>
+
+                <div className="space-y-1.5">
+                  <h3 className="text-xl font-black text-white">
+                    تم استلام طلبك بنجاح! 🌟
+                  </h3>
+                  <p className="text-xs text-slate-300 leading-relaxed max-w-xs mx-auto">
+                    تم تسجيل بياناتك في منصة الجوجالية، وحسابك الآن <span className="text-amber-400 font-bold">بانتظار موافقة واعتماد القائد (Lead / Co-Lead)</span> للتفعيل.
+                  </p>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-white/[0.04] border border-white/[0.08] text-right space-y-1 text-xs text-slate-300">
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">الاسم:</span>
+                    <span className="font-bold text-white">{regFullName}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">اسم المستخدم:</span>
+                    <span className="font-mono text-cyan-300">{regUsername}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">الحالة:</span>
+                    <span className="font-bold text-amber-400">قيد المراجعة ⏳</span>
+                  </div>
+                </div>
+
+                <Button
+                  onClick={() => {
+                    setMode('login');
+                    setUsername(regUsername);
+                    setPassword('');
+                  }}
+                  variant="default"
+                  size="lg"
+                  className="w-full h-11 rounded-xl font-black text-xs bg-gradient-to-r from-violet-600 to-indigo-600 cursor-pointer"
+                >
+                  العودة إلى شاشة تسجيل الدخول
+                </Button>
+              </motion.div>
+            )}
+          </motion.div>
         </div>
 
-        {/* Mobile copyright */}
-        <div className="lg:hidden text-center text-xs" style={{ color: 'var(--text-muted)' }}>
-          © 2026 GDG HITU — Google Developer Group · جامعة حلوان التكنولوجية
+        {/* Bottom Mobile Copyright */}
+        <div className="lg:hidden text-center text-xs text-slate-500">
+          © 2026 منصة الجوجالية · جميع الحقوق محفوظة
         </div>
       </div>
     </div>
-  );
-}
-
-function GoogleSVG() {
-  return (
-    <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24">
-      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-    </svg>
   );
 }

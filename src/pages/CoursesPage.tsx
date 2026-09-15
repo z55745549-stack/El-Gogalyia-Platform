@@ -134,7 +134,7 @@ export function CoursesPage() {
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--brand-accent)]/20 backdrop-blur-md text-xs font-black border border-[var(--brand-accent)]/30 text-[var(--brand-accent)]">
               <Sparkles className="h-3.5 w-3.5" />
-              <span>مجانية 100% لأعضاء مجتمع GDG HITU</span>
+              <span>مجانية 100% لأعضاء منصة الجوجالية</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
               الدورات والمسارات التعليمية
@@ -263,7 +263,7 @@ export function CoursesPage() {
             description={
               search || selectedCategory !== 'all' || selectedLevel !== 'all'
                 ? 'لا توجد دورات تطابق معايير البحث أو التصفية الحالية. جرب تغيير التصنيف أو البحث بكلمات أخرى.'
-                : 'سيتم نشر دورات ومسارات تعليمية جديدة قريباً من قِبل مجتمع GDG HITU.'
+                : 'سيتم نشر دورات ومسارات تعليمية جديدة قريباً من قِبل إدارة منصة الجوجالية.'
             }
           />
         </div>

@@ -155,7 +155,7 @@ export function Header({ onMobileMenuClick }: HeaderProps) {
 
         <div className="hidden sm:flex items-center gap-2 text-xs font-semibold">
           <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: '#6C63FF' }} />
-          <span className="font-bold" style={{ color: 'var(--text-primary)' }}>GDG HITU Platform</span>
+          <span className="font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-cyan-400">منصة الجوجالية</span>
           <span style={{ color: 'var(--border-strong)' }}>·</span>
           <span style={{ color: 'var(--text-muted)' }}>
             {new Date().toLocaleDateString('ar-EG', { weekday: 'long', month: 'long', day: 'numeric' })}

@@ -219,7 +219,7 @@ export function EmployeeDashboard() {
           <div className="space-y-1.5">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full badge-accent text-xs font-bold">
               <Sparkles className="h-3.5 w-3.5" />
-              مساحة العمل والإنجاز · GDG HITU
+              مساحة العمل والإنجاز · منصة الجوجالية
             </div>
             <h1 className="page-title text-xl sm:text-2xl font-extrabold text-[var(--text-primary)]">
               {getGreeting()}، {getFirstName(userProfile?.displayName ?? 'عضو الفريق')} 👋

@@ -95,11 +95,11 @@ export function ReportsPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `gdg_hitu_reports_${dateFilter}_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute('download', `gogalyia_reports_${dateFilter}_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    toast.success('تم تصدير تقرير أداء فريق GDG HITU بنجاح!');
+    toast.success('تم تصدير تقرير أداء فريق منصة الجوجالية بنجاح!');
   };
 
   const DATE_FILTERS: { label: string; value: DateFilter }[] = [
@@ -121,7 +121,7 @@ export function ReportsPage() {
             <span>التقارير والإحصائيات الشاملة</span>
           </h1>
           <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mt-1">
-            مؤشرات أداء فريق GDG HITU، نسب إنجاز التكليفات، وتوزيع مكافآت O Coins.
+            مؤشرات أداء فريق منصة الجوجالية، نسب إنجاز التكليفات، وتوزيع مكافآت O Coins.
           </p>
         </div>
 

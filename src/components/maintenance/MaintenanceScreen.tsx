@@ -150,7 +150,7 @@ export function MaintenanceScreen({ message, onRefresh }: MaintenanceScreenProps
         {/* Footer info */}
         <div className="mt-8 text-[11px] text-[var(--text-muted)] flex items-center gap-2">
           <Sparkles className="h-3.5 w-3.5 text-[var(--brand-accent)]" />
-          <span>منظومة العمل الطلابية الذكية · GDG HITU Platform</span>
+          <span>منظومة العمل والتميز الذكية · منصة الجوجالية</span>
         </div>
       </motion.div>
     </div>
