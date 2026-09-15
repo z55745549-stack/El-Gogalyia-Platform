@@ -13,7 +13,17 @@ const SETTING_DOC_ID = 'maintenance';
 const LOCAL_STORAGE_KEY = 'elgogalyia_maintenance_config';
 export const DEFAULT_MAINTENANCE_MESSAGE = 'المنصة في وضعية الصيانة الفورية للتحديثات , يرجي الانتظار لانتهاء من الصيانة';
 
+const ENV_MAINTENANCE_MODE = import.meta.env.VITE_MAINTENANCE_MODE === 'true';
+const ENV_MAINTENANCE_MESSAGE = (import.meta.env.VITE_MAINTENANCE_MESSAGE as string) || '';
+
 export function getMaintenanceState(): MaintenanceConfig {
+  if (ENV_MAINTENANCE_MODE) {
+    return {
+      enabled: true,
+      message: ENV_MAINTENANCE_MESSAGE.trim() || DEFAULT_MAINTENANCE_MESSAGE,
+    };
+  }
+
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (raw) return JSON.parse(raw);
@@ -34,7 +44,13 @@ function saveMaintenanceLocally(config: MaintenanceConfig) {
 }
 
 export function subscribeMaintenanceMode(callback: (config: MaintenanceConfig) => void): () => void {
-  // 1. Fire immediately with local cached state
+  // 1. If forced via Vercel environment variable, lock to maintenance mode
+  if (ENV_MAINTENANCE_MODE) {
+    callback(getMaintenanceState());
+    return () => {};
+  }
+
+  // 2. Fire immediately with local cached state
   callback(getMaintenanceState());
 
   // 2. Listen to Supabase real-time
