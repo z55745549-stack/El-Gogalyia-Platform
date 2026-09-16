@@ -88,13 +88,13 @@ export function formatOCoins(amount: number): string {
 
 /** Returns '∞' for lead/co_lead, otherwise formatted balance */
 export function getOCoinsDisplay(role: string | undefined, balance: number): string {
-  if (role === 'lead' || role === 'co_lead') return '∞';
+  if (role === 'lead' || role === 'co_lead' || role === 'head') return '∞';
   return formatOCoins(balance);
 }
 
-/** Returns true if the role gets unlimited O Coins */
+/** Returns true if the role gets unlimited O Coins (Leadership: Lead, Co-Lead, and Committee Heads) */
 export function hasUnlimitedCoins(role: string | undefined): boolean {
-  return role === 'lead' || role === 'co_lead';
+  return role === 'lead' || role === 'co_lead' || role === 'head';
 }
 
 

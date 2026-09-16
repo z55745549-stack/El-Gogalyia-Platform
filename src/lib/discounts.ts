@@ -16,6 +16,7 @@ import {
 } from './supabase';
 import { logActivity, createNotification } from './database-service';
 import type { Discount, DiscountPurchase, DiscountStatus, UserProfile } from '@/types';
+import { hasUnlimitedCoins } from '@/utils';
 
 // ─── 1. Create Discount (Admin) ──────────────────────────────────────────────
 export async function createDiscount(params: {
@@ -231,9 +232,9 @@ export async function purchaseDiscount(params: {
     const userData = userSnap.data() as UserProfile;
     const currentBalance = Number(userData.oCoinsBalance) || 0;
 
-    const isUnlimitedUser = userData.role === 'lead' || userData.role === 'co_lead';
+    const isUnlimitedUser = hasUnlimitedCoins(userData.role);
 
-    // 5. Validate sufficient balance (lead and co_lead have unlimited coins)
+    // 5. Validate sufficient balance (unlimited roles have unlimited coins)
     if (!isUnlimitedUser && currentBalance < requiredCoins) {
       throw new Error(
         `رصيدك الحالي (${currentBalance} OC) غير كافٍ لشراء هذا العرض الذي يتطلب (${requiredCoins} OC).`

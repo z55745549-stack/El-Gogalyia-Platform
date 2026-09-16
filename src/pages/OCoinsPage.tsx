@@ -506,8 +506,8 @@ export function OCoinsPage() {
             <p className="text-xs font-bold text-[var(--text-muted)]">
               {canManage && selectedUser
                 ? `رصيد (${selectedUser.displayName})`
-                : isTopLeader
-                ? 'رصيد القيادة العليا (خزينة المنظومة)'
+                : hasUnlimitedCoins(role)
+                ? (isHead ? 'رصيد رئيس اللجنة (خزينة غير محدودة)' : 'رصيد القيادة العليا (خزينة المنظومة)')
                 : 'الرصيد الكلي المتاح'}
             </p>
             <div className="mt-1 flex items-baseline gap-2">
@@ -525,7 +525,7 @@ export function OCoinsPage() {
                     <span className="text-sm font-bold text-[var(--brand-warm)] mr-1.5">OC</span>
                   </p>
                 )
-              ) : isTopLeader ? (
+              ) : hasUnlimitedCoins(role) ? (
                 <div className="flex items-center gap-2">
                   <span className="text-4xl font-black text-[var(--brand-warm)]">∞</span>
                   <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
