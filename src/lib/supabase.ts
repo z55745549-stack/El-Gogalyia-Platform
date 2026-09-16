@@ -156,16 +156,16 @@ const KNOWN_COLUMNS: Record<string, Set<string>> = {
   ocoin_transactions: new Set(['id', 'user_id', 'user_display_name', 'amount', 'type', 'reason', 'task_id', 'task_title', 'new_balance', 'created_by', 'created_by_name', 'created_at', 'raw_data']),
   discounts: new Set(['id', 'title', 'description', 'discount_type', 'discount_value', 'ocoin_cost', 'promo_code', 'redemption_url', 'image_url', 'terms', 'status', 'expires_at', 'total_purchases', 'total_coins_collected', 'created_at', 'raw_data']),
   discount_purchases: new Set(['id', 'discount_id', 'employee_id', 'employee_name', 'employee_photo', 'ocoin_cost', 'promo_code', 'redemption_code', 'purchased_at', 'raw_data']),
-  meetings: new Set(['id', 'title', 'description', 'committee_id', 'date', 'time', 'meeting_link', 'location', 'status', 'created_by', 'created_at', 'raw_data']),
+  meetings: new Set(['id', 'title', 'description', 'committee_id', 'date', 'time', 'start_time', 'duration_minutes', 'meeting_link', 'location', 'type', 'status', 'created_by', 'created_by_name', 'created_at', 'updated_at', 'raw_data']),
   support_tickets: new Set(['id', 'ticket_number', 'subject', 'category', 'priority', 'status', 'creator_id', 'creator_name', 'creator_email', 'assigned_to_admin_id', 'assigned_to_admin_name', 'last_activity_at', 'created_at', 'raw_data']),
   support_ticket_messages: new Set(['id', 'ticket_id', 'sender_id', 'sender_name', 'sender_role', 'message', 'created_at', 'raw_data']),
-  courses: new Set(['id', 'title', 'description', 'thumbnail_url', 'category_id', 'category_name', 'level', 'instructor', 'status', 'youtube_playlist_url', 'total_lessons', 'created_at', 'raw_data']),
-  course_categories: new Set(['id', 'name', 'description', 'color', 'course_count', 'created_at', 'raw_data']),
-  course_lessons: new Set(['id', 'course_id', 'title', 'description', 'duration', 'video_url', 'position', 'is_free', 'created_at', 'raw_data']),
-  course_progress: new Set(['id', 'user_id', 'course_id', 'lesson_id', 'completed', 'completed_at', 'progress_percent', 'updated_at', 'raw_data']),
-  activity_logs: new Set(['id', 'actor_id', 'actor_name', 'action', 'target_id', 'target_name', 'details', 'created_at', 'raw_data']),
+  courses: new Set(['id', 'title', 'description', 'thumbnail_url', 'category_id', 'category_name', 'level', 'instructor', 'status', 'youtube_playlist_url', 'youtube_url', 'youtube_playlist_id', 'external_url', 'duration', 'total_lessons', 'created_by', 'created_by_name', 'created_at', 'updated_at', 'raw_data']),
+  course_categories: new Set(['id', 'name', 'slug', 'description', 'color', 'course_count', 'status', 'created_at', 'updated_at', 'raw_data']),
+  course_lessons: new Set(['id', 'course_id', 'title', 'description', 'duration', 'video_url', 'youtube_video_id', 'position', 'is_free', 'status', 'created_at', 'updated_at', 'raw_data']),
+  course_progress: new Set(['id', 'user_id', 'course_id', 'lesson_id', 'completed', 'completed_at', 'progress_percent', 'last_lesson_id', 'updated_at', 'raw_data']),
+  activity_logs: new Set(['id', 'actor_id', 'actor_name', 'actor_photo', 'action', 'target_type', 'target_id', 'target_name', 'metadata', 'details', 'created_at', 'raw_data']),
   notifications: new Set(['id', 'recipient_email', 'recipient_uid', 'type', 'title', 'message', 'task_id', 'ticket_id', 'related_entity_type', 'related_entity_id', 'action_url', 'read', 'created_at', 'raw_data']),
-  opportunities: new Set(['id', 'title', 'description', 'company', 'type', 'location', 'location_type', 'url', 'deadline', 'tags', 'created_by', 'is_active', 'created_at', 'updated_at', 'raw_data']),
+  opportunities: new Set(['id', 'title', 'description', 'provider', 'requirements', 'application_url', 'deadline', 'category', 'status', 'is_team_exclusive', 'company', 'type', 'location', 'location_type', 'url', 'tags', 'created_by', 'created_by_name', 'is_active', 'created_at', 'updated_at', 'raw_data']),
   committees: new Set(['id', 'name', 'code', 'description', 'leader_id', 'leader_name', 'member_count', 'icon', 'color', 'created_at', 'raw_data']),
   bans: new Set(['id', 'employee_id', 'employee_name', 'reason', 'status', 'banned_by', 'banned_by_name', 'banned_at', 'lifted_at', 'lifted_by', 'notes', 'raw_data']),
   system_settings: new Set(['key', 'value', 'updated_at', 'raw_data']),
@@ -552,6 +552,66 @@ export async function setDoc(docRef: DocRef, data: any, options?: { merge?: bool
     if (!payload.employee_name) payload.employee_name = finalData.employeeName || 'عضو';
     if (!payload.employee_code) payload.employee_code = finalData.employeeCode || 'GOGA-33000';
     if (!payload.status) payload.status = 'present';
+  } else if (table === 'meetings') {
+    // meetings: store all fields as raw_data fallback for non-standard columns
+    if (!payload.status) payload.status = finalData.status || 'scheduled';
+    if (!payload.title) payload.title = finalData.title || 'اجتماع';
+    // Map camelCase fields to snake_case for Supabase
+    if (!payload.start_time && (finalData.startTime || finalData.start_time)) {
+      payload.start_time = finalData.startTime || finalData.start_time;
+    }
+    if (!payload.duration_minutes && (finalData.durationMinutes || finalData.duration_minutes)) {
+      payload.duration_minutes = Number(finalData.durationMinutes || finalData.duration_minutes || 60);
+    }
+    if (!payload.created_by_name && (finalData.createdByName || finalData.created_by_name)) {
+      payload.created_by_name = finalData.createdByName || finalData.created_by_name;
+    }
+    if (!payload.created_by && (finalData.createdBy || finalData.created_by)) {
+      payload.created_by = finalData.createdBy || finalData.created_by;
+    }
+  } else if (table === 'courses') {
+    if (!payload.status) payload.status = finalData.status || 'published';
+    if (!payload.title) payload.title = finalData.title || 'دورة';
+    if (!payload.created_by && (finalData.createdBy || finalData.created_by)) {
+      payload.created_by = finalData.createdBy || finalData.created_by;
+    }
+    if (!payload.created_by_name && (finalData.createdByName || finalData.created_by_name)) {
+      payload.created_by_name = finalData.createdByName || finalData.created_by_name;
+    }
+    if (!payload.youtube_url && (finalData.youtubeUrl || finalData.youtube_url || finalData.youtubePlaylistUrl)) {
+      payload.youtube_url = finalData.youtubeUrl || finalData.youtube_url || finalData.youtubePlaylistUrl || '';
+    }
+    if (!payload.youtube_playlist_id && (finalData.youtubePlaylistId || finalData.youtube_playlist_id)) {
+      payload.youtube_playlist_id = finalData.youtubePlaylistId || finalData.youtube_playlist_id || '';
+    }
+    if (!payload.external_url && (finalData.externalUrl || finalData.external_url)) {
+      payload.external_url = finalData.externalUrl || finalData.external_url || '';
+    }
+  } else if (table === 'opportunities') {
+    if (!payload.status) payload.status = finalData.status || 'active';
+    if (!payload.title) payload.title = finalData.title || 'فرصة';
+    if (!payload.created_by && (finalData.createdBy || finalData.created_by)) {
+      payload.created_by = finalData.createdBy || finalData.created_by;
+    }
+    if (!payload.created_by_name && (finalData.createdByName || finalData.created_by_name)) {
+      payload.created_by_name = finalData.createdByName || finalData.created_by_name;
+    }
+    if (!payload.application_url && (finalData.applicationUrl || finalData.application_url)) {
+      payload.application_url = finalData.applicationUrl || finalData.application_url || '';
+    }
+    if (!payload.is_team_exclusive && finalData.isTeamExclusive !== undefined) {
+      payload.is_team_exclusive = Boolean(finalData.isTeamExclusive);
+    }
+  } else if (table === 'activity_logs') {
+    if (!payload.target_type && (finalData.targetType || finalData.target_type)) {
+      payload.target_type = finalData.targetType || finalData.target_type;
+    }
+    if (!payload.actor_photo && (finalData.actorPhoto || finalData.actor_photo)) {
+      payload.actor_photo = finalData.actorPhoto || finalData.actor_photo;
+    }
+    if (!payload.metadata && finalData.metadata) {
+      payload.metadata = typeof finalData.metadata === 'string' ? finalData.metadata : JSON.stringify(finalData.metadata);
+    }
   }
 
   const { error } = await supabase.from(table).upsert(payload);

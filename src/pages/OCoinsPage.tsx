@@ -207,22 +207,33 @@ export function OCoinsPage() {
   const myEmail = (userProfile?.email || userProfile?.username || '').toLowerCase();
   const myUsername = (userProfile?.username || '').toLowerCase();
 
+  // Helper: check if a transaction belongs to a user (all field name variants)
+  const txBelongsTo = (t: any, uid: string, email: string, username: string): boolean => {
+    if (!uid && !email) return false;
+    if (uid) {
+      if (t.uid === uid) return true;
+      if (t.employeeId === uid) return true;
+      if (t.userId === uid) return true;
+      if (t.user_id === uid) return true;
+    }
+    const tEmail = (t.userEmail || t.user_email || '').toLowerCase();
+    if (tEmail && email && tEmail === email) return true;
+    if (tEmail && username && tEmail === username) return true;
+    return false;
+  };
+
   const userTransactions = canManage
     ? selectedUser
-      ? allTransactions.filter(
-          (t) =>
-            t.uid === selectedUser.uid ||
-            t.employeeId === selectedUser.uid ||
-            t.userEmail?.toLowerCase() === (selectedUser.email || selectedUser.username || '').toLowerCase()
+      ? allTransactions.filter((t) =>
+          txBelongsTo(
+            t,
+            selectedUser.uid,
+            (selectedUser.email || selectedUser.username || '').toLowerCase(),
+            (selectedUser.username || '').toLowerCase()
+          )
         )
       : allTransactions
-    : allTransactions.filter(
-        (t) =>
-          t.uid === myId ||
-          t.employeeId === myId ||
-          t.userEmail?.toLowerCase() === myEmail ||
-          t.userEmail?.toLowerCase() === myUsername
-      );
+    : allTransactions.filter((t) => txBelongsTo(t, myId || '', myEmail, myUsername));
 
   // Calculate totals
   const totalEarned = userTransactions

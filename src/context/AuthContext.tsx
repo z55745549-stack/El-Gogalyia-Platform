@@ -237,6 +237,54 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // -------------------------------------------------------------------
+  // Realtime profile sync: refresh balance & profile when Supabase or
+  // localStorage signals a data change (e.g. admin adds OCoins)
+  // -------------------------------------------------------------------
+  useEffect(() => {
+    if (!user?.uid) return;
+
+    const refreshProfile = async () => {
+      try {
+        const fresh = await fetchProfileFromSupabase(user.uid);
+        if (fresh && fresh.status !== 'suspended' && fresh.status !== 'inactive') {
+          setUserProfile((prev) => {
+            // Only update if something changed (avoid unnecessary re-renders)
+            if (!prev) return fresh;
+            if (
+              prev.oCoinsBalance !== fresh.oCoinsBalance ||
+              prev.role !== fresh.role ||
+              prev.status !== fresh.status ||
+              prev.displayName !== fresh.displayName ||
+              prev.committeeName !== fresh.committeeName
+            ) {
+              return fresh;
+            }
+            return prev;
+          });
+        }
+      } catch { /* silent */ }
+    };
+
+    // Listen for any platform-wide data change events
+    const handleDataChange = () => { refreshProfile(); };
+    window.addEventListener('elgogalyia_data_change', handleDataChange);
+
+    // Also subscribe to Supabase Realtime for the users table
+    const channel = supabase
+      .channel(`user_profile_${user.uid}`)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'users', filter: `id=eq.${user.uid}` }, () => {
+        refreshProfile();
+      })
+      .subscribe();
+
+    return () => {
+      window.removeEventListener('elgogalyia_data_change', handleDataChange);
+      supabase.removeChannel(channel);
+    };
+  }, [user?.uid]);
+
+
+  // -------------------------------------------------------------------
   // signInWithGoogleAdmin — Placeholder (kept for interface compatibility)
   // Google OAuth via Supabase can be added later
   // -------------------------------------------------------------------
