@@ -13,7 +13,7 @@ export type UserRole =
   | 'lead'       // LEAD - قائد المنصة (متساوي مع الكو ليد 100٪ فوق الجميع)
   | 'co_lead'    // CO-LEAD - نائب القائد (متساوي مع الليد 100٪ فوق الجميع)
   | 'head'       // HEAD - رئيس لجنة (مثل السوبر أدمن سابقاً - إدارة كل شيء أسفله)
-  | 'vice_head'  // VICE-HEAD - نائب رئيس لجنة (متساوي مع العضو تماماً مثل صلاحيات الموظف)
+  | 'vice_head'  // VICE-HEAD - نائب رئيس لجنة (صلاحيات العضو بالإضافة لصلاحية مراجعة واعتماد تاسكات لجنته)
   | 'member';    // MEMBER - عضو (البديل الفعلي للموظف)
 export type UserStatus = 'active' | 'inactive' | 'suspended' | 'pending';
 
@@ -131,7 +131,9 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'activity.view',
     'notifications.send',
   ],
-  vice_head: [],
+  vice_head: [
+    'tasks.review',
+  ],
   member: [],
 };
 

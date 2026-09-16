@@ -36,7 +36,8 @@ export function TaskDetailPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const isAdmin = userProfile ? isAdminRole(userProfile.role) : false;
-  const isEmployee = !isAdmin;
+  const isViceHead = userProfile?.role === 'vice_head';
+  const isEmployee = !isAdmin && !isViceHead;
 
   const [task, setTask] = useState<Task | null>(null);
   const [submissions, setSubmissions] = useState<TaskSubmission[]>([]);
@@ -64,7 +65,9 @@ export function TaskDetailPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const backPath = location.pathname.startsWith('/my-tasks') ? '/my-tasks' : '/tasks';
+  const backPath = location.pathname.startsWith('/my-tasks')
+    ? '/my-tasks'
+    : (isViceHead ? '/operations?tab=submissions' : '/tasks');
 
   // Current user identifiers
   const userIdentifiers = [
@@ -74,10 +77,29 @@ export function TaskDetailPage() {
     ('user_' + (userProfile?.username || '').replace(/[^a-z0-9]/g, '_')).toLowerCase(),
   ].filter(Boolean);
 
+  const isCommitteeTask = (t: Task | null) => {
+    if (!t || !userProfile) return false;
+    const cId = userProfile.committeeId;
+    const cName = (userProfile.committeeName || '').trim().toLowerCase();
+    return Boolean(
+      (cId && t.committeeId === cId) ||
+      (cName && t.committeeName && t.committeeName.trim().toLowerCase() === cName)
+    );
+  };
+
+  const canUserAccessTask = (t: Task | null) => {
+    if (!t) return false;
+    if (isAdmin) return true;
+    if (isViceHead && isCommitteeTask(t)) return true;
+    const assigned = (t.assignedTo || []).map((a: string) => (a || '').toLowerCase().trim());
+    return userIdentifiers.some((id) => assigned.includes(id));
+  };
+
+  const canReviewTask = isAdmin || (isViceHead && isCommitteeTask(task));
+
   // Robust assignment check
   const isAssignedToCurrentUser = (() => {
     if (!task || !userProfile) return false;
-    if (!isEmployee) return true;
     return (task.assignedTo || []).some((a: string) => {
       const al = (a || '').toLowerCase().trim();
       return userIdentifiers.includes(al);
@@ -94,14 +116,10 @@ export function TaskDetailPage() {
     const fallbackLocal = () => {
       const localTasks: Task[] = JSON.parse(localStorage.getItem('elgogalyia_local_tasks') || '[]');
       const found = localTasks.find((t) => t.id === taskId) || null;
-      if (found && isEmployee) {
-        const assigned = (found.assignedTo || []).map((a) => a.toLowerCase().trim());
-        const isAllowed = userIdentifiers.some((id) => assigned.includes(id));
-        if (!isAllowed) {
-          setTask(null);
-          setLoading(false);
-          return;
-        }
+      if (found && !canUserAccessTask(found)) {
+        setTask(null);
+        setLoading(false);
+        return;
       }
       setTask(found);
       setLoading(false);
@@ -115,14 +133,10 @@ export function TaskDetailPage() {
           didResolve = true;
           if (snap.exists()) {
             const fetched = { id: snap.id, ...snap.data() } as Task;
-            if (isEmployee) {
-              const assigned = (fetched.assignedTo || []).map((a) => a.toLowerCase().trim());
-              const isAllowed = userIdentifiers.some((id) => assigned.includes(id));
-              if (!isAllowed) {
-                setTask(null);
-                setLoading(false);
-                return;
-              }
+            if (!canUserAccessTask(fetched)) {
+              setTask(null);
+              setLoading(false);
+              return;
             }
             setTask(fetched);
             setLoading(false);
@@ -548,10 +562,10 @@ export function TaskDetailPage() {
         {/* Assigned Team Members Section */}
         <div className="pt-2 border-t border-[var(--border-subtle)]">
           <h3 className="text-xs font-black text-[var(--text-muted)] uppercase tracking-wider mb-2.5">
-            {isAdmin ? 'الأعضاء المكلفون وحالة كل منهم' : 'التكليف'}
+            {canReviewTask ? 'الأعضاء المكلفون وحالة كل منهم' : 'التكليف'}
           </h3>
 
-          {isAdmin ? (
+          {canReviewTask ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {(task.assignedTo || []).map((assigneeId, i) => {
                 const cleanId = (assigneeId || '').toLowerCase().trim();
@@ -628,7 +642,7 @@ export function TaskDetailPage() {
       )}
 
       {/* ─── EMPLOYEE SECTION: INDIVIDUAL STATUS & SUBMISSION FORM ─── */}
-      {isEmployee && (
+      {isAssignedToCurrentUser && (
         <div className="space-y-4">
           {/* 1. Approved Status Banner for current user */}
           {myPersonalStatus === 'approved' && (
@@ -744,13 +758,13 @@ export function TaskDetailPage() {
         </div>
       )}
 
-      {/* ─── ADMIN SECTION: REVIEW EACH EMPLOYEE'S SUBMISSION INDIVIDUALLY ─── */}
-      {isAdmin && (
+      {/* ─── REVIEW SECTION: ADMINS & VICE-HEAD REVIEW EACH SUBMISSION INDIVIDUALLY ─── */}
+      {canReviewTask && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-base sm:text-lg font-black text-[var(--text-primary)] flex items-center gap-2">
               <FileCheck className="h-5 w-5 text-[var(--brand-accent)]" />
-              <span>تسليمات الأعضاء ومراجعة الاعتماد</span>
+              <span>{isViceHead ? 'تسليمات أعضاء اللجنة ومراجعة الاعتماد' : 'تسليمات الأعضاء ومراجعة الاعتماد'}</span>
             </h2>
             <span className="text-xs font-bold text-[var(--text-muted)]">
               إجمالي {allSubmissions.length} تسليم

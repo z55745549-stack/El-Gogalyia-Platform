@@ -80,14 +80,16 @@ export default function App() {
                 <Route path="/my-discounts" element={<Navigate to="/ocoins?tab=purchases" replace />} />
               </Route>
 
-              {/* Leadership & Head routes */}
-              <Route element={<ProtectedRoute allowedRoles={['lead', 'co_lead', 'head']} />}>
-                {/* Unified Operations Hub: Tasks + Submissions */}
+              {/* Unified Operations & Tasks Review (Leadership, Head, and Vice-Head) */}
+              <Route element={<ProtectedRoute allowedRoles={['lead', 'co_lead', 'head', 'vice_head']} />}>
                 <Route path="/operations" element={<OperationsPage />} />
                 <Route path="/tasks" element={<Navigate to="/operations?tab=tasks" replace />} />
                 <Route path="/tasks/:taskId" element={<TaskDetailPage />} />
                 <Route path="/submitted-tasks" element={<Navigate to="/operations?tab=submissions" replace />} />
+              </Route>
 
+              {/* Leadership & Head exclusive admin routes */}
+              <Route element={<ProtectedRoute allowedRoles={['lead', 'co_lead', 'head']} />}>
                 {/* Unified Compliance Hub: Attendance + Bans */}
                 <Route path="/compliance" element={<CompliancePage />} />
                 <Route path="/attendance" element={<Navigate to="/compliance?tab=attendance" replace />} />

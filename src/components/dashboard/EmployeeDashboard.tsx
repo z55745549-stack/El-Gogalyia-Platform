@@ -7,7 +7,7 @@ import {
   CheckSquare, Clock, Upload, CheckCircle2, AlertTriangle,
   Coins, Calendar, ChevronLeft,
   TrendingUp, Sparkles, LifeBuoy, CalendarDays, Bell,
-  UserCheck, QrCode, Flame, Target, Award
+  UserCheck, QrCode, Flame, Target, Award, Inbox
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useNotifications } from '@/hooks/useNotifications';
@@ -541,10 +541,10 @@ export function EmployeeDashboard() {
         </div>
       </div>
 
-      {/* ─── VICE-HEAD EXCLUSIVE: Committee Tasks Pulse ──────────────────────── */}
+      {/* ─── VICE-HEAD EXCLUSIVE: Committee Tasks Pulse & Submissions Review ──────────────────────── */}
       {isViceHead && (
         <div className="card p-5 sm:p-6 space-y-4 border-l-4 border-l-emerald-500">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <span className="p-1.5 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
                 <Target className="h-4 w-4" />
@@ -554,13 +554,27 @@ export function EmployeeDashboard() {
                   متابعة مهام زملاء لجنة {userProfile?.committeeName || ''}
                 </h2>
                 <p className="text-[11px] text-[var(--text-muted)]">
-                  نظرة عامة لمتابعة سير تكليفات أعضاء لجنتك وتنسيق العمل مع رئيس اللجنة
+                  صلاحية الفايس هيد: مراجعة تسليمات أعضاء لجنتك، اعتماد الأعمال وصرف مكافآت O-Coins
                 </p>
               </div>
             </div>
-            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
-              {committeeTasks.length} مهام باللجنة
-            </span>
+
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <Link to="/operations?tab=submissions">
+                <Button size="sm" className="btn-primary text-xs font-black gap-1.5 rounded-xl cursor-pointer">
+                  <Inbox className="h-3.5 w-3.5" />
+                  <span>مراجعة تسليمات لجنتي</span>
+                  {committeeTasks.filter((t) => t.status === 'submitted' || t.latestSubmission?.status === 'pending').length > 0 && (
+                    <span className="px-1.5 py-0.5 bg-amber-400 text-slate-900 rounded-full text-[10px] font-black mr-1">
+                      {committeeTasks.filter((t) => t.status === 'submitted' || t.latestSubmission?.status === 'pending').length}
+                    </span>
+                  )}
+                </Button>
+              </Link>
+              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-1.5 rounded-xl border border-emerald-500/20">
+                {committeeTasks.length} مهام باللجنة
+              </span>
+            </div>
           </div>
 
           {committeeTasks.length === 0 ? (
@@ -574,7 +588,9 @@ export function EmployeeDashboard() {
                     <div className="min-w-0 space-y-1">
                       <div className="flex items-center gap-2">
                         <PriorityBadge priority={t.priority} />
-                        <span className="text-xs font-bold text-[var(--text-primary)] truncate">{t.title}</span>
+                        <Link to={`/tasks/${t.id}`} className="text-xs font-bold text-[var(--text-primary)] hover:text-[var(--brand-primary)] hover:underline truncate">
+                          {t.title}
+                        </Link>
                       </div>
                       <div className="flex items-center gap-2 text-[10px] text-[var(--text-muted)]">
                         <span>المكلف: {t.assignedToNames?.[0] || 'عضو اللجنة'}</span>
@@ -584,7 +600,14 @@ export function EmployeeDashboard() {
                         <span className="text-[var(--brand-warm)] font-bold">🪙 {t.oCoinsReward} OC</span>
                       </div>
                     </div>
-                    <StatusBadge status={t.status} overdue={overdue} />
+                    <div className="flex items-center gap-2 shrink-0">
+                      <StatusBadge status={t.status} overdue={overdue} />
+                      <Link to={`/tasks/${t.id}`}>
+                        <Button size="sm" variant="outline" className="text-[11px] font-bold h-7 px-2.5 rounded-lg cursor-pointer">
+                          مراجعة
+                        </Button>
+                      </Link>
+                    </div>
                   </div>
                 );
               })}

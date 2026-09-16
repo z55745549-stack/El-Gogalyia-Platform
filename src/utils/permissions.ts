@@ -7,8 +7,8 @@ export const ROLE_HIERARCHY: Record<UserRole, number> = {
   lead:       100, // قائد المنصة (متساوي مع الكو ليد 100٪ فوق الجميع)
   co_lead:    100, // نائب القائد (متساوي مع الليد 100٪ فوق الجميع)
   head:        80, // رئيس لجنة (مثل السوبر أدمن سابقاً - صلاحيات كاملة في كل شيء أسفله)
-  vice_head:   10, // نائب رئيس لجنة (متساوي تماماً مع الميمبر مثل صلاحيات الموظف)
-  member:      10, // عضو (متساوي تماماً مع الفايس هيد مثل صلاحيات الموظف)
+  vice_head:   15, // نائب رئيس لجنة (يملك صلاحية مراجعة واعتماد تسليمات أعضاء لجنته)
+  member:      10, // عضو (الموظف التنفيذي)
 };
 
 export function getRoleRank(role: UserRole): number {
@@ -39,6 +39,14 @@ export function isAdminRole(role: UserRole): boolean {
   return role === 'lead' || role === 'co_lead' || role === 'head';
 }
 
+/**
+ * True if role can review & approve/reject task submissions:
+ * LEAD, CO-LEAD, HEAD, and VICE-HEAD (for committee members)
+ */
+export function canReviewTasks(role: UserRole): boolean {
+  return isAdminRole(role) || role === 'vice_head';
+}
+
 export function hasPermission(
   userPermissions: Permission[],
   userRole: UserRole,
@@ -53,9 +61,13 @@ export function hasPermission(
 }
 
 export function canAccessPage(role: UserRole, page: string): boolean {
+  // Vice-Head can access task submissions review hub
+  if (page === '/submitted-tasks' || page === '/operations' || page.startsWith('/operations')) {
+    return isAdminRole(role) || role === 'vice_head';
+  }
   const adminPages = [
     '/employees', '/reports', '/access-management', '/activity-logs',
-    '/tasks', '/submitted-tasks', '/attendance', '/bans',
+    '/tasks', '/attendance', '/bans',
   ];
   if (adminPages.includes(page)) return isAdminRole(role);
   return true;

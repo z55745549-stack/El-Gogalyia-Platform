@@ -40,7 +40,7 @@ export function SubmittedTasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [committees, setCommittees] = useState<Committee[]>([]);
   const [committeeFilter, setCommitteeFilter] = useState<string>(
-    userProfile?.role === 'head' && userProfile?.committeeId ? userProfile.committeeId : ''
+    ((userProfile?.role === 'head' || userProfile?.role === 'vice_head') && userProfile?.committeeId) ? userProfile.committeeId : ''
   );
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -87,9 +87,23 @@ export function SubmittedTasksPage() {
     };
   }, []);
 
-  // Extract all submission items from tasks
+  const isViceHead = userProfile?.role === 'vice_head';
+  const isHead = userProfile?.role === 'head';
+
+  const isTaskInMyCommittee = (t: Task) => {
+    if (!isViceHead) return true;
+    const commId = userProfile?.committeeId;
+    const commName = (userProfile?.committeeName || '').trim().toLowerCase();
+    if (commId && t.committeeId === commId) return true;
+    if (commName && t.committeeName && t.committeeName.trim().toLowerCase() === commName) return true;
+    return false;
+  };
+
+  // Extract all submission items from tasks (strictly restricted for vice_head)
   const submissionItems: SubmissionItem[] = [];
   tasks.forEach((task) => {
+    if (!isTaskInMyCommittee(task)) return;
+
     if (task.latestSubmission) {
       submissionItems.push({
         task,
@@ -142,7 +156,10 @@ export function SubmittedTasksPage() {
       matchStatus = submission.status === 'rejected';
     }
 
-    const matchCommittee = !committeeFilter || task.committeeId === committeeFilter;
+    const matchCommittee = isViceHead
+      ? true
+      : (!committeeFilter || task.committeeId === committeeFilter);
+
     return matchSearch && matchStatus && matchCommittee;
   });
 
@@ -225,10 +242,14 @@ export function SubmittedTasksPage() {
             </div>
             <div>
               <h1 className="text-xl sm:text-2xl font-black text-[var(--text-primary)] flex items-center gap-2">
-                تسليمات المهام والتقييم
+                {isViceHead 
+                  ? `مراجعة تسليمات أعضاء لجنة ${userProfile?.committeeName || 'اللجنة'}`
+                  : 'تسليمات المهام والتقييم'}
               </h1>
               <p className="text-xs sm:text-sm text-[var(--text-muted)] mt-0.5">
-                مراجعة تسليمات الموظفين والطلاب، اعتماد الأعمال، وصرف مكافآت O-Coins
+                {isViceHead
+                  ? 'مراجعة تسليمات أعضاء لجنتك، قبول الأعمال وصرف مكافآت O-Coins، أو طلب التعديل'
+                  : 'مراجعة تسليمات الموظفين والطلاب، اعتماد الأعمال، وصرف مكافآت O-Coins'}
               </p>
             </div>
           </div>
@@ -303,19 +324,25 @@ export function SubmittedTasksPage() {
             leftIcon={<Search className="h-4 w-4 text-[var(--text-muted)]" />}
           />
         </div>
-        <div className="w-full sm:w-48">
-          <select
-            value={committeeFilter}
-            onChange={(e) => setCommitteeFilter(e.target.value)}
-            className="w-full px-3 py-2.5 rounded-xl text-xs bg-[var(--surface-elevated)] border border-[var(--border-subtle)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] cursor-pointer"
-          >
-            <option value="">جميع اللجان</option>
-            {committees.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+        <div className="w-full sm:w-56">
+          {isViceHead ? (
+            <div className="w-full px-3 py-2.5 rounded-xl text-xs bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1.5 justify-center">
+              <span>🏛️ لجنة {userProfile?.committeeName || 'لجنتك'} (مقيد)</span>
+            </div>
+          ) : (
+            <select
+              value={committeeFilter}
+              onChange={(e) => setCommitteeFilter(e.target.value)}
+              className="w-full px-3 py-2.5 rounded-xl text-xs bg-[var(--surface-elevated)] border border-[var(--border-subtle)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] cursor-pointer"
+            >
+              <option value="">جميع اللجان</option>
+              {committees.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
         <div className="w-full sm:w-48">
           <Select

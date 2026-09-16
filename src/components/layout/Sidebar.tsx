@@ -5,7 +5,8 @@ import {
   LayoutDashboard, CheckSquare, Users, Coins, BarChart3,
   Shield, ClipboardList, Bell, Settings, LogOut,
   ListTodo, CalendarDays, GraduationCap, MessageCircleQuestion,
-  CalendarCheck, Tag, ShoppingBag, BookOpen, ShieldAlert, Rocket, Sparkles, HeadphonesIcon
+  CalendarCheck, Tag, ShoppingBag, BookOpen, ShieldAlert, Rocket, Sparkles, HeadphonesIcon,
+  Inbox
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useNotificationCount } from '@/hooks/useNotifications';
@@ -31,6 +32,7 @@ const navItems: NavItem[] = [
 
   // Member / Vice-Head work
   { label: 'مهامي وتكليفاتي', path: '/my-tasks', icon: <ListTodo className="h-4 w-4" />, roles: MEMBER_ROLES, category: 'work' },
+  { label: 'مراجعة تسليمات لجنتي', path: '/operations?tab=submissions', icon: <Inbox className="h-4 w-4" />, roles: ['vice_head'], category: 'work' },
   { label: 'سجل حضوري', path: '/my-attendance', icon: <CalendarCheck className="h-4 w-4" />, roles: MEMBER_ROLES, category: 'work' },
 
   // Admin/Lead/Head work — unified

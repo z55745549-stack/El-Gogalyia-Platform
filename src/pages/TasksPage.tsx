@@ -40,10 +40,11 @@ const PRIORITY_OPTIONS = [
 
 export function TasksPage() {
   const { userProfile } = useAuth();
+  const isViceHead = userProfile?.role === 'vice_head';
   const [tasks, setTasks] = useState<Task[]>([]);
   const [committees, setCommittees] = useState<Committee[]>([]);
   const [committeeFilter, setCommitteeFilter] = useState<string>(
-    userProfile?.role === 'head' && userProfile?.committeeId ? userProfile.committeeId : ''
+    ((userProfile?.role === 'head' || userProfile?.role === 'vice_head') && userProfile?.committeeId) ? userProfile.committeeId : ''
   );
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -188,7 +189,12 @@ export function TasksPage() {
     }
 
     const matchPriority = !priorityFilter || t.priority === priorityFilter;
-    const matchCommittee = !committeeFilter || t.committeeId === committeeFilter;
+    const matchCommittee = isViceHead
+      ? (
+          (userProfile?.committeeId && t.committeeId === userProfile.committeeId) ||
+          (userProfile?.committeeName && t.committeeName && t.committeeName.trim().toLowerCase() === userProfile.committeeName.trim().toLowerCase())
+        )
+      : (!committeeFilter || t.committeeId === committeeFilter);
     return matchSearch && matchTab && matchPriority && matchCommittee;
   });
 
@@ -200,10 +206,13 @@ export function TasksPage() {
       <div className="card p-6 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-black text-[var(--text-primary)] flex items-center gap-2">
-            <CheckSquare className="h-6 w-6 text-amber-500" /> إدارة وتكليف المهام
+            <CheckSquare className="h-6 w-6 text-amber-500" />
+            {isViceHead ? `مهام وتكليفات لجنة ${userProfile?.committeeName || 'اللجنة'}` : 'إدارة وتكليف المهام'}
           </h1>
           <p className="text-xs sm:text-sm text-[var(--text-muted)] mt-1">
-            إجمالي {tasks.length} مهمة مسجلة بالنظام · {submittedCount} بانتظار الاعتماد
+            {isViceHead
+              ? `استعراض مهام ومشاريع أعضاء لجنتك ومتابعة التسليمات (${submittedCount} بانتظار الاعتماد)`
+              : `إجمالي ${tasks.length} مهمة مسجلة بالنظام · ${submittedCount} بانتظار الاعتماد`}
           </p>
         </div>
         <div className="flex items-center gap-2.5 flex-wrap">
@@ -314,19 +323,25 @@ export function TasksPage() {
             leftIcon={<Search className="h-4 w-4 text-[var(--text-muted)]" />}
           />
         </div>
-        <div className="w-full sm:w-48">
-          <select
-            value={committeeFilter}
-            onChange={(e) => setCommitteeFilter(e.target.value)}
-            className="w-full px-3 py-2.5 rounded-xl text-xs bg-[var(--surface-elevated)] border border-[var(--border-subtle)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] cursor-pointer"
-          >
-            <option value="">جميع اللجان</option>
-            {committees.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+        <div className="w-full sm:w-56">
+          {isViceHead ? (
+            <div className="w-full px-3 py-2.5 rounded-xl text-xs bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1.5 justify-center">
+              <span>🏛️ لجنة {userProfile?.committeeName || 'لجنتك'} (مقيد)</span>
+            </div>
+          ) : (
+            <select
+              value={committeeFilter}
+              onChange={(e) => setCommitteeFilter(e.target.value)}
+              className="w-full px-3 py-2.5 rounded-xl text-xs bg-[var(--surface-elevated)] border border-[var(--border-subtle)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] cursor-pointer"
+            >
+              <option value="">جميع اللجان</option>
+              {committees.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
         <div className="w-full sm:w-48">
           <Select
