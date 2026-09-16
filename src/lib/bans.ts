@@ -115,9 +115,12 @@ export async function createBan(params: {
   if (penalty > 0) {
     const ocoinRef = doc(collection(db, 'oCoins'));
     batch.set(ocoinRef, {
+      userId: employee.uid,
+      user_id: employee.uid,
       userEmail: (employee.email || employee.username || '').toLowerCase(),
       userDisplayName: employee.displayName,
       uid: employee.uid,
+      employeeId: employee.uid,
       amount: -penalty,
       type: 'ban_penalty' as const,
       reason: `Ban penalty: ${reason.trim()}`,

@@ -730,9 +730,12 @@ export async function approveTask(
   if (!alreadyRewarded) {
     const ocoinRef = doc(collection(db, 'oCoins'));
     batch.set(ocoinRef, {
+      userId: resolvedUid || '',
+      user_id: resolvedUid || '',
       userEmail: assigneeEmailForLedger,
       userDisplayName: assigneeDisplayForLedger,
       uid: resolvedUid || '',
+      employeeId: resolvedUid || '',
       amount: task.oCoinsReward,
       type: 'task_reward' as OCoinTransactionType,
       reason: `Task approved: ${task.title}`,
@@ -1027,6 +1030,8 @@ export async function manualOCoinAdjustment(params: {
   const userTargetId = (targetUser.username || targetUser.email || '').toLowerCase();
 
   const transactionData: any = {
+    userId: targetUser.uid,
+    user_id: targetUser.uid,
     userEmail: userTargetId,
     userDisplayName: targetUser.displayName || targetUser.username || 'عضو الفريق',
     uid: targetUser.uid,

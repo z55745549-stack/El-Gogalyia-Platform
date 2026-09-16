@@ -271,6 +271,8 @@ export async function purchaseDiscount(params: {
 
     // 7. Construct OCoin Transaction (Unified archive)
     const ocoinTxData = {
+      userId: employee.uid,
+      user_id: employee.uid,
       userEmail: (employee.email || employee.username || '').toLowerCase(),
       userDisplayName: employee.displayName || employee.username || 'عضو الفريق',
       uid: employee.uid,

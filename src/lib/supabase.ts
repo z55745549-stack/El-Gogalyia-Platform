@@ -505,6 +505,16 @@ export async function setDoc(docRef: DocRef, data: any, options?: { merge?: bool
     raw_data: { ...finalData, [idCol]: id },
   };
 
+  // Common field aliases mapping for consistent PostgreSQL translation
+  if (finalData.uid && !finalData.userId && !finalData.user_id) {
+    finalData.userId = finalData.uid;
+    finalData.user_id = finalData.uid;
+  }
+  if (finalData.employeeId && !finalData.userId && !finalData.user_id) {
+    finalData.userId = finalData.employeeId;
+    finalData.user_id = finalData.employeeId;
+  }
+
   const allowedCols = KNOWN_COLUMNS[table];
   for (const [k, v] of Object.entries(finalData)) {
     const snake = toSnakeCase(k);
@@ -524,9 +534,16 @@ export async function setDoc(docRef: DocRef, data: any, options?: { merge?: bool
     if (!payload.committee_name) payload.committee_name = finalData.committeeName || finalData.committee || 'اللجنة العامة';
     if (!payload.status) payload.status = 'pending';
   } else if (table === 'ocoin_transactions') {
-    if (!payload.user_display_name) payload.user_display_name = finalData.userDisplayName || finalData.userName || finalData.userEmail || 'عضو';
+    if (!payload.user_id) {
+      payload.user_id = finalData.userId || finalData.user_id || finalData.uid || finalData.employeeId || finalData.employee_id || id;
+    }
+    if (!payload.user_display_name) payload.user_display_name = finalData.userDisplayName || finalData.userName || finalData.employeeName || finalData.userEmail || 'عضو الفريق';
     if (payload.amount === undefined) payload.amount = Number(finalData.amount || 0);
-    if (!payload.type) payload.type = 'manual_reward';
+    if (!payload.type) payload.type = finalData.type || 'manual_reward';
+    if (!payload.reason) payload.reason = finalData.reason || finalData.description || 'تعديل رصيد';
+    if (payload.new_balance === undefined) payload.new_balance = Number(finalData.newBalance ?? 0);
+    if (!payload.created_by) payload.created_by = finalData.createdBy || 'admin';
+    if (!payload.created_by_name) payload.created_by_name = finalData.createdByName || 'الإدارة';
   } else if (table === 'discounts') {
     if (payload.discount_value === undefined) payload.discount_value = Number(finalData.discountValue || finalData.discount || finalData.value || 0);
     if (!payload.discount_type) payload.discount_type = finalData.discountType || 'percentage';
