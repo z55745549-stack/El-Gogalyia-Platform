@@ -26,15 +26,6 @@ import { formatFullName, formatTitleCaseLive, hasArabic } from '@/utils';
 
 type AuthMode = 'login' | 'register' | 'success';
 
-// ─── Platform Pillars ────────────────────────────────────────────────────────
-
-const PILLARS = [
-  { Icon: Zap,         label: 'إدارة المهام', sub: 'متابعة حية وتسليم معتمد' },
-  { Icon: Award,       label: 'O Coins',       sub: 'نظام مكافآت ونقاط تميز' },
-  { Icon: Layers,      label: 'المسارات',      sub: 'ورش عمل وتطوير مستمر' },
-  { Icon: ShieldCheck, label: 'الأمان المتقدم', sub: 'حماية وحوكمة موثوقة' },
-] as const;
-
 // ─── Input Field Component (Guaranteed Zero Overlap via Flexbox) ──────────────
 
 interface InputFieldProps {
@@ -102,6 +93,7 @@ function ModeTabs({
   onSwitch: (m: 'login' | 'register') => void;
   isDark: boolean;
 }) {
+  const { t } = useLanguage();
   return (
     <div
       className="flex p-1.5 rounded-xl transition-colors"
@@ -136,7 +128,7 @@ function ModeTabs({
                   }
             }
           >
-            {tab === 'login' ? 'تسجيل الدخول' : 'طلب انضمام جديد'}
+            {tab === 'login' ? t('auth.login_tab', 'تسجيل الدخول') : t('auth.register_tab', 'طلب انضمام جديد')}
           </button>
         );
       })}
@@ -153,6 +145,7 @@ function ErrorBanner({
   onClose: () => void;
   isDark: boolean;
 }) {
+   const { t } = useLanguage();
   return (
     <AnimatePresence>
       {message && (
@@ -177,7 +170,7 @@ function ErrorBanner({
             type="button"
             onClick={onClose}
             className="shrink-0 opacity-60 hover:opacity-100 cursor-pointer font-bold text-sm px-1"
-            aria-label="إغلاق"
+            aria-label={t('action.close', 'إغلاق')}
           >
             ✕
           </button>
@@ -190,6 +183,15 @@ function ErrorBanner({
 // ─── Hero Panel (Human-Crafted Typography, No Broken Boxes, No Logos) ────────
 
 function HeroPanel({ isDark }: { isDark: boolean }) {
+  const { t } = useLanguage();
+
+  const pillars = [
+    { Icon: Zap,         label: t('hero.pillar_tasks', 'إدارة المهام'),       sub: t('hero.pillar_tasks_sub', 'متابعة حية وتسليم معتمد') },
+    { Icon: Award,       label: t('hero.pillar_ocoins', 'O Coins'),           sub: t('hero.pillar_ocoins_sub', 'نظام مكافآت ونقاط تميز') },
+    { Icon: Layers,      label: t('hero.pillar_paths', 'المسارات'),           sub: t('hero.pillar_paths_sub', 'ورش عمل وتطوير مستمر') },
+    { Icon: ShieldCheck, label: t('hero.pillar_security', 'الأمان المتقدم'),  sub: t('hero.pillar_security_sub', 'حماية وحوكمة موثوقة') },
+  ];
+
   return (
     <div
       className="hidden lg:flex lg:w-[48%] flex-col justify-between p-10 xl:p-12 relative overflow-hidden"
@@ -225,7 +227,7 @@ function HeroPanel({ isDark }: { isDark: boolean }) {
             className="text-2xl font-black tracking-tight"
             style={{ color: isDark ? '#FFFFFF' : '#0F172A' }}
           >
-            منصة الجوجالية
+            {t('platform.name', 'منصة الجوجالية')}
           </span>
           <span
             className="text-[10px] font-black px-2 py-0.5 rounded-md"
@@ -235,14 +237,14 @@ function HeroPanel({ isDark }: { isDark: boolean }) {
               color: isDark ? '#A78BFA' : '#4F46E5',
             }}
           >
-            المنظومة الرسمية
+            {t('platform.desc', 'المنظمة الرسمية')}
           </span>
         </div>
         <p
           className="text-xs font-semibold mt-1"
           style={{ color: isDark ? 'rgba(148,163,184,0.85)' : '#64748B' }}
         >
-          مجتمع الإبداع والريادة التقنية
+          {t('platform.community', 'مجتمع الإبداع والريادة التقنية')}
         </p>
       </div>
 
@@ -257,7 +259,7 @@ function HeroPanel({ isDark }: { isDark: boolean }) {
           }}
         >
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          بوابة العضوية والقيادة المتكاملة
+          {t('hero.badge', 'بوابة العضوية والقيادة المتكاملة')}
         </div>
 
         <h2
@@ -268,7 +270,7 @@ function HeroPanel({ isDark }: { isDark: boolean }) {
             color: isDark ? '#FFFFFF' : '#0F172A',
           }}
         >
-          اصنع الأثر،{' '}
+          {t('hero.title_part1', 'اصنع الأثر،')}{' '}
           {isDark ? (
             <span
               style={{
@@ -276,7 +278,7 @@ function HeroPanel({ isDark }: { isDark: boolean }) {
                 textShadow: '0 0 24px rgba(56,189,248,0.5)',
               }}
             >
-              طوّر ذاتك،
+              {t('hero.title_part2', 'طور ذاتك،')}
             </span>
           ) : (
             <span
@@ -285,22 +287,22 @@ function HeroPanel({ isDark }: { isDark: boolean }) {
                 backgroundImage: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #0284C7 100%)',
               }}
             >
-              طوّر ذاتك،
+              {t('hero.title_part2', 'طور ذاتك،')}
             </span>
           )}{' '}
-          وقُد المستقبل.
+          {t('hero.title_part3', 'وقُد المستقبل.')}
         </h2>
 
         <p
           className="text-sm leading-relaxed max-w-sm"
           style={{ color: isDark ? 'rgba(203,213,225,0.9)' : '#475569' }}
         >
-          بيئة رقمية حديثة تجمع فرق العمل، وتدير التكليفات والمسابقات والمكافآت بوضوح واحترافية متناهية.
+          {t('hero.subtitle', 'بيئة رقمية حديثة تجمع فرق العمل، وتدير التكليفات والمسابقات والمكافآت بوضوح واحترافية متناهية.')}
         </p>
 
         {/* 4 Pillars Grid */}
         <div className="grid grid-cols-2 gap-2.5 pt-2">
-          {PILLARS.map(({ Icon, label, sub }) => (
+          {pillars.map(({ Icon, label, sub }) => (
             <div
               key={label}
               className="flex items-center gap-2.5 p-3 rounded-xl transition-all hover:scale-[1.02]"
@@ -345,13 +347,13 @@ function HeroPanel({ isDark }: { isDark: boolean }) {
         style={{ borderTop: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(226,232,240,0.85)' }}
       >
         <span style={{ color: isDark ? 'rgba(148,163,184,0.7)' : '#64748B' }}>
-          منصة الجوجالية &copy; 2026
+          {t('hero.footer_copyright', 'منصة الجوجالية')} &copy; 2026
         </span>
         <span
           className="font-bold"
           style={{ color: isDark ? '#A78BFA' : '#4F46E5' }}
         >
-          مجتمع رقمي موحد
+          {t('hero.footer_tagline', 'مجتمع رقمي موحد')}
         </span>
       </div>
     </div>
@@ -363,7 +365,7 @@ function HeroPanel({ isDark }: { isDark: boolean }) {
 export function LoginPage() {
   const { signInWithUsername, registerMember, signInWithDevice } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const { language, direction, toggleLanguage } = useLanguage();
+   const { language, direction, toggleLanguage, t } = useLanguage();
   const navigate = useNavigate();
 
   const [mode, setMode] = useState<AuthMode>('login');
@@ -407,25 +409,25 @@ export function LoginPage() {
     const p = password.trim();
 
     if (!u || !p) {
-      toast.error('يرجى إدخال اسم المستخدم وكلمة المرور.');
+      toast.error(t('error.login_required', 'يرجى إدخال اسم المستخدم وكلمة المرور.'));
       return;
     }
     if (hasArabic(u)) {
-      setErrorMsg('اسم المستخدم لا يمكن أن يحتوي على حروف عربية.');
+      setErrorMsg(t('error.username_arabic', 'اسم المستخدم لا يمكن أن يحتوي على حروف عربية.'));
       return;
     }
     if (hasArabic(p)) {
-      setErrorMsg('كلمة المرور لا يمكن أن تحتوي على حروف عربية.');
+      setErrorMsg(t('error.password_arabic', 'كلمة المرور لا يمكن أن تحتوي على حروف عربية.'));
       return;
     }
 
     setLoading(true);
     try {
       await signInWithUsername(u, p);
-      toast.success('مرحباً بك في منصة الجوجالية');
+      toast.success(t('toast.login_success', 'مرحباً بك في منصة الجوجالية'));
       navigate('/dashboard');
     } catch (err: any) {
-      setErrorMsg(err?.message ?? 'اسم المستخدم أو كلمة المرور غير صحيحة.');
+      setErrorMsg(err?.message ?? t('error.invalid_credentials', 'اسم المستخدم أو كلمة المرور غير صحيحة.'));
     } finally {
       setLoading(false);
     }
@@ -434,23 +436,23 @@ export function LoginPage() {
   // ── Biometric / Device Identity Login ─────────────────────────────
   async function handleBiometricLogin() {
     if (!biometricAvailable) {
-      toast.error('جهازك لا يدعم المصادقة البيومترية أو هوية الجهاز.');
+      toast.error(t('error.device_unsupported', 'جهازك لا يدعم المصادقة البيومترية أو هوية الجهاز.'));
       return;
     }
     setLoading(true);
     setErrorMsg(null);
     try {
       const res = await signInWithDevice(username.trim());
-      if (res.success) {
-        toast.success('تم التحقق من هوية جهازك بنجاح. مرحباً بك!');
+        if (res.success) {
+        toast.success(t('toast.device_login_success', 'تم التحقق من هوية جهازك بنجاح. مرحباً بك!'));
         navigate('/dashboard');
       } else {
-        const msg = res.error || 'هوية جهازك غير مربوطة بأي حساب في منصة الجوجالية — يرجى تسجيل الدخول أولاً وتفعيل الميزة من إعدادات حسابك.';
+        const msg = res.error || t('error.device_not_linked', 'هوية جهازك غير مربوطة بأي حساب في منصة الجوجالية — يرجى تسجيل الدخول أولاً وتفعيل الميزة من إعدادات حسابك.');
         setErrorMsg(msg);
         toast.error(msg);
       }
     } catch (err: any) {
-      const msg = err?.message || 'هوية جهازك غير مربوطة بأي حساب في منصة الجوجالية — يرجى تسجيل الدخول أولاً وتفعيل الميزة من إعدادات حسابك.';
+      const msg = err?.message || t('error.device_not_linked', 'هوية جهازك غير مربوطة بأي حساب في منصة الجوجالية — يرجى تسجيل الدخول أولاً وتفعيل الميزة من إعدادات حسابك.');
       setErrorMsg(msg);
       toast.error(msg);
     } finally {
@@ -468,23 +470,23 @@ export function LoginPage() {
     const pass  = regPassword.trim();
 
     if (!name || !uname || !email || !pass) {
-      setErrorMsg('يرجى ملء كافة الحقول المطلوبة.');
+      setErrorMsg(t('error.register_incomplete', 'يرجى ملء كافة الحقول المطلوبة.'));
       return;
     }
     if (hasArabic(uname)) {
-      setErrorMsg('اسم المستخدم لا يمكن أن يحتوي على حروف عربية — استخدم حروف إنجليزية وأرقام فقط.');
+      setErrorMsg(t('error.register_username_arabic', 'اسم المستخدم لا يمكن أن يحتوي على حروف عربية — استخدم حروف إنجليزية وأرقام فقط.'));
       return;
     }
     if (hasArabic(pass)) {
-      setErrorMsg('كلمة المرور لا يمكن أن تحتوي على حروف عربية — استخدم حروف إنجليزية وأرقام فقط.');
+      setErrorMsg(t('error.register_password_arabic', 'كلمة المرور لا يمكن أن تحتوي على حروف عربية — استخدم حروف إنجليزية وأرقام فقط.'));
       return;
     }
     if (pass.length < 6) {
-      setErrorMsg('كلمة المرور يجب أن لا تقل عن 6 خانات.');
+      setErrorMsg(t('error.password_too_short', 'كلمة المرور يجب أن لا تقل عن 6 خانات.'));
       return;
     }
     if (pass !== regConfirmPassword.trim()) {
-      setErrorMsg('كلمتا المرور غير متطابقتين.');
+      setErrorMsg(t('error.password_mismatch', 'كلمتا المرور غير متطابقتين.'));
       return;
     }
 
@@ -502,9 +504,9 @@ export function LoginPage() {
         specialtyTag:  regSpecialtyTag.trim() || undefined,
       });
       setMode('success');
-      toast.success('تم إرسال طلب انضمامك بنجاح');
+      toast.success(t('toast.register_success', 'تم إرسال طلب انضمامك بنجاح'));
     } catch (err: any) {
-      setErrorMsg(err?.message ?? 'تعذر إرسال الطلب، حاول مجدداً.');
+      setErrorMsg(err?.message ?? t('error.register_failed', 'تعذر إرسال الطلب، حاول مجدداً.'));
     } finally {
       setRegSubmitting(false);
     }
@@ -544,7 +546,7 @@ export function LoginPage() {
       <div className="absolute top-5 left-5 z-50 flex items-center gap-2">
         <button
           onClick={toggleLanguage}
-          aria-label="Toggle Language"
+           aria-label={t('header.lang.switch', language === 'ar' ? 'Switch to English' : 'التبديل إلى العربية')}
           className={[
             'flex items-center gap-1.5 px-3 py-2 rounded-xl',
             'text-xs font-bold transition-all cursor-pointer backdrop-blur-md',
@@ -559,7 +561,7 @@ export function LoginPage() {
 
         <button
           onClick={toggleTheme}
-          aria-label={isDark ? 'التبديل إلى الوضع الفاتح' : 'التبديل إلى الوضع الداكن'}
+           aria-label={isDark ? t('header.theme.light', 'التبديل إلى الوضع الفاتح') : t('header.theme.dark', 'التبديل إلى الوضع الليلي')}
           className={[
             'flex items-center gap-2 px-3.5 py-2 rounded-xl',
             'text-xs font-bold transition-all cursor-pointer backdrop-blur-md',
@@ -568,10 +570,10 @@ export function LoginPage() {
               : 'bg-white/90 border border-slate-200 text-slate-700 hover:bg-white shadow-xs',
           ].join(' ')}
         >
-          {isDark ? (
-            <><Sun className="h-4 w-4 text-amber-400" /><span className="hidden sm:inline">الوضع الفاتح</span></>
+            {isDark ? (
+            <><Sun className="h-4 w-4 text-amber-400" /><span className="hidden sm:inline">{t('theme.light_label', 'الوضع الفاتح')}</span></>
           ) : (
-            <><Moon className="h-4 w-4 text-indigo-600" /><span className="hidden sm:inline">الوضع الداكن</span></>
+            <><Moon className="h-4 w-4 text-indigo-600" /><span className="hidden sm:inline">{t('theme.dark_label', 'الوضع الداكن')}</span></>
           )}
         </button>
       </div>
@@ -612,12 +614,12 @@ export function LoginPage() {
                 className="space-y-6"
               >
                 <div>
-                  <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-                    تسجيل الدخول
-                  </h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                    أدخل بيانات حسابك للمتابعة إلى لوحة التحكم
-                  </p>
+                   <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                     {t('auth.title', 'تسجيل الدخول')}
+                   </h2>
+                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                     {t('login.prompt', 'أدخل بيانات حسابك للمتابعة إلى لوحة التحكم')}
+                   </p>
                 </div>
 
                 <ModeTabs current="login" onSwitch={switchMode} isDark={isDark} />
@@ -625,11 +627,11 @@ export function LoginPage() {
                 <ErrorBanner message={errorMsg} onClose={() => setErrorMsg(null)} isDark={isDark} />
 
                 <form onSubmit={handleSignIn} className="space-y-4" noValidate>
-                  <InputField
-                    id="login-username"
-                    label="اسم المستخدم أو البريد الإلكتروني"
-                    placeholder="أدخل اسم المستخدم أو البريد"
-                    value={username}
+                   <InputField
+                     id="login-username"
+                     label={t('login.username_label', 'اسم المستخدم أو البريد الإلكتروني')}
+                     placeholder={t('login.username_placeholder', 'أدخل اسم المستخدم أو البريد')}
+                     value={username}
                     onChange={(v) => setUsername(v.replace(/[؀-ۿݐ-ݿࢠ-ࣿﭐ-﷿ﹰ-﻿]/g, ''))}
                     IconLeft={User}
                     required
@@ -637,12 +639,12 @@ export function LoginPage() {
                     isDark={isDark}
                   />
 
-                  <InputField
-                    id="login-password"
-                    label="كلمة المرور"
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="كلمة المرور"
-                    value={password}
+                   <InputField
+                     id="login-password"
+                     label={t('login.password_label', 'كلمة المرور')}
+                     type={showPassword ? 'text' : 'password'}
+                     placeholder={t('login.password_placeholder', 'كلمة المرور')}
+                     value={password}
                     onChange={(v) => setPassword(v.replace(/[؀-ۿݐ-ݿࢠ-ࣿﭐ-﷿ﹰ-﻿]/g, ''))}
                     IconLeft={Lock}
                     rightElement={
@@ -650,7 +652,7 @@ export function LoginPage() {
                         type="button"
                         onClick={() => setShowPassword((v) => !v)}
                         className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors cursor-pointer p-1"
-                        aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
+                         aria-label={showPassword ? t('label.hide_password', 'إخفاء كلمة المرور') : t('label.show_password', 'إظهار كلمة المرور')}
                       >
                         {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
@@ -669,9 +671,9 @@ export function LoginPage() {
                       boxShadow: '0 8px 25px -4px rgba(99,102,241,0.45)',
                       border: 'none',
                     }}
-                    loading={loading}
-                  >
-                    دخول إلى المنصة
+                     loading={loading}
+                   >
+                     {t('login.submit', 'دخول إلى المنصة')}
                   </Button>
                 </form>
 
@@ -680,7 +682,7 @@ export function LoginPage() {
                   <div className="space-y-3 pt-1">
                     <div className="flex items-center gap-3">
                       <div className="flex-1 h-px bg-slate-200/90 dark:bg-white/[0.08]" />
-                      <span className="text-[11px] text-slate-500 dark:text-slate-500 font-bold">أو عبر هوية الجهاز</span>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-500 font-bold">{t('login.or_device', 'أو عبر هوية الجهاز')}</span>
                       <div className="flex-1 h-px bg-slate-200/90 dark:bg-white/[0.08]" />
                     </div>
 
@@ -697,21 +699,21 @@ export function LoginPage() {
                       ].join(' ')}
                     >
                       <Fingerprint className="h-4 w-4 text-indigo-500 shrink-0" />
-                      <span>الدخول بهوية الجهاز (بصمة / قفل الشاشة)</span>
+                      <span>{t('login.device_btn', 'الدخول بهوية الجهاز (بصمة / قفل الشاشة)')}</span>
                     </button>
                   </div>
                 )}
 
-                <p className="text-xs text-center text-slate-500 dark:text-slate-400 pt-2">
-                  عضو جديد في الجوجالية؟{' '}
-                  <button
-                    type="button"
-                    onClick={() => switchMode('register')}
-                    className="font-black text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
-                  >
-                    قدّم طلب انضمام الآن
-                  </button>
-                </p>
+                   <p className="text-xs text-center text-slate-500 dark:text-slate-400 pt-2">
+                     {t('login.switch_to_register', 'عضو جديد في الجوجالية؟')}{' '}
+                     <button
+                       type="button"
+                       onClick={() => switchMode('register')}
+                       className="font-black text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
+                     >
+                       {t('login.register_link', 'قدّم طلب انضمام الآن')}
+                     </button>
+                   </p>
               </motion.div>
             )}
 
@@ -726,12 +728,12 @@ export function LoginPage() {
                 className="space-y-5"
               >
                 <div>
-                  <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-                    طلب انضمام جديد
-                  </h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                    أكمل بياناتك الشخصية لمراجعة طلبك واعتماده من قِبل القيادة
-                  </p>
+                   <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                     {t('register.title', 'طلب انضمام جديد')}
+                   </h2>
+                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                     {t('register.subtitle', 'أكمل بياناتك الشخصية لمراجعة طلبك واعتماده من قِبل القيادة')}
+                   </p>
                 </div>
 
                 <ModeTabs current="register" onSwitch={switchMode} isDark={isDark} />
@@ -739,11 +741,11 @@ export function LoginPage() {
                 <ErrorBanner message={errorMsg} onClose={() => setErrorMsg(null)} isDark={isDark} />
 
                 <form onSubmit={handleRegister} className="space-y-3" noValidate>
-                  <InputField
-                    id="reg-fullname"
-                    label="الاسم الكامل"
-                    placeholder="الاسم الثلاثي أو الرباعي"
-                    value={regFullName}
+                   <InputField
+                     id="reg-fullname"
+                     label={t('auth.fullname', 'الاسم الكامل')}
+                     placeholder={t('register.fullname_placeholder', 'الاسم الثلاثي أو الرباعي')}
+                     value={regFullName}
                     onChange={(v) => setRegFullName(formatTitleCaseLive(v))}
                     IconLeft={User}
                     required
@@ -751,23 +753,23 @@ export function LoginPage() {
                   />
 
                   <div className="grid grid-cols-2 gap-2.5">
-                    <InputField
-                      id="reg-username"
-                      label="اسم المستخدم"
-                      placeholder="اسم المستخدم (مثال: user_name)"
-                      value={regUsername}
+                     <InputField
+                       id="reg-username"
+                       label={t('register.username_label', 'اسم المستخدم')}
+                       placeholder={t('register.username_placeholder', 'مثال: user_name')}
+                       value={regUsername}
                       onChange={(v) => setRegUsername(v.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
                       IconLeft={User}
                       required
                       isDark={isDark}
                     />
                     <div className="space-y-1.5 text-right">
-                      <label
-                        htmlFor="reg-committee"
-                        className="block text-xs font-bold text-slate-700 dark:text-slate-300"
-                      >
-                        اللجنة التخصصية
-                      </label>
+                       <label
+                         htmlFor="reg-committee"
+                         className="block text-xs font-bold text-slate-700 dark:text-slate-300"
+                       >
+                         {t('register.committee_label', 'اللجنة التخصصية')}
+                       </label>
                       <select
                         id="reg-committee"
                         value={regCommittee}
@@ -779,12 +781,12 @@ export function LoginPage() {
                             : 'bg-white/90 border-slate-200/90 hover:border-slate-300 text-slate-900 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-500/12 shadow-[0_2px_6px_rgba(15,23,42,0.03),inset_0_1px_1px_rgba(255,255,255,1)]',
                         ].join(' ')}
                       >
-                        <option
-                          value="none"
-                          style={{ background: isDark ? '#0F0F1A' : '#FFFFFF' }}
-                        >
-                          بدون لجنة (قيادة / إدارة عامة)
-                        </option>
+                         <option
+                           value="none"
+                           style={{ background: isDark ? '#0F0F1A' : '#FFFFFF' }}
+                         >
+                           {t('register.committee_none', 'بدون لجنة (قيادة / إدارة عامة)')}
+                         </option>
                         {DEFAULT_COMMITTEES.map((c) => (
                           <option
                             key={c.id}
@@ -798,23 +800,23 @@ export function LoginPage() {
                     </div>
                   </div>
 
-                  <InputField
-                    id="reg-tag"
-                    label="الوسم التخصصي / مجال الخبرة (اختياري)"
-                    type="text"
-                    placeholder="مثال: Flutter, UI/UX, بايثون، مهارات تدريس"
-                    value={regSpecialtyTag}
+                   <InputField
+                     id="reg-tag"
+                     label={t('register.specialty_label', 'الوسم التخصصي / مجال الخبرة (اختياري)')}
+                     type="text"
+                     placeholder={t('register.specialty_placeholder', 'مثال: Flutter, UI/UX, بايثون، مهارات تدريس')}
+                     value={regSpecialtyTag}
                     onChange={setRegSpecialtyTag}
                     IconLeft={Tag}
                     isDark={isDark}
                   />
 
-                  <InputField
-                    id="reg-email"
-                    label="البريد الإلكتروني"
-                    type="email"
-                    placeholder="name@gmail.com"
-                    value={regEmail}
+                   <InputField
+                     id="reg-email"
+                     label={t('auth.email', 'البريد الإلكتروني')}
+                     type="email"
+                     placeholder={t('register.email_placeholder', 'name@gmail.com')}
+                     value={regEmail}
                     onChange={setRegEmail}
                     IconLeft={Mail}
                     required
@@ -822,12 +824,12 @@ export function LoginPage() {
                   />
 
                   <div className="grid grid-cols-2 gap-2.5">
-                    <InputField
-                      id="reg-password"
-                      label="كلمة المرور"
-                      type={showRegPassword ? 'text' : 'password'}
-                      placeholder="6 خانات كحد أدنى"
-                      value={regPassword}
+                     <InputField
+                       id="reg-password"
+                       label={t('auth.password', 'كلمة المرور')}
+                       type={showRegPassword ? 'text' : 'password'}
+                       placeholder={t('register.password_placeholder', '6 خانات كحد أدنى')}
+                       value={regPassword}
                       onChange={(v) => setRegPassword(v.replace(/[؀-ۿݐ-ݿࢠ-ࣿﭐ-﷿ﹰ-﻿]/g, ''))}
                       IconLeft={Lock}
                       rightElement={
@@ -835,7 +837,7 @@ export function LoginPage() {
                           type="button"
                           onClick={() => setShowRegPassword((v) => !v)}
                           className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors cursor-pointer p-1"
-                          aria-label="إظهار / إخفاء كلمة المرور"
+                          aria-label={t('label.toggle_password', 'إظهار / إخفاء كلمة المرور')}
                         >
                           {showRegPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                         </button>
@@ -843,12 +845,12 @@ export function LoginPage() {
                       required
                       isDark={isDark}
                     />
-                    <InputField
-                      id="reg-confirm"
-                      label="تأكيد كلمة المرور"
-                      type="password"
-                      placeholder="تأكيد الكلمة"
-                      value={regConfirmPassword}
+                     <InputField
+                       id="reg-confirm"
+                       label={t('auth.confirm_password', 'تأكيد كلمة المرور')}
+                       type="password"
+                       placeholder={t('register.confirm_placeholder', 'تأكيد الكلمة')}
+                       value={regConfirmPassword}
                       onChange={(v) => setRegConfirmPassword(v.replace(/[؀-ۿݐ-ݿࢠ-ࣿﭐ-﷿ﹰ-﻿]/g, ''))}
                       IconLeft={Lock}
                       required
@@ -868,20 +870,20 @@ export function LoginPage() {
                     }}
                     loading={regSubmitting}
                   >
-                    إرسال طلب الانضمام
+                     {t('auth.submit_register', 'إرسال طلب الانضمام')}
                   </Button>
                 </form>
 
-                <p className="text-xs text-center text-slate-500 dark:text-slate-400 pt-1">
-                  لديك حساب مسبقاً؟{' '}
-                  <button
-                    type="button"
-                    onClick={() => switchMode('login')}
-                    className="font-black text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
-                  >
-                    تسجيل الدخول
-                  </button>
-                </p>
+                 <p className="text-xs text-center text-slate-500 dark:text-slate-400 pt-1">
+                   {t('register.has_account', 'لديك حساب مسبقاً؟')}{' '}
+                   <button
+                     type="button"
+                     onClick={() => switchMode('login')}
+                     className="font-black text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
+                   >
+                     {t('auth.login_tab', 'تسجيل الدخول')}
+                   </button>
+                 </p>
               </motion.div>
             )}
 
@@ -908,55 +910,55 @@ export function LoginPage() {
                   <CheckCircle2 className="h-8 w-8 text-emerald-500" />
                 </motion.div>
 
-                <div className="space-y-2">
-                  <h3 className="text-xl font-black text-slate-900 dark:text-white">
-                    تم استلام طلبك بنجاح
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed max-w-xs mx-auto">
-                    تم حفظ بياناتك، والحساب حالياً{' '}
-                    <span className="font-bold text-amber-600 dark:text-amber-400">
-                      قيد مراجعة القيادة
-                    </span>{' '}
-                    للاعتماد والتفعيل.
-                  </p>
-                </div>
+                 <div className="space-y-2">
+                   <h3 className="text-xl font-black text-slate-900 dark:text-white">
+                     {t('success.title', 'تم استلام طلبك بنجاح')}
+                   </h3>
+                   <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed max-w-xs mx-auto">
+                     {t('success.subtitle', 'تم حفظ بياناتك، والحساب حالياً')}{' '}
+                     <span className="font-bold text-amber-600 dark:text-amber-400">
+                       {t('success.status_pending', 'قيد مراجعة القيادة')}
+                     </span>{' '}
+                     {t('success.status_desc', 'للاعتماد والتفعيل.')}
+                   </p>
+                 </div>
 
-                <div
-                  className="p-4 rounded-xl text-right space-y-2.5"
-                  style={{
-                    background: isDark ? 'rgba(255,255,255,0.03)' : '#F8FAFC',
-                    border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid #E2E8F0',
-                  }}
-                >
-                  {[
-                    { label: 'الاسم الكامل', value: regFullName, className: '' },
-                    { label: 'اسم المستخدم', value: `@${regUsername}`, className: 'text-indigo-600 dark:text-cyan-400' },
-                    { label: 'حالة الحساب',  value: 'قيد الاعتماد', className: 'text-amber-600 dark:text-amber-400' },
-                  ].map(({ label, value, className }) => (
-                    <div key={label} className="flex justify-between text-xs">
-                      <span className="text-slate-500 dark:text-slate-400 font-medium">{label}:</span>
-                      <span className={`font-bold text-slate-900 dark:text-white ${className}`}>{value}</span>
-                    </div>
-                  ))}
-                </div>
+                 <div
+                   className="p-4 rounded-xl text-right space-y-2.5"
+                   style={{
+                     background: isDark ? 'rgba(255,255,255,0.03)' : '#F8FAFC',
+                     border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid #E2E8F0',
+                   }}
+                 >
+                   {[
+                     { label: t('success.summary_fullname', 'الاسم الكامل'), value: regFullName, className: '' },
+                     { label: t('success.summary_username', 'اسم المستخدم'), value: `@${regUsername}`, className: 'text-indigo-600 dark:text-cyan-400' },
+                     { label: t('success.summary_status', 'حالة الحساب'),  value: t('success.summary_status_value', 'قيد الاعتماد'), className: 'text-amber-600 dark:text-amber-400' },
+                   ].map(({ label, value, className }) => (
+                     <div key={label} className="flex justify-between text-xs">
+                       <span className="text-slate-500 dark:text-slate-400 font-medium">{label}:</span>
+                       <span className={`font-bold text-slate-900 dark:text-white ${className}`}>{value}</span>
+                     </div>
+                   ))}
+                 </div>
 
-                <Button
-                  onClick={() => {
-                    switchMode('login');
-                    setUsername(regUsername);
-                    setPassword('');
-                  }}
-                  variant="default"
-                  size="lg"
-                  className="w-full h-11 rounded-xl font-black text-sm text-white cursor-pointer"
-                  style={{
-                    background: 'linear-gradient(135deg, #6366F1, #4F46E5)',
-                    boxShadow: '0 6px 20px rgba(99,102,241,0.35)',
-                    border: 'none',
-                  }}
-                >
-                  العودة لتسجيل الدخول
-                </Button>
+                 <Button
+                   onClick={() => {
+                     switchMode('login');
+                     setUsername(regUsername);
+                     setPassword('');
+                   }}
+                   variant="default"
+                   size="lg"
+                   className="w-full h-11 rounded-xl font-black text-sm text-white cursor-pointer"
+                   style={{
+                     background: 'linear-gradient(135deg, #6366F1, #4F46E5)',
+                     boxShadow: '0 6px 20px rgba(99,102,241,0.35)',
+                     border: 'none',
+                   }}
+                 >
+                   {t('success.back_to_login', 'العودة لتسجيل الدخول')}
+                 </Button>
               </motion.div>
             )}
 
