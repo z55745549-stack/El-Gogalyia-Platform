@@ -56,7 +56,6 @@ const navItems: NavItem[] = [
   { label: 'تذاكر الدعم الفني', path: '/support', icon: <HeadphonesIcon className="h-4 w-4" />, roles: ALL_ROLES, category: 'system' },
   { label: 'سجل العمليات', path: '/activity-logs', icon: <ClipboardList className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'system' },
   { label: 'مركز التنبيهات', path: '/notifications', icon: <Bell className="h-4 w-4" />, roles: ALL_ROLES, category: 'system' },
-  { label: 'الإعدادات والأمان', path: '/settings', icon: <Settings className="h-4 w-4" />, roles: ALL_ROLES, category: 'system' },
 ];
 
 const categoryLabels: Record<string, string> = {
@@ -230,27 +229,42 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
         className="p-3 space-y-2"
         style={{ borderTop: '1px solid var(--border-subtle)' }}
       >
-        <div
-          className="flex items-center gap-2.5 p-2.5 rounded-xl"
+        <button
+          type="button"
+          onClick={() => {
+            navigate('/settings');
+            onMobileClose();
+          }}
+          className="w-full flex items-center gap-2.5 p-2.5 rounded-xl text-right transition-all duration-200 cursor-pointer group hover:scale-[1.01] active:scale-[0.99]"
           style={{
             background: 'var(--surface-elevated)',
             border: '1px solid var(--border-subtle)',
           }}
+          title="عرض الملف الشخصي والإعدادات والأمان"
+          aria-label="الملف الشخصي والإعدادات والأمان"
         >
-          <Avatar
-            src={userProfile?.photoURL}
-            name={userProfile?.displayName || userProfile?.username || 'User'}
-            size="sm"
-          />
+          <div className="relative">
+            <Avatar
+              src={userProfile?.photoURL}
+              name={userProfile?.displayName || userProfile?.username || 'User'}
+              size="sm"
+            />
+            <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 border border-white dark:border-slate-900" />
+          </div>
           <div className="flex-1 min-w-0 text-right">
-            <p className="text-xs font-bold truncate" style={{ color: 'var(--text-primary)' }}>
+            <p className="text-xs font-bold truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors" style={{ color: 'var(--text-primary)' }}>
               {userProfile?.displayName || userProfile?.username || 'عضو الفريق'}
             </p>
-            <p className="text-[10px] font-semibold" style={{ color: '#A78BFA' }}>
-              {getRoleLabel(role)}
-            </p>
+            <div className="flex items-center justify-between gap-1 mt-0.5">
+              <p className="text-[10px] font-semibold" style={{ color: '#A78BFA' }}>
+                {getRoleLabel(role)}
+              </p>
+              <span className="text-[9px] font-bold text-slate-400 group-hover:text-indigo-500 transition-colors">
+                الملف الشخصي ←
+              </span>
+            </div>
           </div>
-        </div>
+        </button>
 
         <button
           onClick={handleSignOut}

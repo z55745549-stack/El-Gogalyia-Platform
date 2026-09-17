@@ -72,11 +72,21 @@ export async function registerDeviceCredential(
   displayName: string,
   deviceName: string
 ): Promise<{ success: boolean; error?: string }> {
-  try {
-    const challenge = crypto.getRandomValues(new Uint8Array(32));
-    const userIdBytes = new TextEncoder().encode(userId);
+  const encoder = new TextEncoder();
+  const userIdHash = await crypto.subtle.digest('SHA-256', encoder.encode(userId));
 
-    const credential = await navigator.credentials.create({
+  async function attemptCreate(usePlatformOnly: boolean): Promise<PublicKeyCredential | null> {
+    const challenge = crypto.getRandomValues(new Uint8Array(32));
+
+    const authSelection: AuthenticatorSelectionCriteria = {
+      userVerification: 'preferred',
+      residentKey: 'preferred',
+    };
+    if (usePlatformOnly) {
+      authSelection.authenticatorAttachment = 'platform';
+    }
+
+    return await navigator.credentials.create({
       publicKey: {
         challenge,
         rp: {
@@ -84,36 +94,57 @@ export async function registerDeviceCredential(
           id: window.location.hostname,
         },
         user: {
-          id: userIdBytes,
-          name: username,
-          displayName,
+          id: new Uint8Array(userIdHash),
+          name: username || 'user',
+          displayName: displayName || username || 'عضو المنصة',
         },
         pubKeyCredParams: [
-          { alg: -7,   type: 'public-key' }, // ES256 (standard on iOS, Android, macOS, Windows)
+          { alg: -7,   type: 'public-key' }, // ES256 (Supported by 100% of Android, iOS, Windows, Mac)
           { alg: -257, type: 'public-key' }, // RS256
-          { alg: -8,   type: 'public-key' }, // Ed25519
         ],
-        authenticatorSelection: {
-          authenticatorAttachment: 'platform', // Phone biometric / Secure Enclave
-          userVerification: 'preferred',        // 'preferred' ensures universal compatibility across all Android/iOS models without rigid hardware aborts
-          residentKey: 'preferred',
-          requireResidentKey: false,
-        },
+        authenticatorSelection: authSelection,
         timeout: 60000,
+        attestation: 'none', // Essential for non-enterprise Android phones (Xiaomi, Samsung, etc.)
       },
     }) as PublicKeyCredential | null;
+  }
 
-    if (!credential) {
-      return { success: false, error: 'لم يتم إنشاء بيانات الجهاز.' };
+  let credential: PublicKeyCredential | null = null;
+  try {
+    credential = await attemptCreate(true);
+  } catch (primaryErr: any) {
+    if (primaryErr?.name === 'NotAllowedError') {
+      return { success: false, error: 'تم إلغاء عملية البصمة أو انتهت مهلتها من الجهاز.' };
     }
+    // Android Credential Manager retry without strict platform attachment
+    try {
+      credential = await attemptCreate(false);
+    } catch (fallbackErr: any) {
+      if (fallbackErr?.name === 'NotAllowedError') {
+        return { success: false, error: 'تم إلغاء عملية البصمة أو قفل الشاشة.' };
+      }
+      if (fallbackErr?.name === 'InvalidStateError') {
+        return { success: false, error: 'هذا الجهاز مسجّل بالفعل لحساب آخر.' };
+      }
+      return {
+        success: false,
+        error: 'تعذّر الاتصال بمدير بيانات الاعتماد بالهاتف. يرجى التأكد من تفعيل قفل الشاشة (بصمة أو نمط أو PIN) في إعدادات الهاتف.',
+      };
+    }
+  }
 
+  if (!credential) {
+    return { success: false, error: 'لم يتم إنشاء بيانات اعتماد الجهاز.' };
+  }
+
+  try {
     const credentialIdBase64 = btoa(
       String.fromCharCode(...new Uint8Array(credential.rawId))
     );
 
     const dbId = 'cred_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
 
-    // 1. Save locally on the device immediately for offline & instant biometric match
+    // 1. Save locally on the device immediately for instant offline biometric match
     saveLocalDevice({
       id: dbId,
       userId,
@@ -148,14 +179,8 @@ export async function registerDeviceCredential(
     }
 
     return { success: true };
-  } catch (err: any) {
-    if (err?.name === 'NotAllowedError') {
-      return { success: false, error: 'تم إلغاء عملية البصمة أو انتهت مهلتها من الجهاز.' };
-    }
-    if (err?.name === 'InvalidStateError') {
-      return { success: false, error: 'هذا الجهاز مسجّل بالفعل لحساب آخر.' };
-    }
-    return { success: false, error: err?.message || 'تعذّر تسجيل هوية الجهاز.' };
+  } catch (saveErr: any) {
+    return { success: false, error: saveErr?.message || 'تعذّر حفظ بيانات الجهاز.' };
   }
 }
 
