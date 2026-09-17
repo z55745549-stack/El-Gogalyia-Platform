@@ -515,11 +515,13 @@ export function TasksPage() {
                     key={`m-${task.id}`}
                     className={`p-4 space-y-3 ${overdue ? 'bg-rose-50/30 dark:bg-rose-950/10' : ''}`}
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <h3 className="font-bold text-slate-900 dark:text-white text-sm leading-tight flex-1">
+                    <div className="flex items-start justify-between gap-2 min-w-0">
+                      <h3 className="font-bold text-slate-900 dark:text-white text-sm leading-tight flex-1 min-w-0">
                         {task.title}
                       </h3>
-                      <StatusBadge status={task.status} overdue={overdue} />
+                      <div className="shrink-0">
+                        <StatusBadge status={task.status} overdue={overdue} />
+                      </div>
                     </div>
                     <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">{task.description}</p>
                     <div className="flex items-center gap-2 flex-wrap">

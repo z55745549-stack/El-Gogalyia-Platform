@@ -685,26 +685,32 @@ export function EmployeesPage() {
                 return (
                   <div
                     key={emp.uid}
-                    className="bg-white dark:bg-[var(--surface)] rounded-2xl border-2 border-amber-300/80 dark:border-amber-500/30 p-5 shadow-sm space-y-4 hover:shadow-md transition-all relative text-right"
+                    className="bg-white dark:bg-[var(--surface)] rounded-2xl border-2 border-amber-300/80 dark:border-amber-500/30 p-4 sm:p-5 shadow-sm space-y-3.5 sm:space-y-4 hover:shadow-md transition-all relative text-right overflow-hidden"
                   >
                     {/* Top status bar accent */}
                     <div className="absolute top-0 right-0 left-0 h-1.5 bg-gradient-to-l from-amber-400 via-amber-500 to-orange-400 rounded-t-2xl" />
 
-                    {/* Member Info Header */}
-                    <div className="flex items-start justify-between gap-3 pt-1">
-                      <div className="flex items-center gap-3">
-                        <Avatar name={formatFullName(emp.displayName)} size="md" />
-                        <div>
-                          <h4 className="font-extrabold text-slate-900 dark:text-white text-sm sm:text-base">
+                    {/* Member Info Header — Bulletproof Responsive Layout */}
+                    <div className="flex items-start justify-between gap-2 sm:gap-3 pt-1 min-w-0">
+                      <div className="flex items-start gap-2.5 sm:gap-3 min-w-0 flex-1">
+                        <Avatar name={formatFullName(emp.displayName)} size="md" className="shrink-0 mt-0.5" />
+                        <div className="min-w-0 flex-1">
+                          <h4 className="font-extrabold text-slate-900 dark:text-white text-sm sm:text-base truncate">
                             {formatFullName(emp.displayName)}
                           </h4>
-                          <div className="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
-                            <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">@{emp.username}</span>
-                            {emp.email && <span className="truncate max-w-[180px] sm:max-w-[240px]">• {emp.email}</span>}
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-1.5 text-xs text-slate-400 mt-0.5 min-w-0">
+                            <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 shrink-0">
+                              @{emp.username}
+                            </span>
+                            {emp.email && (
+                              <span className="truncate max-w-full text-[11px] text-slate-500 dark:text-slate-400 block" title={emp.email}>
+                                <span className="hidden sm:inline">• </span>{emp.email}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
-                      <span className="shrink-0 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-500/20">
+                      <span className="shrink-0 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[10px] font-extrabold bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-500/20 whitespace-nowrap self-start mt-0.5">
                         طلب انضمام جديد ⏳
                       </span>
                     </div>
@@ -919,14 +925,14 @@ export function EmployeesPage() {
           {/* Approved Members Cards (Mobile) */}
           <div className="lg:hidden space-y-3">
             {filteredEmployees.map((emp) => (
-              <div key={`m-${emp.uid}`} className="bg-[var(--surface)] rounded-2xl border border-[var(--border-subtle)] p-4 shadow-sm text-right">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <Avatar name={formatFullName(emp.displayName)} src={emp.photoURL} size="sm" />
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-bold text-[var(--text-primary)] text-sm">{formatFullName(emp.displayName)}</p>
-                        <span className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">
+              <div key={`m-${emp.uid}`} className="bg-[var(--surface)] rounded-2xl border border-[var(--border-subtle)] p-4 shadow-sm text-right overflow-hidden">
+                <div className="flex items-start justify-between gap-2.5 min-w-0">
+                  <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                    <Avatar name={formatFullName(emp.displayName)} src={emp.photoURL} size="sm" className="shrink-0 mt-0.5" />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                        <p className="font-bold text-[var(--text-primary)] text-sm truncate">{formatFullName(emp.displayName)}</p>
+                        <span className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20 shrink-0">
                           {emp.employeeCode || generateEmployeeCode(emp.username || emp.uid)}
                         </span>
                       </div>
@@ -951,7 +957,7 @@ export function EmployeesPage() {
                       })()}
                     </div>
                   </div>
-                  <span className="text-xs font-black px-2 py-1 rounded-lg bg-amber-500/15 text-amber-500 border border-amber-500/20">🪙 {hasUnlimitedCoins(emp.role) ? '∞' : (emp.oCoinsBalance ?? 0)}</span>
+                  <span className="text-xs font-black px-2 py-1 rounded-lg bg-amber-500/15 text-amber-500 border border-amber-500/20 shrink-0">🪙 {hasUnlimitedCoins(emp.role) ? '∞' : (emp.oCoinsBalance ?? 0)}</span>
                 </div>
                 <div className="flex items-center gap-2 mt-3 flex-wrap">
                   <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${getRoleColor(emp.role)}`}>{getRoleLabel(emp.role)}</span>
