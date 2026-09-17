@@ -15,9 +15,9 @@ export function Header({ onMobileMenuClick }: HeaderProps) {
     <header
       className="sticky top-0 z-30 px-4 sm:px-6 h-14 flex items-center justify-between gap-3 font-sans transition-colors"
       style={{
-        background: 'var(--surface-glass)',
-        backdropFilter: 'blur(16px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(16px) saturate(180%)',
+        background: 'color-mix(in srgb, var(--surface) 85%, transparent)',
+        backdropFilter: 'blur(20px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(20px) saturate(180%)',
         borderBottom: '1px solid var(--border-subtle)',
       }}
     >

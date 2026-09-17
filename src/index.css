@@ -77,39 +77,39 @@
     --brand-danger:    #BE123C;   /* Rose 700 */
     --brand-warning:   #B45309;
 
-    /* Surfaces — warm stone layering, NOT pure white */
-    --app-bg:            #F2F4F8;   /* Warm cool-tinted grey — very easy on eyes */
-    --surface:           #FAFBFD;   /* Near white, slight tint */
-    --surface-secondary: #EEF1F7;   /* Inset areas */
-    --surface-elevated:  #F0F2F7;   /* Input backgrounds, dropdowns */
-    --surface-overlay:   #FAFBFD;   /* Modal backgrounds */
-    --surface-glass:     rgba(250, 251, 253, 0.92);
+    /* Surfaces — Luxe Silk & Alabaster Layering */
+    --app-bg:            #F6F8FC;   /* Pearlescent cool-tinted silk background */
+    --surface:           #FFFFFF;   /* Pure crisp white card surface */
+    --surface-secondary: #F8FAFC;   /* Inset areas */
+    --surface-elevated:  #FFFFFF;   /* Input backgrounds, modals, dropdowns */
+    --surface-overlay:   #FFFFFF;   /* Modal backgrounds */
+    --surface-glass:     rgba(255, 255, 255, 0.92);
 
     /* ── Aliases ── */
-    --bg-surface:   #FAFBFD;
-    --bg-card:      #FAFBFD;
-    --bg-elevated:  #F0F2F7;
+    --bg-surface:   #FFFFFF;
+    --bg-card:      #FFFFFF;
+    --bg-elevated:  #FFFFFF;
 
-    /* Borders — visible and structured, not invisible */
-    --border-subtle:  rgba(179, 191, 215, 0.65);  /* clear, not harsh */
-    --border-default: rgba(156, 172, 204, 0.80);
-    --border-strong:  rgba(100, 116, 158, 0.60);
-    --border-glow:    rgba(79, 70, 229, 0.30);
+    /* Borders — Ultra-refined, crisp, never heavy */
+    --border-subtle:  rgba(226, 232, 240, 0.85);  /* crisp luxury border */
+    --border-default: rgba(203, 213, 225, 0.85);
+    --border-strong:  rgba(148, 163, 184, 0.65);
+    --border-glow:    rgba(79, 70, 229, 0.35);
 
-    /* Text — high contrast but not harsh pure black */
-    --text-primary:   #1A1F36;   /* Deep navy-ink, easy to read */
-    --text-secondary: #3D4A6B;   /* Muted navy */
-    --text-muted:     #6B7AA1;   /* Placeholder / subtle */
-    --text-inverse:   #FAFBFD;
+    /* Text — Deep Royal Navy-Ink for supreme readability */
+    --text-primary:   #0F172A;   /* Deep slate-navy, highest clarity */
+    --text-secondary: #334155;   /* Rich muted slate */
+    --text-muted:     #64748B;   /* Placeholder / subtle */
+    --text-inverse:   #FFFFFF;
 
-    /* Shadows — warm and layered for depth */
-    --shadow-xs: 0 1px 3px rgba(60, 72, 110, 0.06), 0 1px 2px rgba(60, 72, 110, 0.04);
-    --shadow-sm: 0 2px 8px rgba(60, 72, 110, 0.07), 0 1px 3px rgba(60, 72, 110, 0.05);
-    --shadow-md: 0 6px 20px rgba(60, 72, 110, 0.10), 0 2px 6px rgba(60, 72, 110, 0.06);
-    --shadow-lg: 0 16px 40px rgba(60, 72, 110, 0.12), 0 6px 14px rgba(60, 72, 110, 0.07);
-    --shadow-glow-primary: 0 0 18px rgba(79, 70, 229, 0.20);
-    --shadow-glow-accent:  0 0 18px rgba(2, 132, 199, 0.15);
-    --shadow-glow-warm:    0 0 14px rgba(180, 83, 9, 0.18);
+    /* Shadows — multi-layered silk depth */
+    --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.03);
+    --shadow-sm: 0 4px 14px -2px rgba(79, 70, 229, 0.04), 0 1px 3px rgba(15, 23, 42, 0.03);
+    --shadow-md: 0 10px 25px -4px rgba(79, 70, 229, 0.07), 0 4px 10px -2px rgba(15, 23, 42, 0.04);
+    --shadow-lg: 0 25px 50px -12px rgba(79, 70, 229, 0.10), 0 8px 20px -4px rgba(15, 23, 42, 0.06);
+    --shadow-glow-primary: 0 0 20px rgba(79, 70, 229, 0.22);
+    --shadow-glow-accent:  0 0 20px rgba(2, 132, 199, 0.18);
+    --shadow-glow-warm:    0 0 16px rgba(180, 83, 9, 0.20);
   }
 
   /* ── GLOBAL BASE ──────────────────────────────────────────────────────*/

@@ -64,7 +64,22 @@ export function StatCard({
       )}
       onClick={onClick}
     >
-      <div className="flex items-start justify-between gap-3">
+      {/* Ambient luxury glow in corner */}
+      <div
+        className="absolute -top-10 -left-10 w-28 h-28 rounded-full pointer-events-none opacity-30 dark:opacity-40 group-hover:opacity-60 transition-opacity duration-300"
+        style={{
+          background: variant === 'warm'
+            ? 'radial-gradient(circle, rgba(245,158,11,0.3) 0%, transparent 70%)'
+            : variant === 'accent'
+            ? 'radial-gradient(circle, rgba(34,211,238,0.3) 0%, transparent 70%)'
+            : variant === 'success'
+            ? 'radial-gradient(circle, rgba(16,185,129,0.3) 0%, transparent 70%)'
+            : 'radial-gradient(circle, rgba(99,102,241,0.3) 0%, transparent 70%)',
+          filter: 'blur(16px)',
+        }}
+      />
+
+      <div className="flex items-start justify-between gap-3 relative z-10">
         <div className="space-y-1.5 flex-1 min-w-0">
           <p className="text-xs font-semibold text-[var(--text-muted)] tracking-wider truncate">
             {title}

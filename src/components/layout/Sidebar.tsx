@@ -128,7 +128,9 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
     <div
       className="flex flex-col h-full select-none transition-colors"
       style={{
-        background: 'var(--surface)',
+        background: 'color-mix(in srgb, var(--surface) 90%, transparent)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
         borderLeft: '1px solid var(--border-subtle)',
       }}
     >

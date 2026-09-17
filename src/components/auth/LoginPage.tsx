@@ -68,7 +68,7 @@ function InputField({
           'w-full flex items-center gap-3 px-3.5 py-3 rounded-xl transition-all duration-200 border',
           isDark
             ? 'bg-white/[0.04] border-white/[0.09] focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:bg-white/[0.06]'
-            : 'bg-slate-50/90 border-slate-200/90 focus-within:bg-white focus-within:border-indigo-600 focus-within:ring-2 focus-within:ring-indigo-500/15 shadow-2xs',
+            : 'bg-white/90 border-slate-200/90 hover:border-slate-300 focus-within:bg-white focus-within:border-indigo-600 focus-within:ring-4 focus-within:ring-indigo-500/12 shadow-[0_2px_6px_rgba(15,23,42,0.03),inset_0_1px_1px_rgba(255,255,255,1)]',
         ].join(' ')}
       >
         <IconLeft className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500" />
@@ -80,7 +80,7 @@ function InputField({
           onChange={(e) => onChange(e.target.value)}
           required={required}
           autoFocus={autoFocus}
-          className="flex-1 min-w-0 bg-transparent border-0 outline-none text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
+          className="flex-1 min-w-0 bg-transparent border-0 outline-none text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 font-medium"
         />
         {rightElement && (
           <div className="shrink-0 flex items-center">
@@ -103,10 +103,11 @@ function ModeTabs({
 }) {
   return (
     <div
-      className="flex p-1 rounded-xl transition-colors"
+      className="flex p-1.5 rounded-xl transition-colors"
       style={{
-        background: isDark ? 'rgba(255,255,255,0.05)' : '#F1F5F9',
-        border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid #E2E8F0',
+        background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(241,245,249,0.85)',
+        border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(226,232,240,0.9)',
+        boxShadow: isDark ? 'none' : 'inset 0 1px 2px rgba(0,0,0,0.03)',
       }}
     >
       {(['login', 'register'] as const).map((tab) => {
@@ -194,8 +195,8 @@ function HeroPanel({ isDark }: { isDark: boolean }) {
       style={{
         background: isDark
           ? 'linear-gradient(150deg, #0D0D20 0%, #12122E 50%, #090916 100%)'
-          : 'linear-gradient(150deg, #FFFFFF 0%, #F5F7FF 50%, #F1F4FD 100%)',
-        borderLeft: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(226,232,240,0.85)',
+          : 'linear-gradient(150deg, rgba(255,255,255,0.98) 0%, rgba(246,249,255,0.94) 50%, rgba(240,244,255,0.9) 100%)',
+        borderLeft: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(226,232,240,0.9)',
       }}
     >
       {/* Subtle ambient lighting */}
@@ -203,15 +204,15 @@ function HeroPanel({ isDark }: { isDark: boolean }) {
         <div
           className="absolute w-72 h-72 rounded-full top-[-10%] right-[-10%]"
           style={{
-            background: isDark ? 'rgba(99,102,241,0.2)' : 'rgba(99,102,241,0.08)',
-            filter: 'blur(50px)',
+            background: isDark ? 'rgba(99,102,241,0.2)' : 'rgba(99,102,241,0.12)',
+            filter: 'blur(55px)',
           }}
         />
         <div
           className="absolute w-60 h-60 rounded-full bottom-[-8%] left-[-8%]"
           style={{
-            background: isDark ? 'rgba(34,211,238,0.18)' : 'rgba(6,182,212,0.06)',
-            filter: 'blur(45px)',
+            background: isDark ? 'rgba(34,211,238,0.18)' : 'rgba(6,182,212,0.09)',
+            filter: 'blur(50px)',
           }}
         />
       </div>
@@ -301,11 +302,11 @@ function HeroPanel({ isDark }: { isDark: boolean }) {
           {PILLARS.map(({ Icon, label, sub }) => (
             <div
               key={label}
-              className="flex items-center gap-2.5 p-3 rounded-xl transition-all"
+              className="flex items-center gap-2.5 p-3 rounded-xl transition-all hover:scale-[1.02]"
               style={{
-                background: isDark ? 'rgba(255,255,255,0.035)' : 'rgba(255,255,255,0.85)',
-                border: isDark ? '1px solid rgba(255,255,255,0.07)' : '1px solid rgba(226,232,240,0.85)',
-                boxShadow: isDark ? 'none' : '0 2px 6px rgba(15,23,42,0.03)',
+                background: isDark ? 'rgba(255,255,255,0.035)' : 'rgba(255,255,255,0.95)',
+                border: isDark ? '1px solid rgba(255,255,255,0.07)' : '1px solid rgba(226,232,240,0.9)',
+                boxShadow: isDark ? 'none' : '0 4px 14px -2px rgba(79,70,229,0.06), 0 1px 3px rgba(15,23,42,0.02)',
               }}
             >
               <div
@@ -511,7 +512,7 @@ export function LoginPage() {
       style={{
         background: isDark
           ? 'linear-gradient(135deg, #07070E 0%, #0C0C1C 50%, #06060D 100%)'
-          : 'linear-gradient(135deg, #F0F4F8 0%, #F6F8FC 50%, #EDF2F7 100%)',
+          : 'radial-gradient(ellipse 90% 70% at 50% -15%, #FFFFFF 0%, #F6F8FD 45%, #EEF2F8 100%)',
       }}
       dir="rtl"
     >
@@ -522,7 +523,7 @@ export function LoginPage() {
           style={{
             background: isDark
               ? 'radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%)'
-              : 'radial-gradient(circle, rgba(99,102,241,0.09) 0%, transparent 70%)',
+              : 'radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%)',
           }}
         />
         <div
@@ -530,7 +531,7 @@ export function LoginPage() {
           style={{
             background: isDark
               ? 'radial-gradient(circle, rgba(34,211,238,0.08) 0%, transparent 70%)'
-              : 'radial-gradient(circle, rgba(6,182,212,0.07) 0%, transparent 70%)',
+              : 'radial-gradient(circle, rgba(6,182,212,0.09) 0%, transparent 70%)',
           }}
         />
       </div>
@@ -544,7 +545,7 @@ export function LoginPage() {
           'text-xs font-bold transition-all cursor-pointer backdrop-blur-md',
           isDark
             ? 'bg-white/5 border border-white/10 text-slate-300 hover:bg-white/[0.08]'
-            : 'bg-white/80 border border-slate-200 text-slate-700 hover:bg-white shadow-xs',
+            : 'bg-white/90 border border-slate-200 text-slate-700 hover:bg-white shadow-xs',
         ].join(' ')}
       >
         {isDark ? (
@@ -563,8 +564,10 @@ export function LoginPage() {
         style={{
           boxShadow: isDark
             ? '0 30px 90px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.06)'
-            : '0 25px 65px -12px rgba(15,23,42,0.09), 0 0 0 1px rgba(226,232,240,0.85)',
+            : '0 30px 85px -15px rgba(79,70,229,0.12), 0 12px 35px -8px rgba(15,23,42,0.07), 0 0 0 1px rgba(255,255,255,0.9) inset, 0 0 0 1px rgba(226,232,240,0.9)',
           minHeight: '580px',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
         }}
       >
         {/* Left Hero Panel */}
@@ -573,7 +576,7 @@ export function LoginPage() {
         {/* Right Form Panel */}
         <div
           className="flex-1 flex flex-col justify-center px-8 py-10 sm:px-12 xl:px-14 relative"
-          style={{ background: isDark ? 'rgba(10,10,20,0.98)' : '#FFFFFF' }}
+          style={{ background: isDark ? 'rgba(10,10,20,0.98)' : 'rgba(255,255,255,0.96)' }}
         >
           <AnimatePresence mode="wait">
 
@@ -639,10 +642,10 @@ export function LoginPage() {
                     type="submit"
                     variant="default"
                     size="lg"
-                    className="w-full h-12 rounded-xl font-black text-sm text-white cursor-pointer"
+                    className="w-full h-12 rounded-xl font-black text-sm text-white cursor-pointer transition-all duration-200 active:scale-[0.99]"
                     style={{
                       background: 'linear-gradient(135deg, #6366F1 0%, #4F46E5 60%, #4338CA 100%)',
-                      boxShadow: '0 6px 24px rgba(99,102,241,0.35)',
+                      boxShadow: '0 8px 25px -4px rgba(99,102,241,0.45)',
                       border: 'none',
                     }}
                     loading={loading}
@@ -655,9 +658,9 @@ export function LoginPage() {
                 {biometricAvailable && (
                   <div className="space-y-3 pt-1">
                     <div className="flex items-center gap-3">
-                      <div className="flex-1 h-px bg-slate-200 dark:bg-white/[0.08]" />
-                      <span className="text-[11px] text-slate-400 dark:text-slate-500 font-bold">أو عبر هوية الجهاز</span>
-                      <div className="flex-1 h-px bg-slate-200 dark:bg-white/[0.08]" />
+                      <div className="flex-1 h-px bg-slate-200/90 dark:bg-white/[0.08]" />
+                      <span className="text-[11px] text-slate-500 dark:text-slate-500 font-bold">أو عبر هوية الجهاز</span>
+                      <div className="flex-1 h-px bg-slate-200/90 dark:bg-white/[0.08]" />
                     </div>
 
                     <button
@@ -669,7 +672,7 @@ export function LoginPage() {
                         'text-xs font-bold transition-all cursor-pointer border',
                         isDark
                           ? 'bg-white/[0.03] border-white/[0.09] text-slate-200 hover:bg-white/[0.06] hover:border-indigo-500/40'
-                          : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-indigo-300 shadow-2xs',
+                          : 'bg-white/90 border-slate-200/90 text-slate-700 hover:bg-slate-50 hover:border-indigo-400 shadow-[0_2px_6px_rgba(15,23,42,0.03)]',
                       ].join(' ')}
                     >
                       <Fingerprint className="h-4 w-4 text-indigo-500 shrink-0" />
@@ -749,11 +752,10 @@ export function LoginPage() {
                         value={regCommittee}
                         onChange={(e) => setRegCommittee(e.target.value)}
                         className={[
-                          'w-full h-[46px] px-3 rounded-xl text-sm outline-none transition-all cursor-pointer',
-                          'border border-slate-200 dark:border-white/[0.09]',
-                          isDark ? 'bg-white/[0.04] text-white' : 'bg-slate-50 text-slate-900',
-                          'focus:border-indigo-500 dark:focus:border-indigo-400',
-                          'focus:ring-2 focus:ring-indigo-500/15',
+                          'w-full h-[46px] px-3 rounded-xl text-sm outline-none transition-all cursor-pointer border',
+                          isDark
+                            ? 'bg-white/[0.04] border-white/[0.09] text-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20'
+                            : 'bg-white/90 border-slate-200/90 hover:border-slate-300 text-slate-900 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-500/12 shadow-[0_2px_6px_rgba(15,23,42,0.03),inset_0_1px_1px_rgba(255,255,255,1)]',
                         ].join(' ')}
                       >
                         <option
@@ -826,10 +828,10 @@ export function LoginPage() {
                     type="submit"
                     variant="default"
                     size="lg"
-                    className="w-full h-12 rounded-xl font-black text-sm text-white cursor-pointer mt-2"
+                    className="w-full h-12 rounded-xl font-black text-sm text-white cursor-pointer mt-2 transition-all duration-200 active:scale-[0.99]"
                     style={{
                       background: 'linear-gradient(135deg, #06B6D4 0%, #0891B2 60%, #0284C7 100%)',
-                      boxShadow: '0 6px 20px rgba(6,182,212,0.35)',
+                      boxShadow: '0 8px 25px -4px rgba(6,182,212,0.45)',
                       border: 'none',
                     }}
                     loading={regSubmitting}

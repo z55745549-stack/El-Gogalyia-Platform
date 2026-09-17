@@ -33,12 +33,30 @@ export function PageWrapper({ children, unreadNotifications = 0 }: PageWrapperPr
   const isEmployee = !isAdminRole(role);
 
   return (
-    <div className="flex h-screen app-bg overflow-hidden font-sans">
+    <div className="flex h-screen app-bg overflow-hidden font-sans relative">
+      {/* ── Background Atmospheric Ambient Mesh Glow (Matches Login Luxury) ── */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0" aria-hidden="true">
+        <div
+          className="absolute w-[650px] h-[650px] rounded-full top-[-15%] right-[-10%] opacity-45 dark:opacity-30"
+          style={{
+            background: 'radial-gradient(circle, rgba(99,102,241,0.14) 0%, transparent 70%)',
+            filter: 'blur(60px)',
+          }}
+        />
+        <div
+          className="absolute w-[550px] h-[550px] rounded-full bottom-[-10%] left-[-10%] opacity-35 dark:opacity-25"
+          style={{
+            background: 'radial-gradient(circle, rgba(34,211,238,0.12) 0%, transparent 70%)',
+            filter: 'blur(55px)',
+          }}
+        />
+      </div>
+
       <Sidebar
         mobileOpen={mobileOpen}
         onMobileClose={() => setMobileOpen(false)}
       />
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative z-10">
         <Header onMobileMenuClick={() => setMobileOpen(true)} />
 
         <main className="flex-1 overflow-y-auto">
@@ -56,13 +74,13 @@ export function PageWrapper({ children, unreadNotifications = 0 }: PageWrapperPr
 
         {/* Mobile bottom nav — GDG HITU Design System */}
         <nav
-          className="lg:hidden fixed bottom-0 inset-x-0 z-40 px-1 py-1.5 pb-[max(0.4rem,env(safe-area-inset-bottom))]"
+          className="lg:hidden fixed bottom-0 inset-x-0 z-40 px-2 py-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
           style={{
-            background: 'color-mix(in srgb, var(--surface) 95%, transparent)',
-            backdropFilter: 'blur(16px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(16px) saturate(180%)',
+            background: 'color-mix(in srgb, var(--surface) 90%, transparent)',
+            backdropFilter: 'blur(20px) saturate(190%)',
+            WebkitBackdropFilter: 'blur(20px) saturate(190%)',
             borderTop: '1px solid var(--border-subtle)',
-            boxShadow: '0 -8px 32px rgba(0,0,0,0.4)',
+            boxShadow: '0 -8px 30px rgba(0,0,0,0.35)',
           }}
         >
           <div className="flex items-center justify-around gap-1 max-w-lg mx-auto">

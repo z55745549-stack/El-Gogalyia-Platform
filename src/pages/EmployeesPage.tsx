@@ -19,7 +19,7 @@ import { subscribeBans, createBan, endBan, getActiveBan } from '@/lib/bans';
 // 2-Step admin auth removed — Lead/Co-Lead and Head act directly
 import { generateEmployeeCode } from '@/lib/attendance';
 import { canManageRole, canManageUser, isTopTierRole, getRoleLabel, getRoleColor, isAdminRole } from '@/utils/permissions';
-import { formatFullName, hasArabic, hasUnlimitedCoins } from '@/utils';
+import { formatFullName, hasArabic, hasUnlimitedCoins, cn } from '@/utils';
 
 
 
@@ -636,17 +636,28 @@ export function EmployeesPage() {
       </div>
       {/* Committee chips quick filter */}
       <div className="flex flex-wrap gap-2">
-        {committees.map((c) => (
-          <button
-            key={c.id}
-            onClick={() => setCommitteeFilter(committeeFilter === c.id ? '' : c.id)}
-            className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all flex items-center gap-1.5 ${committeeFilter === c.id ? 'text-white shadow-sm' : 'bg-white hover:bg-slate-50'}`}
-            style={committeeFilter === c.id ? { backgroundColor: c.color, borderColor: c.color } : { borderColor: '#e2e8f0', color: '#475569', backgroundColor: '#fff' }}
-          >
-            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: committeeFilter === c.id ? '#fff' : c.color }} />
-            {c.name}
-          </button>
-        ))}
+        {committees.map((c) => {
+          const isSelected = committeeFilter === c.id;
+          return (
+            <button
+              key={c.id}
+              onClick={() => setCommitteeFilter(isSelected ? '' : c.id)}
+              className={cn(
+                "px-3 py-1.5 rounded-full text-xs font-bold border transition-all flex items-center gap-1.5 cursor-pointer",
+                isSelected
+                  ? "text-white shadow-sm"
+                  : "bg-[var(--surface-elevated)] border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-default)]"
+              )}
+              style={isSelected ? { backgroundColor: c.color, borderColor: c.color } : {}}
+            >
+              <span
+                className="w-2 h-2 rounded-full"
+                style={{ backgroundColor: isSelected ? '#FFFFFF' : c.color }}
+              />
+              <span>{c.name}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* ── Pending Requests View ───────────────────────────────── */}
