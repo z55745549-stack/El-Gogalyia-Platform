@@ -637,7 +637,20 @@ export function EmployeesPage() {
     return true;
   });
   // Strictly filter approved members: only 'active' users are counted and shown as approved members
-  const approvedMembers = employees.filter((e) => e.status === 'active');
+  // For non-top tier (Heads/Vice-Heads/Members), ONLY show members of their own committee!
+  const approvedMembers = employees.filter((e) => {
+    if (e.status !== 'active') return false;
+    if (!isTopTier) {
+      const myCommId = userProfile?.committeeId;
+      const myCommName = (userProfile?.committeeName || '').trim().toLowerCase();
+      const empCommId = e.committeeId;
+      const empCommName = (e.committeeName || '').trim().toLowerCase();
+      const matchId = Boolean(myCommId && empCommId === myCommId);
+      const matchName = Boolean(myCommName && empCommName === myCommName);
+      return matchId || matchName;
+    }
+    return true;
+  });
 
   const currentList = viewTab === 'pending' ? pendingMembers : approvedMembers;
 
@@ -716,22 +729,30 @@ export function EmployeesPage() {
             leftIcon={<Search className="h-4 w-4 text-slate-400" />}
           />
         </div>
-        <div className="flex gap-2">
-          <Select
-            value={committeeFilter}
-            onChange={(e) => setCommitteeFilter(e.target.value)}
-            options={[
-              { value: '', label: 'كل اللجان' },
-              ...committees.map((c) => ({ value: c.id, label: c.name })),
-            ]}
-            className="flex-1 lg:w-56"
-          />
-          <Button variant="outline" onClick={() => setShowCommitteeModal(true)} className="whitespace-nowrap gap-1.5 border-[#7C00FE]/20 text-[#7C00FE] hover:bg-[#7C00FE]/10">
-            <Shield className="h-4 w-4" /> لجنة جديدة
-          </Button>
-        </div>
+        {isTopTier ? (
+          <div className="flex gap-2">
+            <Select
+              value={committeeFilter}
+              onChange={(e) => setCommitteeFilter(e.target.value)}
+              options={[
+                { value: '', label: 'كل اللجان' },
+                ...committees.map((c) => ({ value: c.id, label: c.name })),
+              ]}
+              className="flex-1 lg:w-56"
+            />
+            <Button variant="outline" onClick={() => setShowCommitteeModal(true)} className="whitespace-nowrap gap-1.5 border-[#7C00FE]/20 text-[#7C00FE] hover:bg-[#7C00FE]/10">
+              <Shield className="h-4 w-4" /> لجنة جديدة
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800/50 text-indigo-700 dark:text-indigo-300 text-xs font-bold self-center">
+            <span>🏛️ لجنة {userProfile?.committeeName || 'اللجنة'}</span>
+            <span className="text-[10px] opacity-75 font-normal">· صلاحيات الإشراف مقتصرة على أعضاء لجنتك فقط</span>
+          </div>
+        )}
       </div>
-      {/* Committee chips quick filter — wrapped naturally so all committees are visible without horizontal scrolling */}
+      {/* Committee chips quick filter — only for top tier (Lead & Co-Lead) */}
+      {isTopTier && (
       <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 pt-1 pb-1">
         <button
           type="button"
@@ -782,6 +803,7 @@ export function EmployeesPage() {
           );
         })}
       </div>
+      )}
 
       {/* ── Pending Requests View ───────────────────────────────── */}
       {viewTab === 'pending' && (

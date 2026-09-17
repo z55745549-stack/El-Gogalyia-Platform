@@ -12,11 +12,13 @@ import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useNotificationCount } from '@/hooks/useNotifications';
 import { Avatar } from '@/components/ui/avatar';
+import { useLanguage } from '@/context/LanguageContext';
 import { cn } from '@/utils';
 import { getRoleLabel } from '@/utils/permissions';
 import type { UserRole } from '@/types';
 
 interface NavItem {
+  key: string;
   label: string;
   path: string;
   icon: React.ReactNode;
@@ -29,33 +31,33 @@ const MEMBER_ROLES: UserRole[] = ['member', 'vice_head'];
 const ALL_ROLES: UserRole[] = ['lead', 'co_lead', 'head', 'vice_head', 'member'];
 
 const navItems: NavItem[] = [
-  { label: 'لوحة التحكم', path: '/dashboard', icon: <LayoutDashboard className="h-4 w-4" />, roles: ALL_ROLES, category: 'main' },
+  { key: 'dashboard', label: 'لوحة التحكم', path: '/dashboard', icon: <LayoutDashboard className="h-4 w-4" />, roles: ALL_ROLES, category: 'main' },
 
   // Member / Vice-Head work
-  { label: 'مهامي وتكليفاتي', path: '/my-tasks', icon: <ListTodo className="h-4 w-4" />, roles: MEMBER_ROLES, category: 'work' },
-  { label: 'مراجعة تسليمات لجنتي', path: '/operations?tab=submissions', icon: <Inbox className="h-4 w-4" />, roles: ['vice_head'], category: 'work' },
-  { label: 'سجل حضوري', path: '/my-attendance', icon: <CalendarCheck className="h-4 w-4" />, roles: MEMBER_ROLES, category: 'work' },
+  { key: 'my_tasks', label: 'مهامي وتكليفاتي', path: '/my-tasks', icon: <ListTodo className="h-4 w-4" />, roles: MEMBER_ROLES, category: 'work' },
+  { key: 'review_submissions', label: 'مراجعة تسليمات لجنتي', path: '/operations?tab=submissions', icon: <Inbox className="h-4 w-4" />, roles: ['vice_head'], category: 'work' },
+  { key: 'my_attendance', label: 'سجل حضوري', path: '/my-attendance', icon: <CalendarCheck className="h-4 w-4" />, roles: MEMBER_ROLES, category: 'work' },
 
   // Admin/Lead/Head work — unified
-  { label: 'المهام والتكليفات', path: '/operations', icon: <CheckSquare className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'work' },
-  { label: 'الاجتماعات واللقاءات', path: '/meetings', icon: <CalendarDays className="h-4 w-4" />, roles: ALL_ROLES, category: 'work' },
+  { key: 'tasks', label: 'المهام والتكليفات', path: '/operations', icon: <CheckSquare className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'work' },
+  { key: 'meetings', label: 'الاجتماعات واللقاءات', path: '/meetings', icon: <CalendarDays className="h-4 w-4" />, roles: ALL_ROLES, category: 'work' },
 
   // Team management
-  { label: 'فريق العمل والطلاب', path: '/employees', icon: <Users className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'team' },
-  { label: 'الحضور والانضباط', path: '/compliance', icon: <Shield className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'team' },
-  { label: 'التقارير التحليلية', path: '/reports', icon: <BarChart3 className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'team' },
+  { key: 'employees', label: 'فريق العمل والطلاب', path: '/employees', icon: <Users className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'team' },
+  { key: 'compliance', label: 'الحضور والانضباط', path: '/compliance', icon: <Shield className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'team' },
+  { key: 'reports', label: 'التقارير التحليلية', path: '/reports', icon: <BarChart3 className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'team' },
 
   // Development
-  { label: 'الدورات التعليمية', path: '/courses', icon: <BookOpen className="h-4 w-4" />, roles: ALL_ROLES, category: 'development' },
-  { label: 'الفرص والتدريبات', path: '/opportunities', icon: <GraduationCap className="h-4 w-4" />, roles: ALL_ROLES, category: 'development' },
+  { key: 'courses', label: 'الدورات التعليمية', path: '/courses', icon: <BookOpen className="h-4 w-4" />, roles: ALL_ROLES, category: 'development' },
+  { key: 'opportunities', label: 'الفرص والتدريبات', path: '/opportunities', icon: <GraduationCap className="h-4 w-4" />, roles: ALL_ROLES, category: 'development' },
 
   // Unified Rewards & Perks
-  { label: 'محفظة O Coins والمتجر', path: '/ocoins', icon: <Coins className="h-4 w-4" />, roles: ALL_ROLES, category: 'rewards' },
+  { key: 'ocoins', label: 'محفظة O Coins والمتجر', path: '/ocoins', icon: <Coins className="h-4 w-4" />, roles: ALL_ROLES, category: 'rewards' },
 
   // System & Security
-  { label: 'تذاكر الدعم الفني', path: '/support', icon: <HeadphonesIcon className="h-4 w-4" />, roles: ALL_ROLES, category: 'system' },
-  { label: 'سجل العمليات', path: '/activity-logs', icon: <ClipboardList className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'system' },
-  { label: 'مركز التنبيهات', path: '/notifications', icon: <Bell className="h-4 w-4" />, roles: ALL_ROLES, category: 'system' },
+  { key: 'support', label: 'تذاكر الدعم الفني', path: '/support', icon: <HeadphonesIcon className="h-4 w-4" />, roles: ALL_ROLES, category: 'system' },
+  { key: 'activity_logs', label: 'سجل العمليات', path: '/activity-logs', icon: <ClipboardList className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'system' },
+  { key: 'notifications', label: 'مركز التنبيهات', path: '/notifications', icon: <Bell className="h-4 w-4" />, roles: ALL_ROLES, category: 'system' },
 ];
 
 const categoryLabels: Record<string, string> = {
@@ -114,6 +116,7 @@ function GogalyiaLogoMark() {
 
 export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   const { userProfile, signOut } = useAuth();
+  const { t, isRTL } = useLanguage();
   const navigate = useNavigate();
   const role = userProfile?.role ?? 'member';
   const unreadCount = useNotificationCount();
@@ -136,7 +139,8 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
         background: 'color-mix(in srgb, var(--surface) 90%, transparent)',
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
-        borderLeft: '1px solid var(--border-subtle)',
+        borderLeft: isRTL ? '1px solid var(--border-subtle)' : 'none',
+        borderRight: !isRTL ? '1px solid var(--border-subtle)' : 'none',
       }}
     >
       {/* ── Brand Header ─────────────────────────────────────────── */}
@@ -149,7 +153,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5">
               <span className="font-black text-sm tracking-tight text-slate-900 dark:text-transparent dark:bg-clip-text dark:bg-gradient-to-r dark:from-white dark:via-slate-100 dark:to-indigo-200">
-                منصة الجوجالية
+                {t('platform.name', 'منصة الجوجالية')}
               </span>
               <span
                 className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
@@ -163,7 +167,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
               </span>
             </div>
             <div className="text-[10px] font-medium" style={{ color: 'var(--text-muted)' }}>
-              مجتمع الجوجالية الرسمي
+              {t('platform.desc', 'مجتمع الجوجالية الرسمي')}
             </div>
           </div>
         </div>
@@ -178,10 +182,10 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
           return (
             <div key={cat} className="space-y-0.5">
               <div
-                className="text-[9.5px] font-bold uppercase tracking-widest px-2.5 mb-1.5 text-right"
+                className="text-[9.5px] font-bold uppercase tracking-widest px-2.5 mb-1.5"
                 style={{ color: 'var(--text-muted)' }}
               >
-                {categoryLabels[cat]}
+                {t('nav.cat.' + cat, categoryLabels[cat] || cat)}
               </div>
 
               {itemsInCat.map((item) => (
@@ -191,7 +195,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
                   onClick={onMobileClose}
                   className={({ isActive }) =>
                     cn(
-                      'flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-semibold transition-all duration-150 cursor-pointer text-right group relative overflow-hidden',
+                      'flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-semibold transition-all duration-150 cursor-pointer group relative overflow-hidden',
                       isActive
                         ? 'sidebar-nav-item-active'
                         : 'sidebar-nav-item-inactive'
@@ -209,7 +213,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
                       >
                         {item.icon}
                       </span>
-                      <span className="truncate flex-1">{item.label}</span>
+                      <span className="truncate flex-1">{t('nav.' + item.key, item.label)}</span>
                       {item.path === '/notifications' && unreadCount > 0 && (
                         <span className="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-rose-500 text-white min-w-[18px] text-center leading-none">
                           {unreadCount > 99 ? '99+' : unreadCount}
@@ -260,7 +264,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
                 {getRoleLabel(role)}
               </p>
               <span className="text-[9px] font-bold text-slate-400 group-hover:text-indigo-500 transition-colors">
-                الملف الشخصي ←
+                {t('nav.settings', 'الملف الشخصي')} {isRTL ? '←' : '→'}
               </span>
             </div>
           </div>
@@ -278,7 +282,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
           }}
         >
           <LogOut className="h-3.5 w-3.5" />
-          <span>تسجيل الخروج</span>
+          <span>{t('nav.logout', 'تسجيل الخروج')}</span>
         </button>
       </div>
     </div>
@@ -304,11 +308,11 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
               onClick={onMobileClose}
             />
             <motion.aside
-              initial={{ x: 260 }}
+              initial={{ x: isRTL ? 260 : -260 }}
               animate={{ x: 0 }}
-              exit={{ x: 260 }}
+              exit={{ x: isRTL ? 260 : -260 }}
               transition={{ type: 'spring', damping: 28, stiffness: 340 }}
-              className="fixed right-0 top-0 bottom-0 w-64 z-50 shadow-2xl lg:hidden"
+              className={`fixed top-0 bottom-0 w-64 z-50 shadow-2xl lg:hidden ${isRTL ? 'right-0' : 'left-0'}`}
             >
               {sidebarContent}
             </motion.aside>

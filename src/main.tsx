@@ -5,6 +5,7 @@ import { Toaster } from 'sonner';
 import App from './App.tsx';
 import { AuthProvider } from './context/AuthContext.tsx';
 import { ThemeProvider } from './context/ThemeContext.tsx';
+import { LanguageProvider } from './context/LanguageContext.tsx';
 import './index.css';
 
 import { ErrorBoundary } from './components/ui/ErrorBoundary.tsx';
@@ -24,17 +25,19 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
-          <AuthProvider>
-            <App />
-            <Toaster
-              position="top-right"
-              richColors
-              expand={false}
-              toastOptions={{
-                style: { fontFamily: 'Alexandria, sans-serif' },
-              }}
-            />
-          </AuthProvider>
+          <LanguageProvider>
+            <AuthProvider>
+              <App />
+              <Toaster
+                position="top-right"
+                richColors
+                expand={false}
+                toastOptions={{
+                  style: { fontFamily: 'Alexandria, sans-serif' },
+                }}
+              />
+            </AuthProvider>
+          </LanguageProvider>
         </ThemeProvider>
       </QueryClientProvider>
     </ErrorBoundary>

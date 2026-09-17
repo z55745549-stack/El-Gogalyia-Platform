@@ -11,12 +11,13 @@ import { toast } from 'sonner';
 
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { isWebAuthnSupported } from '@/lib/webauthn';
 import {
   Lock, User, Mail, Sun, Moon,
   CheckCircle2, Eye, EyeOff, Layers, Award, Zap,
-  ShieldCheck, Fingerprint, Tag
+  ShieldCheck, Fingerprint, Tag, Languages
 } from 'lucide-react';
 import { DEFAULT_COMMITTEES } from '@/types';
 import { formatFullName, formatTitleCaseLive, hasArabic } from '@/utils';
@@ -362,6 +363,7 @@ function HeroPanel({ isDark }: { isDark: boolean }) {
 export function LoginPage() {
   const { signInWithUsername, registerMember, signInWithDevice } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { language, direction, toggleLanguage } = useLanguage();
   const navigate = useNavigate();
 
   const [mode, setMode] = useState<AuthMode>('login');
@@ -516,7 +518,7 @@ export function LoginPage() {
           ? 'linear-gradient(135deg, #07070E 0%, #0C0C1C 50%, #06060D 100%)'
           : 'radial-gradient(ellipse 90% 70% at 50% -15%, #FFFFFF 0%, #F6F8FD 45%, #EEF2F8 100%)',
       }}
-      dir="rtl"
+      dir={direction}
     >
       {/* Background ambient lighting */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden>
@@ -538,24 +540,41 @@ export function LoginPage() {
         />
       </div>
 
-      {/* Theme toggle button */}
-      <button
-        onClick={toggleTheme}
-        aria-label={isDark ? 'التبديل إلى الوضع الفاتح' : 'التبديل إلى الوضع الداكن'}
-        className={[
-          'absolute top-5 left-5 z-50 flex items-center gap-2 px-3.5 py-2 rounded-xl',
-          'text-xs font-bold transition-all cursor-pointer backdrop-blur-md',
-          isDark
-            ? 'bg-white/5 border border-white/10 text-slate-300 hover:bg-white/[0.08]'
-            : 'bg-white/90 border border-slate-200 text-slate-700 hover:bg-white shadow-xs',
-        ].join(' ')}
-      >
-        {isDark ? (
-          <><Sun className="h-4 w-4 text-amber-400" /><span className="hidden sm:inline">الوضع الفاتح</span></>
-        ) : (
-          <><Moon className="h-4 w-4 text-indigo-600" /><span className="hidden sm:inline">الوضع الداكن</span></>
-        )}
-      </button>
+      {/* Language & Theme toggle buttons */}
+      <div className="absolute top-5 left-5 z-50 flex items-center gap-2">
+        <button
+          onClick={toggleLanguage}
+          aria-label="Toggle Language"
+          className={[
+            'flex items-center gap-1.5 px-3 py-2 rounded-xl',
+            'text-xs font-bold transition-all cursor-pointer backdrop-blur-md',
+            isDark
+              ? 'bg-white/5 border border-white/10 text-slate-300 hover:bg-white/[0.08]'
+              : 'bg-white/90 border border-slate-200 text-slate-700 hover:bg-white shadow-xs',
+          ].join(' ')}
+        >
+          <Languages className="h-4 w-4 text-indigo-500" />
+          <span className="font-mono font-bold uppercase text-[11px]">{language === 'ar' ? 'EN' : 'عربي'}</span>
+        </button>
+
+        <button
+          onClick={toggleTheme}
+          aria-label={isDark ? 'التبديل إلى الوضع الفاتح' : 'التبديل إلى الوضع الداكن'}
+          className={[
+            'flex items-center gap-2 px-3.5 py-2 rounded-xl',
+            'text-xs font-bold transition-all cursor-pointer backdrop-blur-md',
+            isDark
+              ? 'bg-white/5 border border-white/10 text-slate-300 hover:bg-white/[0.08]'
+              : 'bg-white/90 border border-slate-200 text-slate-700 hover:bg-white shadow-xs',
+          ].join(' ')}
+        >
+          {isDark ? (
+            <><Sun className="h-4 w-4 text-amber-400" /><span className="hidden sm:inline">الوضع الفاتح</span></>
+          ) : (
+            <><Moon className="h-4 w-4 text-indigo-600" /><span className="hidden sm:inline">الوضع الداكن</span></>
+          )}
+        </button>
+      </div>
 
       {/* ═══════════ MASTER LUXURY CONTAINER ═══════════ */}
       <motion.div

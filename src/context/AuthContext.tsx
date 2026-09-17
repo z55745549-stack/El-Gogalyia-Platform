@@ -762,7 +762,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       updated_at: new Date().toISOString(),
     };
 
-    const { error: insErr } = await supabase.from('users').insert(newProfile);
+    let { error: insErr } = await supabase.from('users').insert(newProfile);
+    if (insErr && (insErr.message?.includes('specialty_tag') || insErr.message?.includes('schema cache'))) {
+      const fallbackProfile: any = { ...newProfile };
+      delete fallbackProfile.specialty_tag;
+      fallbackProfile.raw_data = { ...(fallbackProfile.raw_data || {}), specialty_tag: data.specialtyTag?.trim() || null };
+      const retry = await supabase.from('users').insert(fallbackProfile);
+      insErr = retry.error;
+    }
     if (insErr) {
       logError('registerMember insert', insErr);
       throw new Error(insErr.message || 'حدث خطأ أثناء إرسال طلب الانضمام.');

@@ -208,20 +208,20 @@ export async function registerDeviceCredential(
       String.fromCharCode(...new Uint8Array(credential.rawId))
     );
 
-    const dbId = 'cred_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
+    // Generate standard RFC4122 UUID so PostgreSQL uuid column never rejects it
+    const dbId = (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
+      ? crypto.randomUUID()
+      : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+          const r = (Math.random() * 16) | 0;
+          const v = c === 'x' ? r : (r & 0x3) | 0x8;
+          return v.toString(16);
+        });
 
-    // 1. Save locally on the device immediately for instant biometric recognition
-    saveLocalDevice({
-      id: dbId,
-      userId,
-      credentialId: credentialIdBase64,
-      deviceName,
-      createdAt: new Date().toISOString(),
-    });
+    let savedId = dbId;
 
-    // 2. Store in Supabase if table exists
+    // 1. Store in Supabase
     try {
-      await supabase
+      const { data: insertedRow, error: dbErr } = await supabase
         .from('webauthn_credentials')
         .insert({
           id: dbId,
@@ -229,10 +229,28 @@ export async function registerDeviceCredential(
           credential_id: credentialIdBase64,
           device_name: deviceName,
           created_at: new Date().toISOString(),
-        });
+        })
+        .select('id')
+        .maybeSingle();
+
+      if (insertedRow?.id) {
+        savedId = insertedRow.id;
+      }
+      if (dbErr) {
+        console.warn('Supabase webauthn_credentials save notice:', dbErr);
+      }
     } catch (dbErr) {
       console.warn('Supabase webauthn_credentials save notice:', dbErr);
     }
+
+    // 2. Save locally on the device immediately for instant biometric recognition
+    saveLocalDevice({
+      id: savedId,
+      userId,
+      credentialId: credentialIdBase64,
+      deviceName,
+      createdAt: new Date().toISOString(),
+    });
 
     // 3. Mark webauthn_enabled on user in Supabase
     try {
@@ -415,6 +433,31 @@ export async function listUserDevices(userId: string): Promise<DeviceCredential[
       .order('created_at', { ascending: false });
 
     if (!error && data) {
+      // Auto-sync: if local devices exist on this client that aren't yet in Supabase, push them up
+      const dbCredIds = new Set(data.map((r: any) => r.credential_id));
+      for (const loc of localList) {
+        if (!dbCredIds.has(loc.credentialId)) {
+          const syncUuid = (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
+            ? crypto.randomUUID()
+            : undefined;
+          void supabase
+            .from('webauthn_credentials')
+            .insert({
+              ...(syncUuid ? { id: syncUuid } : {}),
+              user_id: userId,
+              credential_id: loc.credentialId,
+              device_name: loc.deviceName || 'الهاتف',
+              created_at: loc.createdAt || new Date().toISOString(),
+            })
+            .then(() => {
+              void supabase
+                .from('users')
+                .update({ webauthn_enabled: true, updated_at: new Date().toISOString() })
+                .eq('id', userId);
+            });
+        }
+      }
+
       for (const row of data) {
         itemsMap.set(row.credential_id, {
           id: row.id,
@@ -444,8 +487,8 @@ export async function removeDeviceCredential(
     await supabase
       .from('webauthn_credentials')
       .delete()
-      .eq('id', credentialDbId)
-      .eq('user_id', userId);
+      .eq('user_id', userId)
+      .or(`id.eq.${credentialDbId},credential_id.eq.${credentialDbId}`);
   } catch (e) {
     console.warn('Supabase removeDeviceCredential notice:', e);
   }

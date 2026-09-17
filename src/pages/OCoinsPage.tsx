@@ -196,13 +196,17 @@ export function OCoinsPage() {
           localUsers.forEach((u) => {
             if (!map.has(u.uid)) map.set(u.uid, u);
           });
-          setAllUsers(Array.from(map.values()));
+          let usersList = Array.from(map.values());
+          if (!isTopLeader && userProfile?.committeeId) {
+            usersList = usersList.filter((u) => u.committeeId === userProfile.committeeId);
+          }
+          setAllUsers(usersList);
         })
         .catch((err) => console.warn('Failed to load users:', err));
     }
 
     return unsub;
-  }, [userProfile, canManage]);
+  }, [userProfile, canManage, isTopLeader]);
 
   // 2. Filter Transactions by User and Search Criteria
   const myId = userProfile?.uid;
@@ -234,7 +238,12 @@ export function OCoinsPage() {
             (selectedUser.username || '').toLowerCase()
           )
         )
-      : allTransactions
+      : isTopLeader
+        ? allTransactions
+        : allTransactions.filter((t) => {
+            if (txBelongsTo(t, myId || '', myEmail, myUsername)) return true;
+            return allUsers.some((u) => txBelongsTo(t, u.uid, (u.email || '').toLowerCase(), (u.username || '').toLowerCase()));
+          })
     : allTransactions.filter((t) => txBelongsTo(t, myId || '', myEmail, myUsername));
 
   // Calculate totals

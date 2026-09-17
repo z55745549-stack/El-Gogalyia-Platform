@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
+import { supabase } from '@/lib/supabase';
 import {
   isWebAuthnSupported,
   registerDeviceCredential,
@@ -59,7 +60,6 @@ export function DeviceIdentitySection() {
 
   const reload = useCallback(async () => {
     if (!userId) return;
-    setLoadingDevices(true);
     const list = await listUserDevices(userId);
     setDevices(list);
     setLoadingDevices(false);
@@ -68,7 +68,31 @@ export function DeviceIdentitySection() {
   useEffect(() => {
     isWebAuthnSupported().then(setSupported);
     reload();
-  }, [reload]);
+
+    // 1. Listen for window focus to re-sync when switching between devices
+    const handleFocus = () => reload();
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') reload();
+    });
+
+    // 2. Realtime subscription to webauthn_credentials table
+    const channel = supabase
+      .channel(`device_credentials_${userId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'webauthn_credentials', filter: `user_id=eq.${userId}` },
+        () => {
+          reload();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      void supabase.removeChannel(channel);
+    };
+  }, [reload, userId]);
 
   useEffect(() => {
     setDeviceName(detectDeviceName());

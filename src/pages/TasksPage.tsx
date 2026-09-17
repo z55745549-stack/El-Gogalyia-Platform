@@ -191,8 +191,9 @@ export function TasksPage() {
       matchTab = t.status === 'archived';
     }
 
+    const isTopTier = userProfile?.role === 'lead' || userProfile?.role === 'co_lead';
     const matchPriority = !priorityFilter || t.priority === priorityFilter;
-    const matchCommittee = isViceHead
+    const matchCommittee = !isTopTier
       ? (
           (userProfile?.committeeId && t.committeeId === userProfile.committeeId) ||
           (userProfile?.committeeName && t.committeeName && t.committeeName.trim().toLowerCase() === userProfile.committeeName.trim().toLowerCase())
@@ -201,6 +202,7 @@ export function TasksPage() {
     return matchSearch && matchTab && matchPriority && matchCommittee;
   });
 
+  const isTopTier = userProfile?.role === 'lead' || userProfile?.role === 'co_lead';
   const canCreate = userProfile ? isAdminRole(userProfile.role) : false;
 
   return (
@@ -210,7 +212,7 @@ export function TasksPage() {
         <div>
           <h1 className="text-xl sm:text-2xl font-black text-[var(--text-primary)] flex items-center gap-2">
             <CheckSquare className="h-6 w-6 text-amber-500" />
-            {isViceHead ? `مهام وتكليفات لجنة ${userProfile?.committeeName || 'اللجنة'}` : 'إدارة وتكليف المهام'}
+            {!isTopTier ? `مهام وتكليفات لجنة ${userProfile?.committeeName || 'اللجنة'}` : 'إدارة وتكليف المهام'}
           </h1>
           <p className="text-xs sm:text-sm text-[var(--text-muted)] mt-1">
             {isViceHead
@@ -327,8 +329,8 @@ export function TasksPage() {
           />
         </div>
         <div className="w-full sm:w-56">
-          {isViceHead ? (
-            <div className="w-full px-3 py-2.5 rounded-xl text-xs bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1.5 justify-center">
+          {!isTopTier ? (
+            <div className="w-full px-3 py-2.5 rounded-xl text-xs bg-indigo-500/10 border border-indigo-500/30 text-indigo-600 dark:text-indigo-400 font-bold flex items-center gap-1.5 justify-center">
               <span>🏛️ لجنة {userProfile?.committeeName || 'لجنتك'} (مقيد)</span>
             </div>
           ) : (

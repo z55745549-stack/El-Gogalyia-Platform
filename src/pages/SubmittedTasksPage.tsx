@@ -93,7 +93,8 @@ export function SubmittedTasksPage() {
 
   const isViceHead = userProfile?.role === 'vice_head';
   const isHead = userProfile?.role === 'head';
-  const isCommitteeRestricted = (isHead || isViceHead) && Boolean(userProfile?.committeeId);
+  const isTopTier = userProfile?.role === 'lead' || userProfile?.role === 'co_lead';
+  const isCommitteeRestricted = !isTopTier && Boolean(userProfile?.committeeId || userProfile?.committeeName);
 
   const isTaskInMyCommittee = (t: Task) => {
     if (!isCommitteeRestricted) return true;

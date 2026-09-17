@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
-import { Menu, Sun, Moon, Bell } from 'lucide-react';
+import { Menu, Sun, Moon, Bell, Languages } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { useNotificationCount } from '@/hooks/useNotifications';
 
 interface HeaderProps {
@@ -9,7 +10,14 @@ interface HeaderProps {
 
 export function Header({ onMobileMenuClick }: HeaderProps) {
   const { theme, toggleTheme } = useTheme();
+  const { language, toggleLanguage, t } = useLanguage();
   const unreadCount = useNotificationCount();
+
+  const formattedDate = new Date().toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  });
 
   return (
     <header
@@ -21,7 +29,7 @@ export function Header({ onMobileMenuClick }: HeaderProps) {
         borderBottom: '1px solid var(--border-subtle)',
       }}
     >
-      {/* Left side (RTL Start): Mobile Drawer Toggle + Brand & Date */}
+      {/* Left side (Start): Mobile Drawer Toggle + Brand & Date */}
       <div className="flex items-center gap-3">
         <button
           onClick={onMobileMenuClick}
@@ -38,28 +46,46 @@ export function Header({ onMobileMenuClick }: HeaderProps) {
         <div className="flex sm:hidden items-center gap-1.5 text-xs font-black">
           <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: 'var(--brand-primary)' }} />
           <span className="text-slate-900 dark:text-white font-black text-[13px]">
-            منصة الجوجالية
+            {t('platform.name', 'منصة الجوجالية')}
           </span>
         </div>
 
         <div className="hidden sm:flex items-center gap-2 text-xs font-semibold">
           <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: 'var(--brand-primary)' }} />
           <span className="font-black text-slate-900 dark:text-transparent dark:bg-clip-text dark:bg-gradient-to-r dark:from-violet-400 dark:to-cyan-400">
-            منصة الجوجالية
+            {t('platform.name', 'منصة الجوجالية')}
           </span>
           <span style={{ color: 'var(--border-strong)' }}>·</span>
           <span style={{ color: 'var(--text-muted)' }}>
-            {new Date().toLocaleDateString('ar-EG', { weekday: 'long', month: 'long', day: 'numeric' })}
+            {formattedDate}
           </span>
         </div>
       </div>
 
-      {/* Right side: Notifications Bell + Theme Toggle */}
+      {/* Right side: Language Switcher + Notifications Bell + Theme Toggle */}
       <div className="flex items-center gap-2">
+        {/* Language Switcher (AR / EN) */}
+        <button
+          onClick={toggleLanguage}
+          title={t('header.lang.switch', language === 'ar' ? 'Switch to English' : 'التبديل إلى العربية')}
+          className="p-2 px-2.5 rounded-xl transition-all cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-1.5 text-xs font-black"
+          style={{
+            color: 'var(--text-secondary)',
+            background: 'var(--surface-elevated)',
+            border: '1px solid var(--border-subtle)',
+          }}
+          aria-label="Toggle Language"
+        >
+          <Languages className="h-4 w-4 text-indigo-500" />
+          <span className="uppercase font-mono text-[11px] font-black tracking-wider text-[var(--text-primary)]">
+            {language === 'ar' ? 'EN' : 'عربي'}
+          </span>
+        </button>
+
         {/* Notification Bell */}
         <Link
           to="/notifications"
-          title="مركز الإشعارات والتنبيهات"
+          title={t('header.notifications', 'مركز الإشعارات والتنبيهات')}
           className="relative p-2 rounded-xl transition-all cursor-pointer hover:scale-105 active:scale-95 flex items-center justify-center"
           style={{
             color: 'var(--text-secondary)',
@@ -81,7 +107,7 @@ export function Header({ onMobileMenuClick }: HeaderProps) {
         {/* Theme Toggle (Light / Dark Mode) */}
         <button
           onClick={toggleTheme}
-          title={theme === 'dark' ? 'التبديل إلى الوضع الفاتح' : 'التبديل إلى الوضع الليلي'}
+          title={theme === 'dark' ? t('header.theme.light', 'التبديل إلى الوضع الفاتح') : t('header.theme.dark', 'التبديل إلى الوضع الليلي')}
           className="p-2 rounded-xl transition-all cursor-pointer hover:scale-105 active:scale-95 flex items-center justify-center"
           style={{
             color: 'var(--text-secondary)',

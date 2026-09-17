@@ -415,40 +415,40 @@ export function AdminDashboard() {
         </div>
       </div>
 
-      {/* Semantic KPI Cards Grid — Tailored for Head or Top Leaders */}
+      {/* Semantic KPI Cards Grid — Tailored for Committee or Top Leaders */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-3.5">
         <StatCard
-          title={isHead ? "أعضاء لجنتي" : "فريق العمل"}
-          value={isHead ? myCommitteeUsers.length : totalEmployees}
+          title={!isTopLeader ? "أعضاء لجنتي" : "فريق العمل"}
+          value={!isTopLeader ? myCommitteeUsers.length : totalEmployees}
           variant="primary"
           icon={<Users className="h-4 w-4" />}
-          subtext={isHead ? `أعضاء ${userProfile?.committeeName || 'اللجنة'}` : "الأعضاء النشطين"}
+          subtext={!isTopLeader ? `أعضاء ${userProfile?.committeeName || 'اللجنة'}` : "الأعضاء النشطين"}
         />
         <StatCard
-          title={isHead ? "تسليمات لجنتي" : "تسليمات معلقة"}
-          value={isHead ? myCommitteeSubmitted.length : stats.submitted}
-          variant={(isHead ? myCommitteeSubmitted.length : stats.submitted) > 0 ? 'warm' : 'default'}
+          title={!isTopLeader ? "تسليمات لجنتي" : "تسليمات معلقة"}
+          value={!isTopLeader ? myCommitteeSubmitted.length : stats.submitted}
+          variant={(!isTopLeader ? myCommitteeSubmitted.length : stats.submitted) > 0 ? 'warm' : 'default'}
           icon={<Upload className="h-4 w-4" />}
           subtext="تحتاج مراجعة وقبول"
         />
         <StatCard
-          title={isHead ? "مهام لجنتي الجارية" : "قيد التنفيذ"}
-          value={isHead ? myCommitteeTasks.filter(t => t.status === 'in_progress').length : stats.inProgress}
+          title={!isTopLeader ? "مهام لجنتي الجارية" : "قيد التنفيذ"}
+          value={!isTopLeader ? myCommitteeTasks.filter(t => t.status === 'in_progress').length : stats.inProgress}
           variant="accent"
           icon={<Clock className="h-4 w-4" />}
           subtext="يعمل عليها الفريق"
         />
         <StatCard
-          title={isHead ? "مهام متأخرة بلجنتي" : "مهام متأخرة"}
-          value={isHead ? myCommitteeTasks.filter(t => isOverdue(t.deadline, t.status)).length : stats.overdue}
+          title={!isTopLeader ? "مهام متأخرة بلجنتي" : "مهام متأخرة"}
+          value={!isTopLeader ? myCommitteeTasks.filter(t => isOverdue(t.deadline, t.status)).length : stats.overdue}
           variant="default"
           icon={<AlertTriangle className="h-4 w-4" />}
-          iconBg={(isHead ? myCommitteeTasks.filter(t => isOverdue(t.deadline, t.status)).length : stats.overdue) > 0 ? "bg-[var(--brand-danger)]/15 text-[var(--brand-danger)]" : undefined}
+          iconBg={(!isTopLeader ? myCommitteeTasks.filter(t => isOverdue(t.deadline, t.status)).length : stats.overdue) > 0 ? "bg-[var(--brand-danger)]/15 text-[var(--brand-danger)]" : undefined}
           subtext="تجاوزت الموعد"
         />
         <StatCard
-          title={isHead ? "مهام معتمدة بلجنتي" : "مهام معتمدة"}
-          value={isHead ? myCommitteeTasks.filter(t => t.status === 'approved' || t.status === 'completed').length : stats.approved}
+          title={!isTopLeader ? "مهام معتمدة بلجنتي" : "مهام معتمدة"}
+          value={!isTopLeader ? myCommitteeTasks.filter(t => t.status === 'approved' || t.status === 'completed').length : stats.approved}
           variant="success"
           icon={<CheckCircle2 className="h-4 w-4" />}
           subtext="مكتملة ومصروفة"
@@ -592,8 +592,12 @@ export function AdminDashboard() {
         <div className="lg:col-span-2 card overflow-hidden">
           <div className="p-4 sm:p-5 border-b border-[var(--border-subtle)] flex items-center justify-between bg-[var(--bg-elevated)]/30">
             <div>
-              <h2 className="section-title text-sm sm:text-base text-[var(--text-primary)]">أحدث التكليفات والمهام</h2>
-              <p className="text-[11px] text-[var(--text-muted)] mt-0.5">{tasks.length} مهمة مسجلة بالنظام</p>
+              <h2 className="section-title text-sm sm:text-base text-[var(--text-primary)]">
+                {!isTopLeader ? `أحدث مهام لجنة ${userProfile?.committeeName || 'اللجنة'}` : 'أحدث التكليفات والمهام'}
+              </h2>
+              <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
+                {!isTopLeader ? `${myCommitteeTasks.length} مهمة بلجنتك` : `${tasks.length} مهمة مسجلة بالنظام`}
+              </p>
             </div>
             <Link to="/tasks" className="text-xs font-bold text-[var(--brand-primary)] hover:text-[var(--brand-accent)] hover:underline flex items-center gap-1">
               عرض كافة المهام <ArrowUpRight className="h-3 w-3" />
@@ -605,7 +609,7 @@ export function AdminDashboard() {
               <div className="p-5 space-y-3">
                 {[1, 2, 3].map((i) => <SkeletonCard key={i} />)}
               </div>
-            ) : tasks.length === 0 ? (
+            ) : (isTopLeader ? tasks : myCommitteeTasks).length === 0 ? (
               <div className="p-8 text-center text-[var(--text-muted)] text-xs sm:text-sm">
                 لا توجد مهام مسجلة حالياً.{' '}
                 <Link to="/tasks" className="text-[var(--brand-primary)] font-bold hover:underline">
@@ -613,7 +617,7 @@ export function AdminDashboard() {
                 </Link>
               </div>
             ) : (
-              tasks.slice(0, 6).map((task) => {
+              (isTopLeader ? tasks : myCommitteeTasks).slice(0, 6).map((task) => {
                 const overdue = isOverdue(task.deadline, task.status);
                 return (
                   <Link
