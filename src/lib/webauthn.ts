@@ -318,24 +318,28 @@ export async function authenticateWithDevice(): Promise<{
     return {
       id: bytes.buffer,
       type: 'public-key' as const,
-      transports: ['internal' as AuthenticatorTransport, 'hybrid' as AuthenticatorTransport],
+      transports: ['internal' as AuthenticatorTransport],
     };
   });
 
   let assertion: PublicKeyCredential | null = null;
   let lastErr: any = null;
 
-  // Sole, direct method: The exact proven Attempt 2 configuration that targets This Device
+  // Sole, direct method: Strictly platform internal biometric authenticator ("This Device")
+  // Using transports: ['internal'] and hints: ['client-device'] suppresses external roaming options (USB / NFC / Hybrid).
   try {
     const challenge = crypto.getRandomValues(new Uint8Array(32));
+    const publicKeyReq: any = {
+      challenge,
+      timeout: 60000,
+      userVerification: 'preferred',
+      rpId,
+      allowCredentials: allowedDescriptors,
+      hints: ['client-device'],
+    };
+
     assertion = await navigator.credentials.get({
-      publicKey: {
-        challenge,
-        timeout: 60000,
-        userVerification: 'preferred',
-        rpId,
-        allowCredentials: allowedDescriptors,
-      },
+      publicKey: publicKeyReq,
     }) as PublicKeyCredential | null;
   } catch (err: any) {
     lastErr = err;
