@@ -232,7 +232,7 @@ export function AdminDiscountsPage() {
   return (
     <div className="space-y-6 font-sans dir-rtl text-right">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-white/[0.03] p-6 rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 card p-6 rounded-2xl shadow-xs">
         <div>
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-slate-100 flex items-center gap-2.5">
             <Tag className="h-6 w-6 text-[var(--brand-primary)] dark:text-[var(--brand-accent)]" />
@@ -265,7 +265,7 @@ export function AdminDiscountsPage() {
         ].map((m, i) => (
           <div
             key={i}
-            className="bg-white dark:bg-[#13131A] p-4 rounded-2xl border border-slate-200/80 dark:border-[#2A2A35] shadow-xs flex items-center justify-between"
+            className="card p-4 rounded-2xl shadow-xs flex items-center justify-between"
           >
             <div>
               <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{m.label}</p>
@@ -279,7 +279,7 @@ export function AdminDiscountsPage() {
       </div>
 
       {/* Search & Filter Bar */}
-      <div className="bg-white dark:bg-[#13131A] p-4 rounded-2xl border border-slate-200/80 dark:border-[#2A2A35] shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div className="card p-4 rounded-2xl shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
         <div className="relative w-full sm:max-w-md">
           <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <input
@@ -287,7 +287,7 @@ export function AdminDiscountsPage() {
             placeholder="البحث في العروض..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pr-10 pl-4 py-2 text-xs sm:text-sm rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-slate-800 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-[var(--brand-primary)]"
+            className="w-full pr-10 pl-4 py-2 text-xs sm:text-sm rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-hidden focus:ring-2 focus:ring-[var(--brand-primary)]"
           />
         </div>
 
@@ -300,7 +300,7 @@ export function AdminDiscountsPage() {
                 'px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer',
                 statusFilter === s
                   ? 'btn-primary shadow-xs'
-                  : 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+                  : 'bg-[var(--surface-elevated)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] border border-[var(--border-subtle)]'
               )}
             >
               {s === 'all' ? 'الكل' : s === 'active' ? 'نشطة فقط' : 'معطلة'}
@@ -310,10 +310,10 @@ export function AdminDiscountsPage() {
       </div>
 
       {/* Discounts Table (Desktop) */}
-      <div className="bg-white dark:bg-[#13131A] rounded-2xl border border-slate-200/80 dark:border-[#2A2A35] shadow-xs overflow-hidden hidden lg:block">
+      <div className="card rounded-2xl shadow-xs overflow-hidden hidden lg:block">
         <div className="overflow-x-auto">
           <table className="w-full text-right text-xs">
-            <thead className="bg-slate-50 dark:bg-[#181820] border-b border-slate-200 dark:border-[#2A2A35] text-slate-500 dark:text-slate-400 font-bold">
+            <thead className="bg-[var(--surface-elevated)] border-b border-[var(--border-subtle)] text-[var(--muted-foreground)] font-bold">
               <tr>
                 <th className="p-4">العرض / الخصم</th>
                 <th className="p-4">النوع</th>
@@ -325,9 +325,9 @@ export function AdminDiscountsPage() {
                 <th className="p-4 text-left">الإجراءات</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-[#242430] font-medium">
+            <tbody className="divide-y divide-[var(--border-subtle)] font-medium">
               {filteredDiscounts.map((discount) => (
-                <tr key={discount.id} className="hover:bg-slate-50/60 dark:hover:bg-[#1A1A24] transition-colors">
+                <tr key={discount.id} className="hover:bg-[var(--surface-elevated)]/60 transition-colors">
                   <td className="p-4">
                     <div className="flex items-center gap-3">
                       {discount.imageUrl ? (
@@ -400,14 +400,14 @@ export function AdminDiscountsPage() {
                       <button
                         onClick={() => handleToggleStatus(discount)}
                         title={discount.status === 'active' ? 'تعطيل' : 'تفعيل'}
-                        className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-[#1E1E28] text-slate-600 dark:text-slate-300 cursor-pointer"
+                        className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 cursor-pointer"
                       >
                         <Power className={cn('h-4 w-4', discount.status === 'active' ? 'text-emerald-600' : 'text-slate-400')} />
                       </button>
                       <button
                         onClick={() => handleOpenEdit(discount)}
                         title="تعديل"
-                        className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-[#1E1E28] text-slate-600 dark:text-slate-300 cursor-pointer"
+                        className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 cursor-pointer"
                       >
                         <Edit3 className="h-4 w-4" />
                       </button>
@@ -435,7 +435,7 @@ export function AdminDiscountsPage() {
         {filteredDiscounts.map((discount) => (
           <div
             key={`m-${discount.id}`}
-            className="bg-white dark:bg-[#13131A] p-4 rounded-2xl border border-slate-200/80 dark:border-[#2A2A35] space-y-3"
+            className="card p-4 rounded-2xl space-y-3"
           >
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -458,7 +458,7 @@ export function AdminDiscountsPage() {
               </div>
             )}
 
-            <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-[#242430]">
+            <div className="flex items-center justify-between pt-2 border-t border-[var(--border-subtle)]">
               <button
                 onClick={() => {
                   setSelectedDiscount(discount);
@@ -472,13 +472,13 @@ export function AdminDiscountsPage() {
               <div className="flex gap-1">
                 <button
                   onClick={() => handleToggleStatus(discount)}
-                  className="p-1.5 rounded-lg bg-slate-100 dark:bg-[#1E1E28] text-slate-600"
+                  className="p-1.5 rounded-lg bg-slate-100 dark:bg-white/10 text-slate-600"
                 >
                   <Power className="h-3.5 w-3.5" />
                 </button>
                 <button
                   onClick={() => handleOpenEdit(discount)}
-                  className="p-1.5 rounded-lg bg-slate-100 dark:bg-[#1E1E28] text-slate-600"
+                  className="p-1.5 rounded-lg bg-slate-100 dark:bg-white/10 text-slate-600"
                 >
                   <Edit3 className="h-3.5 w-3.5" />
                 </button>
@@ -605,7 +605,7 @@ export function AdminDiscountsPage() {
             ]}
           />
 
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-[#242430]">
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-[var(--border-subtle)]">
             <Button
               type="button"
               variant="outline"
@@ -650,7 +650,7 @@ export function AdminDiscountsPage() {
               لم يقم أي موظف بشراء هذا الخصم حتى الآن.
             </p>
           ) : (
-            <div className="max-h-96 overflow-y-auto divide-y divide-slate-100 dark:divide-[#242430]">
+            <div className="max-h-96 overflow-y-auto divide-y divide-[var(--border-subtle)]">
               {selectedDiscountPurchases.map((purchase) => (
                 <div key={purchase.id} className="py-3 flex items-center justify-between gap-3 text-xs">
                   <div className="flex items-center gap-2.5">

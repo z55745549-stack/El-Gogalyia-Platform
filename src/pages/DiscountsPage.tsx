@@ -105,98 +105,127 @@ export function DiscountsPage() {
 
   return (
     <div className="space-y-6 font-sans dir-rtl text-right animate-fadeIn">
-      {/* Hero & Balance Header */}
-      <div className="relative overflow-hidden rounded-3xl p-6 sm:p-8 text-white shadow-xl bg-gradient-to-r from-[#1E1B4B] via-[#0F172A] to-[#1E1B4B] border border-indigo-500/25">
-        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-xs font-bold border border-white/20">
-              <Gift className="h-3.5 w-3.5 text-[var(--brand-accent)]" />
-              <span>مكافآت وامتيازات أعضاء منصة الجوجالية</span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
+      {/* Header Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <h1 className="page-title text-2xl font-black text-slate-900 dark:text-white">
               متجر الخصومات والعروض الحصرية
             </h1>
-            <p className="text-slate-300 text-xs sm:text-sm max-w-xl leading-relaxed">
-              استبدل نقاطك من <span className="text-[var(--brand-accent)] font-bold">O Coins</span> بخصومات وعروض حصرية، قسائم شراء، ومزايا مخصصة لأعضاء المجتمع.
-            </p>
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-[var(--brand-primary)]/15 text-[var(--brand-primary)] border border-[var(--brand-primary)]/30">
+              🎁 Exclusive Store
+            </span>
           </div>
+          <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mt-1">
+            استبدل نقاطك من <span className="text-[var(--brand-warm)] font-bold">O Coins</span> بخصومات وعروض حصرية، قسائم شراء ومزايا مخصصة لأعضاء المنظومة.
+          </p>
+        </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
-            <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-3 sm:px-4 sm:py-3 flex items-center justify-between gap-4">
-              <div>
-                <p className="text-[11px] text-slate-400 font-medium">رصيدك الحالي</p>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="text-xl sm:text-2xl font-black text-amber-400">
-                    {currentCoins.toLocaleString()}
-                  </span>
-                  <span className="text-xs font-bold text-slate-300">O Coins 🪙</span>
-                </div>
-              </div>
-              <Link
-                to="/ocoins"
-                className="text-[11px] font-bold px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors whitespace-nowrap"
-              >
-                سجل النقاط
-              </Link>
+        <Link
+          to="/ocoins?tab=purchases"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl btn-primary text-xs shadow-sm transition-all whitespace-nowrap font-bold shrink-0 self-start sm:self-auto"
+        >
+          <ShoppingBag className="h-4 w-4" />
+          <span>مشترياتي وقسائمي المفعّلة</span>
+        </Link>
+      </div>
+
+      {/* KPI Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="card p-5 rounded-2xl flex items-center justify-between shadow-xs border-[var(--brand-warm)]/30">
+          <div>
+            <p className="text-xs font-bold text-[var(--text-muted)]">
+              {isUnlimited ? 'رصيدك المتاح' : 'رصيدك الحالي من O Coins'}
+            </p>
+            <div className="flex items-center gap-1.5 mt-1">
+              <span className="text-2xl font-black text-[var(--brand-warm)]">
+                {isUnlimited ? '∞ غير محدود' : currentCoins.toLocaleString()}
+              </span>
+              {!isUnlimited && <span className="text-xs font-bold text-[var(--text-muted)]">OC 🪙</span>}
             </div>
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center text-xl">
+            🪙
+          </div>
+        </div>
 
-            <Link
-              to="/my-discounts"
-              className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl btn-accent font-extrabold text-xs sm:text-sm shadow-lg transition-all"
-            >
-              <ShoppingBag className="h-4 w-4" />
-              <span>خصوماتي المشتراة</span>
-            </Link>
+        <div className="card p-5 rounded-2xl flex items-center justify-between shadow-xs border-[var(--brand-primary)]/30">
+          <div>
+            <p className="text-xs font-bold text-[var(--text-muted)]">العروض والخصومات المتاحة</p>
+            <div className="flex items-center gap-1.5 mt-1">
+              <span className="text-2xl font-black text-[var(--brand-primary)]">
+                {activeDiscounts.length}
+              </span>
+              <span className="text-xs font-bold text-[var(--text-muted)]">عرض ساري</span>
+            </div>
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] flex items-center justify-center">
+            <Tag className="h-6 w-6" />
+          </div>
+        </div>
+
+        <div className="card p-5 rounded-2xl flex items-center justify-between shadow-xs border-emerald-500/30">
+          <div>
+            <p className="text-xs font-bold text-[var(--text-muted)]">فئات الخصومات</p>
+            <div className="flex items-center gap-1.5 mt-1">
+              <span className="text-2xl font-black text-emerald-500">
+                {Object.keys(DISCOUNT_TYPE_CONFIG).length}
+              </span>
+              <span className="text-xs font-bold text-[var(--text-muted)]">فئات متنوعة</span>
+            </div>
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+            <Sparkles className="h-6 w-6" />
           </div>
         </div>
       </div>
 
       {/* Filters & Search */}
-      <div className="card p-4 rounded-2xl shadow-xs space-y-3">
-        <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
-          <div className="relative w-full sm:max-w-md">
-            <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <input
-              type="text"
-              placeholder="ابحث في الخصومات والعروض المتاحة..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pr-10 pl-4 py-2.5 text-xs sm:text-sm rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-slate-800 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-[var(--brand-primary)]"
-            />
-          </div>
+      <div className="card p-4 rounded-2xl shadow-xs flex flex-col sm:flex-row gap-3 items-center justify-between">
+        <div className="relative w-full sm:max-w-md">
+          <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
+          <input
+            type="text"
+            placeholder="ابحث في الخصومات والعروض المتاحة..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pr-10 pl-4 py-2 text-xs sm:text-sm rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-hidden focus:ring-2 focus:ring-[var(--brand-primary)]"
+          />
+        </div>
 
-          <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 no-scrollbar">
-            <button
-              onClick={() => setSelectedType('all')}
-              className={cn(
-                'px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer',
-                selectedType === 'all'
-                  ? 'btn-primary shadow-md shadow-[var(--brand-primary)]/20'
-                  : 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
-              )}
-            >
-              الكل ({discounts.filter((d) => d.status === 'active').length})
-            </button>
-            {Object.entries(DISCOUNT_TYPE_CONFIG).map(([typeKey, cfg]) => {
-              const count = discounts.filter((d) => d.status === 'active' && d.discountType === typeKey).length;
-              return (
-                <button
-                  key={typeKey}
-                  onClick={() => setSelectedType(typeKey)}
-                  className={cn(
-                    'px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 flex items-center gap-1.5 cursor-pointer',
-                    selectedType === typeKey
-                      ? 'btn-primary shadow-md shadow-[var(--brand-primary)]/20'
-                      : 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
-                  )}
-                >
-                  <cfg.icon className="h-3.5 w-3.5" />
-                  <span>{cfg.label}</span>
-                  {count > 0 && <span className="text-[10px] opacity-75">({count})</span>}
-                </button>
-              );
-            })}
-          </div>
+        <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 no-scrollbar">
+          <button
+            type="button"
+            onClick={() => setSelectedType('all')}
+            className={cn(
+              'px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer',
+              selectedType === 'all'
+                ? 'btn-primary shadow-xs'
+                : 'bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)]'
+            )}
+          >
+            الكل ({discounts.filter((d) => d.status === 'active').length})
+          </button>
+          {Object.entries(DISCOUNT_TYPE_CONFIG).map(([typeKey, cfg]) => {
+            const count = discounts.filter((d) => d.status === 'active' && d.discountType === typeKey).length;
+            return (
+              <button
+                type="button"
+                key={typeKey}
+                onClick={() => setSelectedType(typeKey)}
+                className={cn(
+                  'px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 flex items-center gap-1.5 cursor-pointer',
+                  selectedType === typeKey
+                    ? 'btn-primary shadow-xs'
+                    : 'bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)]'
+                )}
+              >
+                <cfg.icon className="h-3.5 w-3.5" />
+                <span>{cfg.label}</span>
+                {count > 0 && <span className="text-[10px] opacity-75">({count})</span>}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -218,7 +247,7 @@ export function DiscountsPage() {
       ) : activeDiscounts.length === 0 ? (
         <div className="card rounded-2xl p-12 text-center">
           <EmptyState
-            icon={<Tag className="h-10 w-10 text-slate-400" />}
+            icon={<Tag className="h-10 w-10 text-[var(--text-muted)]" />}
             title="لا توجد خصومات أو عروض متاحة حالياً"
             description={
               search
@@ -245,10 +274,10 @@ export function DiscountsPage() {
                 layout
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="card rounded-2xl shadow-sm hover:shadow-lg hover:border-[var(--brand-primary)]/40 transition-all flex flex-col justify-between overflow-hidden group"
+                className="card rounded-2xl shadow-xs hover:shadow-md hover:border-[var(--brand-primary)]/40 transition-all flex flex-col justify-between overflow-hidden group"
               >
                 {/* Card Top: Image / Banner */}
-                <div className="relative h-44 bg-slate-100 dark:bg-white/5 overflow-hidden">
+                <div className="relative h-44 bg-[var(--surface-elevated)] overflow-hidden">
                   {discount.imageUrl ? (
                     <img
                       src={discount.imageUrl}
@@ -264,16 +293,16 @@ export function DiscountsPage() {
                       <div className="w-14 h-14 rounded-2xl bg-[var(--brand-primary)]/15 flex items-center justify-center text-[var(--brand-primary)] dark:text-[var(--brand-accent)] mb-2">
                         <Tag className="h-7 w-7" />
                       </div>
-                      <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                      <span className="text-xs font-bold text-[var(--text-muted)]">
                         {typeConfig.label}
                       </span>
                     </div>
                   )}
 
                   {/* Value Badge */}
-                  <div className="absolute top-3 right-3 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900/85 backdrop-blur-md text-white shadow-lg border border-white/10">
+                  <div className="absolute top-3 right-3 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--surface)]/90 backdrop-blur-md text-[var(--text-primary)] shadow-md border border-[var(--border-subtle)]">
                     <Sparkles className="h-3.5 w-3.5 text-amber-400" />
-                    <span className="text-xs font-black text-[var(--brand-accent)]">{discount.discountValue}</span>
+                    <span className="text-xs font-black text-[var(--brand-primary)]">{discount.discountValue}</span>
                   </div>
 
                   {/* Type Badge */}
@@ -287,18 +316,18 @@ export function DiscountsPage() {
                 {/* Card Content */}
                 <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
                   <div className="space-y-2">
-                    <h3 className="font-extrabold text-base text-slate-900 dark:text-slate-100 group-hover:text-[var(--brand-primary)] dark:group-hover:text-[var(--brand-accent)] transition-colors line-clamp-1">
+                    <h3 className="font-extrabold text-base text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] transition-colors line-clamp-1">
                       {discount.title}
                     </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
+                    <p className="text-xs text-[var(--text-secondary)] line-clamp-2 leading-relaxed">
                       {discount.description}
                     </p>
                   </div>
 
-                  <div className="pt-2 border-t border-slate-100 dark:border-white/5 space-y-3">
-                    <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+                  <div className="pt-2 border-t border-[var(--border-subtle)] space-y-3">
+                    <div className="flex items-center justify-between text-[11px] text-[var(--text-muted)]">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <Clock className={cn('h-3.5 w-3.5', isExpiringSoon ? 'text-rose-500 animate-pulse' : 'text-slate-400')} />
+                        <Clock className={cn('h-3.5 w-3.5', isExpiringSoon ? 'text-rose-500 animate-pulse' : 'text-[var(--text-muted)]')} />
                         {discount.expiresAt ? (
                           <span className={cn(isExpiringSoon && 'text-rose-500 font-bold')}>
                             ينتهي: {new Date(String(discount.expiresAt)).toLocaleDateString('ar-EG', { month: 'short', day: 'numeric', year: 'numeric' })}
@@ -313,7 +342,7 @@ export function DiscountsPage() {
                         )}
                       </div>
                       {discount.totalPurchases > 0 && (
-                        <span className="text-[10px] text-slate-400 font-medium">
+                        <span className="text-[10px] text-[var(--text-muted)] font-medium">
                           {discount.totalPurchases} عملية شراء
                         </span>
                       )}
@@ -325,10 +354,10 @@ export function DiscountsPage() {
                           🪙
                         </div>
                         <div>
-                          <div className="text-base font-black text-slate-900 dark:text-slate-100 leading-none">
+                          <div className="text-base font-black text-[var(--text-primary)] leading-none">
                             {discount.ocoinCost}
                           </div>
-                          <div className="text-[9px] font-bold text-slate-400">O Coins</div>
+                          <div className="text-[9px] font-bold text-[var(--text-muted)]">O Coins</div>
                         </div>
                       </div>
 
@@ -336,10 +365,10 @@ export function DiscountsPage() {
                         onClick={() => handleOpenPurchase(discount)}
                         disabled={!canAfford}
                         className={cn(
-                          'gap-1.5 text-xs font-bold py-2.5 px-4 rounded-xl shadow-sm transition-all cursor-pointer',
+                          'gap-1.5 text-xs font-bold py-2.5 px-4 rounded-xl shadow-xs transition-all cursor-pointer',
                           canAfford
-                            ? 'btn-primary shadow-[var(--brand-primary)]/25'
-                            : 'bg-slate-100 dark:bg-white/5 text-slate-400 cursor-not-allowed'
+                            ? 'btn-primary'
+                            : 'bg-[var(--surface-elevated)] text-[var(--text-muted)] cursor-not-allowed border border-[var(--border-subtle)]'
                         )}
                       >
                         <ShoppingBag className="h-3.5 w-3.5" />

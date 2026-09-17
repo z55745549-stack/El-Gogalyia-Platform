@@ -416,7 +416,7 @@ export function AdminCoursesPage() {
         ].map((m, i) => (
           <div
             key={i}
-            className="bg-white dark:bg-[#13131A] p-4 rounded-2xl border border-slate-200/80 dark:border-[#2A2A35] shadow-xs flex items-center justify-between"
+            className="card p-4 rounded-2xl shadow-xs flex items-center justify-between"
           >
             <div>
               <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{m.label}</p>
@@ -478,7 +478,7 @@ export function AdminCoursesPage() {
               <select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
-                className="px-3 py-2 text-xs font-bold rounded-xl border border-slate-200 dark:border-[#2A2A35] bg-slate-50 dark:bg-[#181820] text-slate-700 dark:text-slate-300 cursor-pointer"
+                className="px-3 py-2 text-xs font-bold rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--foreground)] cursor-pointer"
               >
                 <option value="all">جميع التصنيفات</option>
                 {categories.map((c) => (
@@ -489,7 +489,7 @@ export function AdminCoursesPage() {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-2 text-xs font-bold rounded-xl border border-slate-200 dark:border-[#2A2A35] bg-slate-50 dark:bg-[#181820] text-slate-700 dark:text-slate-300 cursor-pointer"
+                className="px-3 py-2 text-xs font-bold rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--foreground)] cursor-pointer"
               >
                 <option value="all">جميع الحالات</option>
                 <option value="published">منشورة (Published)</option>
@@ -500,10 +500,10 @@ export function AdminCoursesPage() {
           </div>
 
           {/* Courses Table (Desktop) */}
-          <div className="bg-white dark:bg-[#13131A] rounded-2xl border border-slate-200/80 dark:border-[#2A2A35] shadow-xs overflow-hidden hidden lg:block">
+          <div className="card rounded-2xl shadow-xs overflow-hidden hidden lg:block">
             <div className="overflow-x-auto">
               <table className="w-full text-right text-xs">
-                <thead className="bg-slate-50 dark:bg-[#181820] border-b border-slate-200 dark:border-[#2A2A35] text-slate-500 dark:text-slate-400 font-bold">
+                <thead className="bg-[var(--surface-elevated)] border-b border-[var(--border-subtle)] text-[var(--muted-foreground)] font-bold">
                   <tr>
                     <th className="p-4">الدورة التعليمية</th>
                     <th className="p-4">التصنيف</th>
@@ -514,7 +514,7 @@ export function AdminCoursesPage() {
                     <th className="p-4 text-left">الإجراءات</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-[#242430] font-medium">
+                <tbody className="divide-y divide-[var(--border-subtle)] font-medium">
                   {filteredCourses.map((course) => {
                     const isSyncing = syncingCourseId === course.id;
                     const ytUrl = getCourseYoutubeUrl(course);
@@ -602,7 +602,7 @@ export function AdminCoursesPage() {
                               to={`/courses/${course.id}/learn`}
                               target="_blank"
                               title="معاينة الدورة كطالب"
-                              className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-[#1E1E28] text-slate-600 dark:text-slate-300 cursor-pointer"
+                              className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 cursor-pointer"
                             >
                               <Eye className="h-4 w-4" />
                             </Link>
@@ -610,7 +610,7 @@ export function AdminCoursesPage() {
                             <button
                               onClick={() => handleToggleCourseStatus(course)}
                               title={course.status === 'published' ? 'إلغاء النشر' : 'نشر'}
-                              className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-[#1E1E28] text-slate-600 cursor-pointer"
+                              className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-600 cursor-pointer"
                             >
                               <Power className={cn('h-4 w-4', course.status === 'published' ? 'text-emerald-600' : 'text-slate-400')} />
                             </button>
@@ -618,7 +618,7 @@ export function AdminCoursesPage() {
                             <button
                               onClick={() => handleOpenEditCourse(course)}
                               title="تعديل"
-                              className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-[#1E1E28] text-slate-600 cursor-pointer"
+                              className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-600 cursor-pointer"
                             >
                               <Edit3 className="h-4 w-4" />
                             </button>
@@ -653,7 +653,7 @@ export function AdminCoursesPage() {
               return (
                 <div
                   key={`m-${course.id}`}
-                  className="bg-white dark:bg-[#13131A] p-4 rounded-2xl border border-slate-200/80 dark:border-[#2A2A35] space-y-3"
+                  className="card p-4 rounded-2xl space-y-3"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-2.5">
@@ -678,7 +678,7 @@ export function AdminCoursesPage() {
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-[#242430]">
+                  <div className="flex items-center justify-between pt-2 border-t border-[var(--border-subtle)]">
                     <button
                       onClick={() => handleOpenLessonsModal(course)}
                       className="text-xs font-bold text-[var(--brand-primary)] dark:text-[var(--brand-accent)] flex items-center gap-1"
@@ -700,19 +700,19 @@ export function AdminCoursesPage() {
                       <Link
                         to={`/courses/${course.id}/learn`}
                         target="_blank"
-                        className="p-1.5 rounded-lg bg-slate-100 dark:bg-[#1E1E28] text-slate-600"
+                        className="p-1.5 rounded-lg bg-slate-100 dark:bg-white/10 text-slate-600"
                       >
                         <Eye className="h-3.5 w-3.5" />
                       </Link>
                       <button
                         onClick={() => handleToggleCourseStatus(course)}
-                        className="p-1.5 rounded-lg bg-slate-100 dark:bg-[#1E1E28] text-slate-600"
+                        className="p-1.5 rounded-lg bg-slate-100 dark:bg-white/10 text-slate-600"
                       >
                         <Power className="h-3.5 w-3.5" />
                       </button>
                       <button
                         onClick={() => handleOpenEditCourse(course)}
-                        className="p-1.5 rounded-lg bg-slate-100 dark:bg-[#1E1E28] text-slate-600"
+                        className="p-1.5 rounded-lg bg-slate-100 dark:bg-white/10 text-slate-600"
                       >
                         <Edit3 className="h-3.5 w-3.5" />
                       </button>
@@ -742,7 +742,7 @@ export function AdminCoursesPage() {
               return (
                 <div
                   key={cat.id}
-                  className="bg-white dark:bg-[#13131A] p-5 rounded-2xl border border-slate-200/80 dark:border-[#2A2A35] shadow-xs flex flex-col justify-between space-y-3"
+                  className="card p-5 rounded-2xl shadow-xs flex flex-col justify-between space-y-3"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
@@ -765,7 +765,7 @@ export function AdminCoursesPage() {
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => handleOpenEditCat(cat)}
-                        className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-[#1E1E28] text-slate-600 cursor-pointer"
+                        className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-600 cursor-pointer"
                         title="تعديل التصنيف"
                       >
                         <Edit3 className="h-3.5 w-3.5" />
@@ -833,14 +833,14 @@ export function AdminCoursesPage() {
                 placeholder="مثال: الذكاء الاصطناعي، البرمجة، التسويق..."
                 value={formCategoryName}
                 onChange={(e) => setFormCategoryName(e.target.value)}
-                className="w-full px-3 py-2 text-xs sm:text-sm rounded-xl border border-slate-200 dark:border-[#2A2A35] bg-slate-50 dark:bg-[#181820]"
+                className="w-full px-3 py-2 text-xs sm:text-sm rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--foreground)]"
                 required
               />
               <select
                 onChange={(e) => {
                   if (e.target.value) setFormCategoryName(e.target.value);
                 }}
-                className="px-3 py-2 text-xs font-bold rounded-xl border border-slate-200 dark:border-[#2A2A35] bg-slate-50 dark:bg-[#181820] text-slate-600"
+                className="px-3 py-2 text-xs font-bold rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--foreground)]"
               >
                 <option value="">اختر من القائمة</option>
                 {categories.map((c) => (
@@ -919,7 +919,7 @@ export function AdminCoursesPage() {
             ]}
           />
 
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-[#242430]">
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-[var(--border-subtle)]">
             <Button
               type="button"
               variant="outline"
@@ -987,7 +987,7 @@ export function AdminCoursesPage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-[#242430]">
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-[var(--border-subtle)]">
             <Button
               type="button"
               variant="outline"
@@ -1090,7 +1090,7 @@ export function AdminCoursesPage() {
                 )}
               </div>
             ) : (
-              <div className="max-h-96 overflow-y-auto divide-y divide-slate-100 dark:divide-[#242430] border border-slate-200/80 dark:border-[#2A2A35] rounded-2xl bg-white dark:bg-[#13131A]">
+              <div className="max-h-96 overflow-y-auto divide-y divide-[var(--border-subtle)] card rounded-2xl">
                 {courseLessons.map((lesson) => (
                   <div
                     key={lesson.id}
@@ -1120,7 +1120,7 @@ export function AdminCoursesPage() {
                         href={`https://www.youtube.com/watch?v=${lesson.youtubeVideoId}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="p-1.5 rounded-lg bg-slate-100 dark:bg-[#1E1E28] text-slate-600 hover:text-red-600"
+                        className="p-1.5 rounded-lg bg-slate-100 dark:bg-white/10 text-slate-600 hover:text-red-600"
                         title="مشاهدة على YouTube"
                       >
                         <ExternalLink className="h-3.5 w-3.5" />

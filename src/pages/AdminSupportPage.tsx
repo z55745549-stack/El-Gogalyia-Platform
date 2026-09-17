@@ -181,7 +181,7 @@ export function AdminSupportPage() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-[#181820] border border-slate-200 dark:border-[#2A2A35] text-slate-800 dark:text-slate-200 focus:outline-none"
+            className="px-3 py-2 rounded-xl text-xs bg-[var(--surface-elevated)] border border-[var(--border-subtle)] text-[var(--foreground)] focus:outline-hidden"
           >
             <option value="all">كافة الحالات</option>
             <option value="open">مفتوحة فقط</option>
@@ -195,7 +195,7 @@ export function AdminSupportPage() {
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-[#181820] border border-slate-200 dark:border-[#2A2A35] text-slate-800 dark:text-slate-200 focus:outline-none"
+            className="px-3 py-2 rounded-xl text-xs bg-[var(--surface-elevated)] border border-[var(--border-subtle)] text-[var(--foreground)] focus:outline-hidden"
           >
             <option value="all">جميع الأقسام</option>
             <option value="technical">مشاكل تقنية</option>
@@ -210,7 +210,7 @@ export function AdminSupportPage() {
           <select
             value={assignmentFilter}
             onChange={(e) => setAssignmentFilter(e.target.value as any)}
-            className="px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-[#181820] border border-slate-200 dark:border-[#2A2A35] text-slate-800 dark:text-slate-200 focus:outline-none"
+            className="px-3 py-2 rounded-xl text-xs bg-[var(--surface-elevated)] border border-[var(--border-subtle)] text-[var(--foreground)] focus:outline-hidden"
           >
             <option value="all">جميع التكليفات</option>
             <option value="unassigned">غير مسندة لمشرف</option>
@@ -220,7 +220,7 @@ export function AdminSupportPage() {
       </div>
 
       {/* Tickets Table / List */}
-      <div className="card rounded-3xl bg-white dark:bg-[#130d29] border border-slate-200/90 dark:border-[#281e4b] overflow-hidden shadow-sm">
+      <div className="card rounded-2xl overflow-hidden shadow-xs">
         {loading ? (
           <div className="p-8">
             <SkeletonCard />

@@ -97,7 +97,7 @@ export function MyDiscountsPage() {
             placeholder="ابحث باسم الخصم أو كود القسيمة..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pr-10 pl-4 py-2 text-xs sm:text-sm rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-slate-800 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-[var(--brand-primary)]"
+            className="w-full pr-10 pl-4 py-2 text-xs sm:text-sm rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-hidden focus:ring-2 focus:ring-[var(--brand-primary)]"
           />
         </div>
 
@@ -115,7 +115,7 @@ export function MyDiscountsPage() {
                 'px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer',
                 statusFilter === tab.id
                   ? 'btn-primary shadow-xs'
-                  : 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+                  : 'bg-[var(--surface-elevated)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] border border-[var(--border-subtle)]'
               )}
             >
               {tab.label} ({tab.count})
@@ -181,7 +181,7 @@ export function MyDiscountsPage() {
                 )}
               >
                 {/* Header Strip with Discount Value */}
-                <div className="p-4 bg-slate-50 dark:bg-white/[0.03] border-b border-slate-100 dark:border-white/5 flex items-center justify-between">
+                <div className="p-4 bg-[var(--surface-elevated)] border-b border-[var(--border-subtle)] flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-black px-2.5 py-1 rounded-lg bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] dark:text-[var(--brand-accent)]">
                       {purchase.discountValue}
@@ -246,7 +246,7 @@ export function MyDiscountsPage() {
                   )}
 
                   {/* Bottom Actions */}
-                  <div className="pt-2 border-t border-slate-100 dark:border-white/5 flex items-center justify-between gap-2">
+                  <div className="pt-2 border-t border-[var(--border-subtle)] flex items-center justify-between gap-2">
                     <span className="text-[10px] font-mono text-slate-400">
                       ID: {purchase.id.substring(0, 12)}
                     </span>

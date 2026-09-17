@@ -671,7 +671,7 @@ export function CoursePlayerPage() {
 
         {/* ─── Right Column: Lesson Playlist (Desktop) ─── */}
         <div className="hidden lg:block space-y-4">
-          <div className="bg-white dark:bg-[#13131A] rounded-2xl border border-slate-200/80 dark:border-[#2A2A35] shadow-xs flex flex-col h-[640px] sticky top-20">
+          <div className="card rounded-2xl shadow-xs flex flex-col h-[640px] sticky top-20">
             {/* Playlist Header */}
             <div className="p-4 border-b border-slate-100 dark:border-white/5">
               <div className="flex items-center justify-between">
