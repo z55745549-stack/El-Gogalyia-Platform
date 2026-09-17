@@ -86,36 +86,28 @@ function GogalyiaLogoMark() {
           width="480"
           height="480"
           rx="124"
-          fill={isDark ? '#090B10' : '#FFFFFF'}
+          fill={isDark ? '#090B11' : '#FFFFFF'}
           stroke={isDark ? '#1E2330' : '#E2E8F0'}
           strokeWidth="6"
           className="transition-colors duration-300"
         />
-        <g transform="translate(256, 256)">
-          <path
-            d="M 64 -148 C 14 -148 -44 -148 -96 -118 C -152 -84 -180 -24 -180 40 C -180 110 -144 168 -88 196 C -36 222 36 224 94 196 C 152 168 184 116 184 48 L 184 12 L 0 12 L 0 56 L 132 56 C 128 92 104 126 66 148 C 28 168 -24 168 -62 148 C -102 126 -126 84 -126 38 C -126 -10 -106 -52 -70 -74 C -36 -96 6 -96 46 -76 L 76 -120 C 46 -138 6 -148 64 -148 Z"
-            fill={isDark ? '#FFFFFF' : '#0F172A'}
-            className="transition-colors duration-300"
-          />
-          <path
-            d="M 80 -148 L 174 -148 L 134 -88 L 44 -88 Z"
-            fill={isDark ? '#818CF8' : '#2563EB'}
-            className="transition-colors duration-300"
-          />
-          <polygon
-            points="0,12 52,-56 184,-56 132,12"
-            fill={isDark ? '#38BDF8' : '#4F46E5'}
-            opacity="0.9"
-            className="transition-colors duration-300"
-          />
-          <circle
-            cx="64"
-            cy="-22"
-            r="16"
-            fill={isDark ? '#60A5FA' : '#3B82F6'}
-            className="transition-colors duration-300"
-          />
-        </g>
+        <path
+          d="M 352 160 A 136 136 0 1 0 352 352 L 352 256"
+          stroke={isDark ? '#FFFFFF' : '#0F172A'}
+          strokeWidth="56"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          fill="none"
+          className="transition-colors duration-300"
+        />
+        <path
+          d="M 352 256 L 244 256"
+          stroke={isDark ? '#38BDF8' : '#2563EB'}
+          strokeWidth="56"
+          strokeLinecap="round"
+          fill="none"
+          className="transition-colors duration-300"
+        />
       </svg>
     </div>
   );

@@ -2,45 +2,35 @@
   <style>
     <![CDATA[
     :root {
-      --bg-fill: #FFFFFF;
-      --bg-stroke: #E2E8F0;
-      --monogram-primary: #0F172A;
-      --monogram-secondary: #2563EB;
-      --monogram-accent: #4F46E5;
-      --center-node: #3B82F6;
+      --tile-bg: #FFFFFF;
+      --tile-stroke: #E2E8F0;
+      --g-primary: #0F172A;
+      --g-accent: #2563EB;
     }
 
     @media (prefers-color-scheme: dark) {
       :root {
-        --bg-fill: #090B10;
-        --bg-stroke: #1E2330;
-        --monogram-primary: #FFFFFF;
-        --monogram-secondary: #818CF8;
-        --monogram-accent: #38BDF8;
-        --center-node: #60A5FA;
+        --tile-bg: #090B11;
+        --tile-stroke: #1E2330;
+        --g-primary: #FFFFFF;
+        --g-accent: #38BDF8;
       }
     }
 
-    .tile-bg {
-      fill: var(--bg-fill);
-      stroke: var(--bg-stroke);
+    .tile-rect {
+      fill: var(--tile-bg);
+      stroke: var(--tile-stroke);
     }
-    .glyph-primary {
-      fill: var(--monogram-primary);
+    .g-body {
+      stroke: var(--g-primary);
     }
-    .glyph-secondary {
-      fill: var(--monogram-secondary);
-    }
-    .glyph-accent {
-      fill: var(--monogram-accent);
-    }
-    .glyph-node {
-      fill: var(--center-node);
+    .g-bar {
+      stroke: var(--g-accent);
     }
     ]]>
   </style>
 
-  <!-- 1. Adaptive Squircle Tile Container -->
+  <!-- 1. Clean Obsidian / Ceramic Adaptive Tile -->
   <rect
     x="24"
     y="24"
@@ -48,58 +38,29 @@
     height="464"
     rx="124"
     ry="124"
-    class="tile-bg"
+    class="tile-rect"
     stroke-width="4"
   />
 
-  <!-- 2. The Minimalist Executive G Nexus Monogram -->
-  <g transform="translate(256, 256)">
-    <!-- Outer Sweep: Main Structural Body of G -->
-    <path
-      d="M 64 -148 
-         C 14 -148 -44 -148 -96 -118 
-         C -152 -84 -180 -24 -180 40 
-         C -180 110 -144 168 -88 196 
-         C -36 222 36 224 94 196 
-         C 152 168 184 116 184 48 
-         L 184 12 
-         L 0 12 
-         L 0 56 
-         L 132 56 
-         C 128 92 104 126 66 148 
-         C 28 168 -24 168 -62 148 
-         C -102 126 -126 84 -126 38 
-         C -126 -10 -106 -52 -70 -74 
-         C -36 -96 6 -96 46 -76 
-         L 76 -120 
-         C 46 -138 6 -148 64 -148 
-         Z"
-      class="glyph-primary"
-    />
+  <!-- 2. Pure Mathematical Modern 'G' Monogram -->
+  <!-- Outer Circular Sweep -->
+  <path
+    d="M 352 160 
+       A 136 136 0 1 0 352 352 
+       L 352 256"
+    class="g-body"
+    stroke-width="56"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    fill="none"
+  />
 
-    <!-- Dynamic Aerodynamic Blade -->
-    <path
-      d="M 80 -148 
-         L 174 -148 
-         L 134 -88 
-         L 44 -88 
-         Z"
-      class="glyph-secondary"
-    />
-
-    <!-- Forward-Leaning Center Core Vector -->
-    <polygon
-      points="0,12 52,-56 184,-56 132,12"
-      class="glyph-accent"
-      opacity="0.9"
-    />
-
-    <!-- Precision Core Node -->
-    <circle
-      cx="64"
-      cy="-22"
-      r="16"
-      class="glyph-node"
-    />
-  </g>
+  <!-- Precision Horizontal Crossbeam -->
+  <path
+    d="M 352 256 L 244 256"
+    class="g-bar"
+    stroke-width="56"
+    stroke-linecap="round"
+    fill="none"
+  />
 </svg>
