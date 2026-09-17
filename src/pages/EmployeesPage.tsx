@@ -20,6 +20,7 @@ import { subscribeBans, createBan, endBan, getActiveBan } from '@/lib/bans';
 import { generateEmployeeCode } from '@/lib/attendance';
 import { canManageRole, canManageUser, isTopTierRole, getRoleLabel, getRoleColor, isAdminRole } from '@/utils/permissions';
 import { formatFullName, hasArabic, hasUnlimitedCoins, cn } from '@/utils';
+import { logActivity } from '@/lib/database-service';
 
 
 
@@ -228,6 +229,17 @@ export function EmployeesPage() {
         return;
       }
 
+      await logActivity({
+        actor: userProfile?.email || userProfile?.username || 'admin',
+        actorName: userProfile?.displayName || userProfile?.username || 'المشرف',
+        actorPhoto: userProfile?.photoURL,
+        action: 'user.created',
+        targetType: 'user',
+        targetId: generatedUid,
+        targetName: formatFullName(formDisplayName.trim()),
+        metadata: { role: getRoleLabel(formRole), committee: isTopLeadership ? 'بدون لجنة' : (committee?.name || 'بدون لجنة') },
+      });
+
       toast.success(`تم إضافة ${getRoleLabel(formRole)} (${formDisplayName}) بنجاح!`);
       setShowAddModal(false);
       resetForm();
@@ -294,6 +306,17 @@ export function EmployeesPage() {
       const updated = localUsers.map((u) => (u.uid === selectedUser.uid ? { ...u, ...updates } : u));
       localStorage.setItem('elgogalyia_local_users', JSON.stringify(updated));
       window.dispatchEvent(new Event('elgogalyia_data_change'));
+
+      await logActivity({
+        actor: userProfile?.email || userProfile?.username || 'admin',
+        actorName: userProfile?.displayName || userProfile?.username || 'المشرف',
+        actorPhoto: userProfile?.photoURL,
+        action: 'user.updated',
+        targetType: 'user',
+        targetId: selectedUser.uid,
+        targetName: formatFullName(formDisplayName.trim()),
+        metadata: { role: getRoleLabel(formRole), status: formStatus },
+      });
 
       toast.success('تم تحديث بيانات الموظف بنجاح!');
       setShowEditModal(false);
@@ -369,6 +392,17 @@ export function EmployeesPage() {
       localStorage.setItem('elgogalyia_local_users', JSON.stringify(updated));
       window.dispatchEvent(new Event('elgogalyia_data_change'));
 
+      await logActivity({
+        actor: userProfile?.email || userProfile?.username || 'admin',
+        actorName: userProfile?.displayName || userProfile?.username || 'المشرف',
+        actorPhoto: userProfile?.photoURL,
+        action: 'user.status_changed',
+        targetType: 'user',
+        targetId: user.uid,
+        targetName: formatFullName(user.displayName),
+        metadata: { newStatus: nextStatus },
+      });
+
       toast.success(nextStatus === 'suspended' ? 'تم تعطيل حساب الموظف.' : 'تم تفعيل حساب الموظف.');
     } catch (e) {
       toast.error('فشل تغيير حالة الموظف.');
@@ -396,6 +430,16 @@ export function EmployeesPage() {
       localStorage.setItem('elgogalyia_local_users', JSON.stringify(filtered));
       window.dispatchEvent(new Event('elgogalyia_data_change'));
 
+      await logActivity({
+        actor: userProfile?.email || userProfile?.username || 'admin',
+        actorName: userProfile?.displayName || userProfile?.username || 'المشرف',
+        actorPhoto: userProfile?.photoURL,
+        action: 'user.removed',
+        targetType: 'user',
+        targetId: selectedUser.uid,
+        targetName: formatFullName(selectedUser.displayName),
+      });
+
       toast.success('تم حذف حساب الموظف بنجاح (مع الحفاظ على سجلات المهام والـ O Coins التاريخية).');
       setShowDeleteModal(false);
       resetForm();
@@ -411,7 +455,18 @@ export function EmployeesPage() {
     if (!newCommitteeName.trim()) { toast.error('اسم اللجنة مطلوب'); return; }
     setSubmitting(true);
     try {
-      await createCommittee({ name: newCommitteeName.trim(), description: newCommitteeDesc.trim(), color: newCommitteeColor }, userProfile?.username || 'admin');
+      const created = await createCommittee({ name: newCommitteeName.trim(), description: newCommitteeDesc.trim(), color: newCommitteeColor }, userProfile?.username || 'admin');
+      
+      await logActivity({
+        actor: userProfile?.email || userProfile?.username || 'admin',
+        actorName: userProfile?.displayName || userProfile?.username || 'المشرف',
+        actorPhoto: userProfile?.photoURL,
+        action: 'committee.created',
+        targetType: 'committee',
+        targetId: (typeof created === 'string' ? created : (created as any)?.id) || 'new_comm',
+        targetName: newCommitteeName.trim(),
+      });
+
       toast.success(`تم إنشاء اللجنة "${newCommitteeName}" بنجاح`);
       setNewCommitteeName(''); setNewCommitteeDesc(''); setNewCommitteeColor('#7C00FE');
       setShowCommitteeModal(false);
@@ -524,6 +579,17 @@ export function EmployeesPage() {
         ocoins_balance: isUnlimitedAssignedRole ? null : (emp.oCoinsBalance ?? 0),
         updated_at: new Date().toISOString(),
       });
+      await logActivity({
+        actor: userProfile?.email || userProfile?.username || 'admin',
+        actorName: userProfile?.displayName || userProfile?.username || 'المشرف',
+        actorPhoto: userProfile?.photoURL,
+        action: 'user.approved',
+        targetType: 'user',
+        targetId: emp.uid,
+        targetName: formatFullName(emp.displayName),
+        metadata: { role: getRoleLabel(assignedRole), committee: commName },
+      });
+
       toast.success(`تم قبول واعتماد ${emp.displayName} كـ (${getRoleLabel(assignedRole)}) في (${commName}) بنجاح! 🎉`);
     } catch (err: any) {
       toast.error('حدث خطأ أثناء اعتماد الحساب.');
@@ -533,13 +599,37 @@ export function EmployeesPage() {
   const handleRejectPending = async (emp: UserProfile) => {
     try {
       await deleteDoc(doc(db, 'users', emp.uid));
+
+      await logActivity({
+        actor: userProfile?.email || userProfile?.username || 'admin',
+        actorName: userProfile?.displayName || userProfile?.username || 'المشرف',
+        actorPhoto: userProfile?.photoURL,
+        action: 'user.rejected',
+        targetType: 'user',
+        targetId: emp.uid,
+        targetName: formatFullName(emp.displayName),
+      });
+
       toast.success(`تم رفض وحذف طلب ${emp.displayName}.`);
     } catch (err: any) {
       toast.error('حدث خطأ أثناء رفض الطلب.');
     }
   };
 
-  const pendingMembers = employees.filter((e) => e.status === 'pending');
+  // Scoped pending requests: HEAD only sees requests from candidates who chose their committee
+  const pendingMembers = employees.filter((e) => {
+    if (e.status !== 'pending') return false;
+    if (isHeadRole) {
+      const myCommId = userProfile?.committeeId;
+      const myCommName = (userProfile?.committeeName || '').trim().toLowerCase();
+      const empCommId = e.committeeId;
+      const empCommName = (e.committeeName || '').trim().toLowerCase();
+      const matchId = Boolean(myCommId && empCommId === myCommId);
+      const matchName = Boolean(myCommName && empCommName === myCommName);
+      return matchId || matchName;
+    }
+    return true;
+  });
   const approvedMembers = employees.filter((e) => e.status !== 'pending');
 
   const currentList = viewTab === 'pending' ? pendingMembers : approvedMembers;
@@ -704,9 +794,11 @@ export function EmployeesPage() {
               {filteredEmployees.map((emp) => {
                 const currentRole = pendingRoles[emp.uid] || emp.role || 'member';
                 const isLeaderRole = currentRole === 'lead' || currentRole === 'co_lead';
-                const selectedComm = pendingCommittees[emp.uid] !== undefined
-                  ? pendingCommittees[emp.uid]
-                  : (isLeaderRole ? 'none' : (emp.committeeId || (emp.committeeName === 'بدون لجنة' ? 'none' : (emp.committeeName ? emp.committeeId || 'none' : 'none'))));
+                const selectedComm = isHeadRole && userProfile?.committeeId
+                  ? userProfile.committeeId
+                  : (pendingCommittees[emp.uid] !== undefined
+                    ? pendingCommittees[emp.uid]
+                    : (isLeaderRole ? 'none' : (emp.committeeId || (emp.committeeName === 'بدون لجنة' ? 'none' : (emp.committeeName ? emp.committeeId || 'none' : 'none')))));
 
                 return (
                   <div
@@ -750,21 +842,30 @@ export function EmployeesPage() {
                         </label>
                         <select
                           value={selectedComm}
+                          disabled={isHeadRole}
                           onChange={(e) => setPendingCommittees({ ...pendingCommittees, [emp.uid]: e.target.value })}
-                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/15 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 cursor-pointer focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/15 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 cursor-pointer focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-85 disabled:cursor-not-allowed"
                         >
-                          <option value="none">بدون لجنة (قيادة / عام)</option>
-                          {committees.length > 0
-                            ? committees.map((c) => (
-                                <option key={c.id} value={c.id}>
-                                  {c.name}
-                                </option>
-                              ))
-                            : DEFAULT_COMMITTEES.map((c: any) => (
-                                <option key={c.id} value={c.id}>
-                                  {c.name}
-                                </option>
-                              ))}
+                          {isHeadRole ? (
+                            <option value={userProfile?.committeeId || 'none'}>
+                              {userProfile?.committeeName || 'لجنتك المعتمدة'}
+                            </option>
+                          ) : (
+                            <>
+                              <option value="none">بدون لجنة (قيادة / عام)</option>
+                              {committees.length > 0
+                                ? committees.map((c) => (
+                                    <option key={c.id} value={c.id}>
+                                      {c.name}
+                                    </option>
+                                  ))
+                                : DEFAULT_COMMITTEES.map((c: any) => (
+                                    <option key={c.id} value={c.id}>
+                                      {c.name}
+                                    </option>
+                                  ))}
+                            </>
+                          )}
                         </select>
                       </div>
 

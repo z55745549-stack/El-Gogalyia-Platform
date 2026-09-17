@@ -163,7 +163,7 @@ const KNOWN_COLUMNS: Record<string, Set<string>> = {
   course_categories: new Set(['id', 'name', 'slug', 'description', 'color', 'course_count', 'status', 'created_at', 'updated_at', 'raw_data']),
   course_lessons: new Set(['id', 'course_id', 'title', 'description', 'duration', 'video_url', 'youtube_video_id', 'position', 'is_free', 'status', 'created_at', 'updated_at', 'raw_data']),
   course_progress: new Set(['id', 'user_id', 'course_id', 'lesson_id', 'completed', 'completed_at', 'progress_percent', 'last_lesson_id', 'updated_at', 'raw_data']),
-  activity_logs: new Set(['id', 'actor_id', 'actor_name', 'actor_photo', 'action', 'target_type', 'target_id', 'target_name', 'metadata', 'details', 'created_at', 'raw_data']),
+  activity_logs: new Set(['id', 'actor', 'actor_id', 'actor_name', 'actor_photo', 'action', 'target_type', 'target_id', 'target_name', 'metadata', 'details', 'created_at', 'raw_data']),
   notifications: new Set(['id', 'recipient_email', 'recipient_uid', 'type', 'title', 'message', 'task_id', 'ticket_id', 'related_entity_type', 'related_entity_id', 'action_url', 'read', 'created_at', 'raw_data']),
   opportunities: new Set(['id', 'title', 'description', 'provider', 'requirements', 'application_url', 'deadline', 'category', 'status', 'is_team_exclusive', 'company', 'type', 'location', 'location_type', 'url', 'tags', 'created_by', 'created_by_name', 'is_active', 'created_at', 'updated_at', 'raw_data']),
   committees: new Set(['id', 'name', 'code', 'description', 'leader_id', 'leader_name', 'member_count', 'icon', 'color', 'created_at', 'raw_data']),
@@ -603,14 +603,32 @@ export async function setDoc(docRef: DocRef, data: any, options?: { merge?: bool
       payload.is_team_exclusive = Boolean(finalData.isTeamExclusive);
     }
   } else if (table === 'activity_logs') {
+    if (!payload.actor_id && (finalData.actorId || finalData.actor_id || finalData.actor)) {
+      payload.actor_id = finalData.actorId || finalData.actor_id || finalData.actor;
+    }
+    if (!payload.actor && (finalData.actor || finalData.actor_id || finalData.actorId)) {
+      payload.actor = finalData.actor || finalData.actor_id || finalData.actorId;
+    }
+    if (!payload.actor_name && (finalData.actorName || finalData.actor_name)) {
+      payload.actor_name = finalData.actorName || finalData.actor_name;
+    }
     if (!payload.target_type && (finalData.targetType || finalData.target_type)) {
       payload.target_type = finalData.targetType || finalData.target_type;
+    }
+    if (!payload.target_id && (finalData.targetId || finalData.target_id)) {
+      payload.target_id = finalData.targetId || finalData.target_id;
+    }
+    if (!payload.target_name && (finalData.targetName || finalData.target_name)) {
+      payload.target_name = finalData.targetName || finalData.target_name;
     }
     if (!payload.actor_photo && (finalData.actorPhoto || finalData.actor_photo)) {
       payload.actor_photo = finalData.actorPhoto || finalData.actor_photo;
     }
     if (!payload.metadata && finalData.metadata) {
       payload.metadata = typeof finalData.metadata === 'string' ? finalData.metadata : JSON.stringify(finalData.metadata);
+    }
+    if (!payload.created_at) {
+      payload.created_at = new Date().toISOString();
     }
   }
 

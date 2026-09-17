@@ -17,6 +17,7 @@ import type { UserProfile, Permission } from '@/types';
 import { isAdminRole } from '@/utils/permissions';
 import { authenticateWithDevice } from '@/lib/webauthn';
 import { formatFullName, hasUnlimitedCoins } from '@/utils';
+import { logActivity } from '@/lib/database-service';
 
 // -------------------------------------------------------------------
 // Login Rate Limiter (In-memory + Session scoped protection)
@@ -506,6 +507,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     saveSession(safeUserProfile);
     setUser({ uid: safeUserProfile.uid, displayName: safeUserProfile.displayName });
     setUserProfile(safeUserProfile);
+
+    void logActivity({
+      actor: {
+        id: safeUserProfile.uid,
+        name: safeUserProfile.displayName || safeUserProfile.username,
+        role: safeUserProfile.role,
+      },
+      action: 'auth.login',
+      targetType: 'auth',
+      targetId: safeUserProfile.uid,
+      targetName: safeUserProfile.displayName || safeUserProfile.username,
+      details: `قام المستخدم ${safeUserProfile.displayName || safeUserProfile.username} بتسجيل الدخول إلى المنصة.`,
+    });
+
     return true;
   }, []);
 
@@ -533,6 +548,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     saveSession(safeProfile);
     setUser({ uid: safeProfile.uid, displayName: safeProfile.displayName });
     setUserProfile(safeProfile);
+
+    void logActivity({
+      actor: {
+        id: safeProfile.uid,
+        name: safeProfile.displayName || safeProfile.username,
+        role: safeProfile.role,
+      },
+      action: 'auth.login',
+      targetType: 'auth',
+      targetId: safeProfile.uid,
+      targetName: safeProfile.displayName || safeProfile.username,
+      details: `تسجيل دخول بيومتري / مفتاح أمان للمستخدم ${safeProfile.displayName || safeProfile.username}.`,
+    });
+
     return { success: true };
   }, []);
 
@@ -545,6 +574,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser({ uid: safeProfile.uid, displayName: safeProfile.displayName });
     setUserProfile(safeProfile);
     setLoading(false);
+
+    void logActivity({
+      actor: {
+        id: safeProfile.uid,
+        name: safeProfile.displayName || safeProfile.username,
+        role: safeProfile.role,
+      },
+      action: 'auth.login',
+      targetType: 'auth',
+      targetId: safeProfile.uid,
+      targetName: safeProfile.displayName || safeProfile.username,
+      details: `إتمام التحقق بخطوتين (2FA) وتسجيل الدخول للمستخدم ${safeProfile.displayName || safeProfile.username}.`,
+    });
+
     return true;
   }, []);
 
@@ -590,11 +633,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // signOut
   // -------------------------------------------------------------------
   const signOut = useCallback(async () => {
+    if (userProfile) {
+      void logActivity({
+        actor: {
+          id: userProfile.uid,
+          name: userProfile.displayName || userProfile.username,
+          role: userProfile.role,
+        },
+        action: 'auth.logout',
+        targetType: 'auth',
+        targetId: userProfile.uid,
+        targetName: userProfile.displayName || userProfile.username,
+        details: `قام المستخدم ${userProfile.displayName || userProfile.username} بتسجيل الخروج من المنصة.`,
+      });
+    }
     clearSession();
     setUser(null);
     setUserProfile(null);
     setUnauthorized(false);
-  }, []);
+  }, [userProfile]);
 
   // -------------------------------------------------------------------
   // hasPermission
@@ -704,6 +761,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       logError('registerMember insert', insErr);
       throw new Error(insErr.message || 'حدث خطأ أثناء إرسال طلب الانضمام.');
     }
+
+    void logActivity({
+      actor: {
+        id: genId,
+        name: nameClean,
+        role: 'member',
+      },
+      action: 'auth.join_request',
+      targetType: 'user',
+      targetId: genId,
+      targetName: nameClean,
+      details: `طلب انضمام جديد للجنة "${newProfile.committee_name}" من ${nameClean} (${emailClean}).`,
+      metadata: {
+        committeeId: newProfile.committee_id,
+        committeeName: newProfile.committee_name,
+        email: emailClean,
+        employeeCode,
+      },
+    });
   }, []);
 
   return (

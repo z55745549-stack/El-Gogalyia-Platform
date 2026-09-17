@@ -46,20 +46,49 @@ function isUnlimitedRole(role: string | undefined): boolean {
 // ─── Activity Logs ─────────────────────────────────────────────────────────────
 
 export async function logActivity(logData: {
-  actor: string;
-  actorName: string;
+  actor: string | { id?: string; name?: string; role?: string };
+  actorName?: string;
   actorPhoto?: string;
-  action: ActivityLog['action'];
-  targetType: ActivityLog['targetType'];
+  action: ActivityLog['action'] | string;
+  targetType: ActivityLog['targetType'] | string;
   targetId: string;
   targetName: string;
+  details?: string;
   metadata?: Record<string, any>;
 }) {
+  const actorId = typeof logData.actor === 'string' ? logData.actor : (logData.actor?.id || 'system');
+  const actorName = logData.actorName || (typeof logData.actor === 'object' ? logData.actor?.name : '') || 'مستخدم النظام';
+
+  const newLog = {
+    id: 'log_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
+    ...logData,
+    actorId,
+    actor: actorId,
+    actorName,
+    actorPhoto: logData.actorPhoto || '',
+    action: logData.action as ActivityLog['action'],
+    targetType: logData.targetType as ActivityLog['targetType'],
+    targetId: logData.targetId,
+    targetName: logData.targetName,
+    details: logData.details || '',
+    metadata: logData.metadata || {},
+    createdAt: new Date().toISOString(),
+  };
+
+  // 1. Local real-time cache so operations show up immediately
+  try {
+    const existing = JSON.parse(localStorage.getItem('elgogalyia_activity_logs') || '[]');
+    const updated = [newLog, ...existing].slice(0, 300);
+    localStorage.setItem('elgogalyia_activity_logs', JSON.stringify(updated));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('elgogalyia_activity_logged', { detail: newLog }));
+    }
+  } catch (e) {}
+
+  // 2. Persist to Supabase
   try {
     await addDoc(collection(db, 'activityLogs'), {
-      ...logData,
-      actorPhoto: logData.actorPhoto || '',
-      metadata: logData.metadata || {},
+      ...newLog,
       createdAt: serverTimestamp(),
     });
   } catch (err) {

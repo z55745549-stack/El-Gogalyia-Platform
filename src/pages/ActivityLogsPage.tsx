@@ -8,32 +8,55 @@ import { formatDateTime } from '@/utils';
 import type { ActivityLog } from '@/types';
 
 const ACTION_LABELS: Record<string, { label: string; color: string }> = {
+  // Authentication & Join Requests
+  'auth.login': { label: 'تسجيل دخول للنظام', color: 'text-emerald-600 bg-emerald-500/10 border-emerald-500/20' },
+  'auth.join_request': { label: 'تقديم طلب انضمام جديد', color: 'text-amber-600 bg-amber-500/10 border-amber-500/20' },
+  // Tasks
   'task.created': { label: 'إنشاء مهمة جديدة', color: 'text-blue-600 bg-blue-500/10 border-blue-500/20' },
   'task.updated': { label: 'تعديل بيانات مهمة', color: 'text-indigo-600 bg-indigo-500/10 border-indigo-500/20' },
   'task.deleted': { label: 'حذف / أرشفة مهمة', color: 'text-rose-600 bg-rose-500/10 border-rose-500/20' },
-  'task.submitted': { label: 'تسليم عمل من موظف', color: 'text-amber-600 bg-amber-500/10 border-amber-500/20' },
+  'task.submitted': { label: 'تسليم عمل من عضو', color: 'text-amber-600 bg-amber-500/10 border-amber-500/20' },
   'task.approved': { label: 'اعتماد تسليم ومكافأة كوينز', color: 'text-emerald-600 bg-emerald-500/10 border-emerald-500/20' },
   'task.rejected': { label: 'رفض تسليم وإعادة للمراجعة', color: 'text-rose-600 bg-rose-500/10 border-rose-500/20' },
   'task.status_changed': { label: 'تغيير حالة المهمة', color: 'text-blue-600 bg-blue-500/10 border-blue-500/20' },
+  // O-Coins
   'ocoin.awarded': { label: 'منح O Coins', color: 'text-amber-600 bg-amber-500/10 border-amber-500/20' },
   'ocoin.manual_add': { label: 'إضافة كوينز يدوية', color: 'text-emerald-600 bg-emerald-500/10 border-emerald-500/20' },
   'ocoin.manual_remove': { label: 'خصم كوينز', color: 'text-rose-600 bg-rose-500/10 border-rose-500/20' },
   'ocoin.discount_purchase': { label: 'شراء خصم بكوينز', color: 'text-purple-600 bg-purple-500/10 border-purple-500/20' },
-  'user.created': { label: 'إضافة مستخدم جديد', color: 'text-blue-600 bg-blue-500/10 border-blue-500/20' },
+  // Users & Members
+  'user.created': { label: 'إضافة عضو جديد', color: 'text-blue-600 bg-blue-500/10 border-blue-500/20' },
+  'user.approved': { label: 'قبول واعتماد عضو جديد', color: 'text-emerald-600 bg-emerald-500/10 border-emerald-500/20' },
+  'user.rejected': { label: 'رفض طلب انضمام', color: 'text-rose-600 bg-rose-500/10 border-rose-500/20' },
+  'user.updated': { label: 'تعديل بيانات العضو', color: 'text-indigo-600 bg-indigo-500/10 border-indigo-500/20' },
   'user.role_changed': { label: 'تعديل رتبة المستخدم', color: 'text-purple-600 bg-purple-500/10 border-purple-500/20' },
   'user.status_changed': { label: 'تغيير حالة الحساب', color: 'text-amber-600 bg-amber-500/10 border-amber-500/20' },
-  'user.removed': { label: 'إلغاء تفويض مستخدم', color: 'text-rose-600 bg-rose-500/10 border-rose-500/20' },
+  'user.removed': { label: 'إلغاء تفويض / حذف عضو', color: 'text-rose-600 bg-rose-500/10 border-rose-500/20' },
   'user.banned': { label: 'حظر وتعليق حساب', color: 'text-rose-600 bg-rose-500/10 border-rose-500/20' },
+  'user.unbanned': { label: 'رفع الحظر عن حساب', color: 'text-emerald-600 bg-emerald-500/10 border-emerald-500/20' },
+  // Committees & Broadcasts
+  'committee.created': { label: 'إنشاء لجنة جديدة', color: 'text-purple-600 bg-purple-500/10 border-purple-500/20' },
+  'broadcast.sent': { label: 'إذاعة تنبيه عام للمنظومة', color: 'text-cyan-600 bg-cyan-500/10 border-cyan-500/20' },
+  // Attendance
   'attendance.session_created': { label: 'بدء جلسة حضور QR', color: 'text-teal-600 bg-teal-500/10 border-teal-500/20' },
   'attendance.check_in': { label: 'تسجيل حضور موظف', color: 'text-emerald-600 bg-emerald-500/10 border-emerald-500/20' },
+  // Opportunities, Discounts, Courses, Support
+  'opportunity.created': { label: 'نشر فرصة جديدة', color: 'text-blue-600 bg-blue-500/10 border-blue-500/20' },
+  'discount.created': { label: 'إضافة عرض خصم جديد', color: 'text-purple-600 bg-purple-500/10 border-purple-500/20' },
+  'course.created': { label: 'نشر دورة تدريبية جديدة', color: 'text-emerald-600 bg-emerald-500/10 border-emerald-500/20' },
+  'ticket.created': { label: 'فتح تذكرة دعم فني', color: 'text-amber-600 bg-amber-500/10 border-amber-500/20' },
+  'ticket.replied': { label: 'رد على تذكرة دعم', color: 'text-indigo-600 bg-indigo-500/10 border-indigo-500/20' },
+  'ticket.closed': { label: 'إغلاق تذكرة دعم', color: 'text-slate-600 bg-slate-500/10 border-slate-500/20' },
 };
 
 const FILTER_GROUPS = [
   { id: 'all', label: 'جميع العمليات' },
+  { id: 'auth', label: 'تسجيل الدخول والطلبات' },
   { id: 'task', label: 'إدارة المهام' },
   { id: 'ocoin', label: 'المعاملات المالية و O Coins' },
-  { id: 'user', label: 'المستخدمين والصلاحيات' },
+  { id: 'user', label: 'المستخدمين والأعضاء' },
   { id: 'attendance', label: 'الحضور والغياب' },
+  { id: 'committee', label: 'اللجان والتعميمات' },
 ];
 
 export function ActivityLogsPage() {
@@ -43,10 +66,41 @@ export function ActivityLogsPage() {
   const [typeFilter, setTypeFilter] = useState('all');
 
   useEffect(() => {
+    // 1. Instant paint from local cache
+    const getLocal = (): ActivityLog[] => {
+      try {
+        return JSON.parse(localStorage.getItem('elgogalyia_activity_logs') || '[]');
+      } catch {
+        return [];
+      }
+    };
+
+    const localList = getLocal();
+    if (localList.length > 0) {
+      setLogs(localList);
+      setLoading(false);
+    }
+
+    // 2. Real-time Supabase snapshot listener
     const unsub = onSnapshot(
       query(collection(db, 'activityLogs'), orderBy('createdAt', 'desc'), limit(200)),
       (snap) => {
-        setLogs(snap.docs.map((d) => ({ id: d.id, ...d.data() } as ActivityLog)));
+        const remote = snap.docs.map((d) => ({ id: d.id, ...d.data() } as ActivityLog));
+        const mergedMap = new Map<string, ActivityLog>();
+        // Add remote first
+        for (const r of remote) mergedMap.set(r.id, r);
+        // Add local
+        for (const l of getLocal()) {
+          if (!mergedMap.has(l.id)) mergedMap.set(l.id, l);
+        }
+
+        const mergedList = Array.from(mergedMap.values()).sort((a: any, b: any) => {
+          const tA = new Date(a.createdAt?.toDate?.() || a.createdAt || 0).getTime();
+          const tB = new Date(b.createdAt?.toDate?.() || b.createdAt || 0).getTime();
+          return tB - tA;
+        });
+
+        setLogs(mergedList);
         setLoading(false);
       },
       (err) => {
@@ -54,7 +108,18 @@ export function ActivityLogsPage() {
         setLoading(false);
       }
     );
-    return unsub;
+
+    // 3. Same-tab instant update event listener
+    const handleLocalUpdate = () => {
+      const updated = getLocal();
+      if (updated.length > 0) setLogs(updated);
+    };
+    window.addEventListener('elgogalyia_activity_logged', handleLocalUpdate);
+
+    return () => {
+      unsub();
+      window.removeEventListener('elgogalyia_activity_logged', handleLocalUpdate);
+    };
   }, []);
 
   const filtered = logs.filter((l) => {

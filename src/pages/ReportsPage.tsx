@@ -125,8 +125,10 @@ export function ReportsPage() {
     })
     .sort((a, b) => b.completed - a.completed || b.coins - a.coins);
 
-  // Top 3 Leaderboard
-  const topPerformers = employeeReports.slice(0, 3);
+  // Top 3 Leaderboard — Exclusively for regular members with completed tasks (> 0) or earned coins (> 0)
+  const topPerformers = employeeReports
+    .filter((r) => r.user.role === 'member' && (r.completed > 0 || r.coins > 0))
+    .slice(0, 3);
 
   const exportCSV = () => {
     const rows = [
@@ -334,14 +336,14 @@ export function ReportsPage() {
       </div>
 
       {/* Top Performers Podium */}
-      {topPerformers.length > 0 && (
+      {topPerformers.length > 0 ? (
         <div className="card p-6 rounded-2xl">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-extrabold text-[var(--text-primary)] flex items-center gap-2">
               <Crown className="h-4 w-4 text-amber-500" />
               لوحة شرف المتميزين (Top 3 Performers)
             </h2>
-            <span className="text-xs text-[var(--text-muted)]">الأعلى إنجازاً للتكليفات</span>
+            <span className="text-xs text-[var(--text-muted)]">الأعلى إنجازاً للتكليفات من الأعضاء</span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -373,6 +375,18 @@ export function ReportsPage() {
                 </div>
               );
             })}
+          </div>
+        </div>
+      ) : (
+        <div className="card p-5 rounded-2xl border border-dashed border-[var(--border-subtle)] bg-[var(--surface-elevated)]/30 flex items-center gap-3.5">
+          <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0 text-lg">
+            🏆
+          </div>
+          <div className="min-w-0 text-right">
+            <h4 className="text-xs sm:text-sm font-bold text-[var(--text-primary)]">لوحة شرف المتميزين للأعضاء (Top Performers)</h4>
+            <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
+              لوحة الشرف مخصصة للأعضاء فقط، وتعتلي المراكز الأولى تلقائياً فور إنجاز واعتماد أولى المهام وصرف مكافآت O-Coins.
+            </p>
           </div>
         </div>
       )}
