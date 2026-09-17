@@ -67,6 +67,12 @@ export function EmployeesPage() {
   const [banNote, setBanNote] = useState('');
   const [banDuration, setBanDuration] = useState<string>('7');
   const [banCustomEnd, setBanCustomEnd] = useState('');
+  // Unban confirmation
+  const [showUnbanModal, setShowUnbanModal] = useState(false);
+  const [unbanTarget, setUnbanTarget] = useState<UserProfile | null>(null);
+  // Status toggle (Deactivate / Activate)
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [statusTarget, setStatusTarget] = useState<UserProfile | null>(null);
 
   // Top-tier check: lead & co_lead bypass all confirmations
   const myRole = userProfile?.role ?? 'member';
@@ -1078,12 +1084,12 @@ export function EmployeesPage() {
                             <button onClick={() => handleOpenEdit(emp)} title="تعديل" className="p-2 hover:bg-[var(--surface-elevated)] rounded-lg text-[var(--text-muted)] cursor-pointer"><Edit3 className="h-4 w-4" /></button>
                             <button onClick={() => { setSelectedUser(emp); setShowPassModal(true); }} title="كلمة المرور" className="p-2 hover:bg-amber-500/10 rounded-lg text-amber-500 cursor-pointer"><KeyRound className="h-4 w-4" /></button>
                             {(() => { const ab = getActiveBan(bans, emp.uid); return ab ? (
-                              <button onClick={() => handleEndBan(emp)} title={`Suspended until ${new Date(ab.endAt as any).toLocaleDateString()} — click to lift`} className="p-2 bg-rose-500/10 hover:bg-emerald-500/10 rounded-lg text-rose-500 hover:text-emerald-500 flex items-center gap-1 text-[10px] font-bold cursor-pointer"><BanIcon className="h-3.5 w-3.5" /> Lift</button>
+                              <button onClick={() => { setUnbanTarget(emp); setShowUnbanModal(true); }} title={`محظور حتى ${new Date(ab.endAt as any).toLocaleDateString('ar-EG')} — انقر لرفع الحظر`} className="p-2 bg-rose-500/10 hover:bg-emerald-500/10 rounded-lg text-rose-500 hover:text-emerald-500 flex items-center gap-1 text-[10px] font-bold cursor-pointer"><BanIcon className="h-3.5 w-3.5" /> رفع الحظر</button>
                             ) : (
-                              <button onClick={() => openBanModal(emp)} title="Suspend member" className="p-2 hover:bg-rose-500/10 rounded-lg text-rose-500 cursor-pointer"><Gavel className="h-4 w-4" /></button>
+                              <button onClick={() => openBanModal(emp)} title="حظر العضو (عقوبة انضباطية)" className="p-2 hover:bg-rose-500/10 rounded-lg text-rose-500 cursor-pointer"><Gavel className="h-4 w-4" /></button>
                             );})()}
-                            <button onClick={() => handleToggleStatus(emp)} title={emp.status === 'active' ? 'تعطيل' : 'تفعيل'} className={`p-2 rounded-lg cursor-pointer ${emp.status === 'active' ? 'hover:bg-rose-500/10 text-rose-500' : 'hover:bg-emerald-500/10 text-emerald-500'}`}>{emp.status === 'active' ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}</button>
-                            <button onClick={() => { setSelectedUser(emp); setShowDeleteModal(true); }} title="حذف" className="p-2 hover:bg-rose-500/10 rounded-lg text-rose-500 cursor-pointer"><Trash2 className="h-4 w-4" /></button>
+                            <button onClick={() => { setStatusTarget(emp); setShowStatusModal(true); }} title={emp.status === 'active' ? 'تعطيل الحساب مؤقتاً' : 'إعادة تفعيل الحساب'} className={`p-2 rounded-lg cursor-pointer ${emp.status === 'active' ? 'hover:bg-rose-500/10 text-rose-500' : 'hover:bg-emerald-500/10 text-emerald-500'}`}>{emp.status === 'active' ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}</button>
+                            <button onClick={() => { setSelectedUser(emp); setShowDeleteModal(true); }} title="حذف الحساب نهائياً" className="p-2 hover:bg-rose-500/10 rounded-lg text-rose-500 cursor-pointer"><Trash2 className="h-4 w-4" /></button>
                           </div>
                         ) : null}
                       </td>
@@ -1151,11 +1157,11 @@ export function EmployeesPage() {
                     <button onClick={() => handleOpenEdit(emp)} className="py-2 rounded-xl bg-[var(--surface-elevated)] hover:bg-[var(--brand-primary)]/10 text-[var(--text-secondary)] flex flex-col items-center gap-1 text-[10px] font-bold"><Edit3 className="h-4 w-4" /> تعديل</button>
                     <button onClick={() => { setSelectedUser(emp); setShowPassModal(true); }} className="py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 flex flex-col items-center gap-1 text-[10px] font-bold"><KeyRound className="h-4 w-4" /> كلمة السر</button>
                     {(() => { const ab = getActiveBan(bans, emp.uid); return ab ? (
-                      <button onClick={() => handleEndBan(emp)} className="py-2 rounded-xl bg-emerald-500/10 text-emerald-500 flex flex-col items-center gap-1 text-[10px] font-bold"><BanIcon className="h-4 w-4" /> رفع الحظر</button>
+                      <button onClick={() => { setUnbanTarget(emp); setShowUnbanModal(true); }} className="py-2 rounded-xl bg-emerald-500/10 text-emerald-500 flex flex-col items-center gap-1 text-[10px] font-bold"><BanIcon className="h-4 w-4" /> رفع الحظر</button>
                     ) : (
                       <button onClick={() => openBanModal(emp)} className="py-2 rounded-xl bg-rose-500/10 text-rose-500 flex flex-col items-center gap-1 text-[10px] font-bold"><Gavel className="h-4 w-4" /> حظر</button>
                     );})()}
-                    <button onClick={() => handleToggleStatus(emp)} className={`py-2 rounded-xl flex flex-col items-center gap-1 text-[10px] font-bold ${emp.status === 'active' ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'}`}>{emp.status === 'active' ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}{emp.status === 'active' ? 'تعطيل' : 'تفعيل'}</button>
+                    <button onClick={() => { setStatusTarget(emp); setShowStatusModal(true); }} className={`py-2 rounded-xl flex flex-col items-center gap-1 text-[10px] font-bold ${emp.status === 'active' ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'}`}>{emp.status === 'active' ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}{emp.status === 'active' ? 'تعطيل' : 'تفعيل'}</button>
                     <button onClick={() => { setSelectedUser(emp); setShowDeleteModal(true); }} className="py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 flex flex-col items-center gap-1 text-[10px] font-bold"><Trash2 className="h-4 w-4" /> حذف</button>
                   </div>
                 ) : null}
@@ -1436,47 +1442,105 @@ export function EmployeesPage() {
       <Modal
         open={showBanModal}
         onClose={() => { setShowBanModal(false); setBanTarget(null); }}
-        title={`Suspension — ${banTarget?.displayName || ''}`}
-        description={`Suspend ${banTarget?.username || ''} • All O Coins will be cleared (single penalty)`}
+        title={`حظر وتجميد حساب — ${banTarget?.displayName || ''}`}
+        description={`تطبيق عقوبة انضباطية على حساب (${banTarget?.username || ''}) مع إيقاف الوصول وتصفير الكوينز`}
         size="md"
-        footer={<><Button variant="outline" onClick={() => setShowBanModal(false)} disabled={submitting}>Cancel</Button><Button onClick={handleConfirmBan as any} loading={submitting} className="bg-[#F5004F] text-white gap-2"><BanIcon className="h-4 w-4" /> Confirm Suspension</Button></>}
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setShowBanModal(false)} disabled={submitting}>إلغاء</Button>
+            <Button onClick={handleConfirmBan as any} loading={submitting} className="bg-[#F5004F] text-white gap-2">
+              <BanIcon className="h-4 w-4" /> تأكيد الحظر وتطبيق العقوبة
+            </Button>
+          </>
+        }
       >
-        <div className="space-y-4 text-left">
-          <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 flex gap-2">
-            <AlertTriangle className="h-4 w-4 text-rose-600 mt-0.5" />
-            <p className="text-xs text-rose-800 leading-relaxed"><strong>Penalty:</strong> All {banTarget?.oCoinsBalance ?? 0} O Coins will be removed once, recorded as <code className="bg-white px-1 rounded">BAN_PENALTY</code>. Duplicate penalties prevented.</p>
+        <div className="space-y-4 text-right dir-rtl">
+          <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 flex gap-2">
+            <AlertTriangle className="h-4 w-4 text-rose-500 mt-0.5 shrink-0" />
+            <p className="text-xs text-rose-600 dark:text-rose-400 leading-relaxed">
+              <strong>عقوبة انضباطية:</strong> سيتم تصفير رصيد الـ O Coins البالغ ({banTarget?.oCoinsBalance ?? 0}) كوينز كغرامة رسمية واحدة وتوثيقها كـ <code className="bg-rose-500/20 px-1 py-0.5 rounded font-mono">BAN_PENALTY</code>.
+            </p>
           </div>
           <div>
-            <label className="form-label">Duration *</label>
+            <label className="form-label">مدة الحظر الانضباطي *</label>
             <div className="grid grid-cols-3 gap-2">
               {[
-                { v: '1', l: '1 Day' },
-                { v: '3', l: '3 Days' },
-                { v: '7', l: '7 Days' },
-                { v: '14', l: '14 Days' },
-                { v: '30', l: '1 Month' },
-                { v: 'custom', l: 'Custom' },
+                { v: '1', l: 'يوم واحد' },
+                { v: '3', l: '3 أيام' },
+                { v: '7', l: 'أسبوع (7 أيام)' },
+                { v: '14', l: 'أسبوعين' },
+                { v: '30', l: 'شهر كامل' },
+                { v: 'custom', l: 'تاريخ مخصص' },
               ].map((o) => (
-                <button key={o.v} type="button" onClick={() => setBanDuration(o.v)} className={`py-2.5 rounded-xl text-xs font-bold border-2 ${banDuration===o.v ? 'bg-[var(--brand-primary)] text-white border-[var(--brand-primary)]' : 'bg-[var(--surface)] text-[var(--text-secondary)] border-[var(--border-subtle)] hover:border-[var(--brand-primary)]/30'}`}>{o.l}</button>
+                <button
+                  key={o.v}
+                  type="button"
+                  onClick={() => setBanDuration(o.v)}
+                  className={`py-2.5 rounded-xl text-xs font-bold border-2 transition-all ${banDuration === o.v ? 'bg-[var(--brand-primary)] text-white border-[var(--brand-primary)] shadow-sm' : 'bg-[var(--surface)] text-[var(--text-secondary)] border-[var(--border-subtle)] hover:border-[var(--brand-primary)]/30'}`}
+                >
+                  {o.l}
+                </button>
               ))}
             </div>
           </div>
           {banDuration === 'custom' && (
-            <Input label="Custom End Date/Time *" type="datetime-local" value={banCustomEnd} onChange={(e) => setBanCustomEnd(e.target.value)} />
+            <Input label="تاريخ ووقت نهاية الحظر المخصص *" type="datetime-local" value={banCustomEnd} onChange={(e) => setBanCustomEnd(e.target.value)} />
           )}
           <div>
-            <label className="form-label">Reason *</label>
-            <textarea className="form-input min-h-[80px]" placeholder="e.g. Repeated team policy violation..." value={banReason} onChange={(e) => setBanReason(e.target.value)} />
+            <label className="form-label">سبب الحظر *</label>
+            <textarea className="form-input min-h-[80px]" placeholder="مثال: تكرار مخالفة سياسة الفريق أو الغياب بدون إذن..." value={banReason} onChange={(e) => setBanReason(e.target.value)} />
           </div>
           <div>
-            <label className="form-label">Internal note (optional)</label>
-            <Input placeholder="Private admin note..." value={banNote} onChange={(e) => setBanNote(e.target.value)} />
+            <label className="form-label">ملاحظة إدارية خاصة (اختياري)</label>
+            <Input placeholder="ملاحظة داخلية للإدارة فقط..." value={banNote} onChange={(e) => setBanNote(e.target.value)} />
           </div>
-          <div className="text-[11px] text-[var(--text-muted)] bg-[var(--surface-elevated)] p-3 rounded-xl border border-[var(--border-subtle)]">
-            Start: now • End: {banDuration === 'custom' ? (banCustomEnd ? new Date(banCustomEnd).toLocaleString() : '—') : `${banDuration} day(s) from now`} • Auto-expires without manual unban.
+          <div className="text-[11px] text-[var(--text-muted)] bg-[var(--surface-elevated)] p-3 rounded-xl border border-[var(--border-subtle)] leading-relaxed">
+            يبدأ الحظر فوراً • ينتهي في: {banDuration === 'custom' ? (banCustomEnd ? new Date(banCustomEnd).toLocaleString('ar-EG') : '—') : `بعد ${banDuration} يوم/أيام`} • يُرفع الحظر آلياً فور انتهاء المدة أو يدوياً عبر زر "رفع الحظر".
           </div>
         </div>
       </Modal>
+
+      {/* Dialog: Status Toggle (Deactivate / Activate) Confirmation */}
+      <ConfirmDialog
+        open={showStatusModal}
+        onClose={() => { setShowStatusModal(false); setStatusTarget(null); }}
+        onConfirm={async () => {
+          if (statusTarget) {
+            await handleToggleStatus(statusTarget);
+            setShowStatusModal(false);
+            setStatusTarget(null);
+          }
+        }}
+        title={statusTarget?.status === 'active' ? 'تأكيد تعطيل الحساب (إيقاف مؤقت)' : 'تأكيد إعادة تفعيل الحساب'}
+        description={
+          statusTarget?.status === 'active'
+            ? `هل أنت متأكد من تعطيل حساب (${statusTarget?.displayName}) مؤقتاً؟ لن يتمكن من تسجيل الدخول حتى تقوم بإعادة تفعيله، مع بقاء كافة بياناته ورصيده من الـ O Coins ومهامه محفوظة بالكامل دون أي مساس ويمكنك إعادة تفعيله في أي ثانية بضغطة زر واحدة.`
+            : `هل أنت متأكد من إعادة تفعيل حساب (${statusTarget?.displayName})؟ سيتمكن فوراً من تسجيل الدخول ومتابعة مهامه بشكل طبيعي.`
+        }
+        confirmLabel={statusTarget?.status === 'active' ? 'تأكيد التعطيل' : 'تأكيد التفعيل'}
+        cancelLabel="إلغاء"
+        variant={statusTarget?.status === 'active' ? 'danger' : 'default'}
+        loading={submitting}
+      />
+
+      {/* Dialog: Lift Ban Confirmation */}
+      <ConfirmDialog
+        open={showUnbanModal}
+        onClose={() => { setShowUnbanModal(false); setUnbanTarget(null); }}
+        onConfirm={async () => {
+          if (unbanTarget) {
+            await handleEndBan(unbanTarget);
+            setShowUnbanModal(false);
+            setUnbanTarget(null);
+          }
+        }}
+        title="تأكيد رفع الحظر عن العضو"
+        description={`هل أنت متأكد من إنهاء الحظر الانضباطي واستعادة وصول (${unbanTarget?.displayName}) للمنصة؟ سيتمكن من تسجيل الدخول ومباشرة نشاطه فوراً.`}
+        confirmLabel="رفع الحظر الآن"
+        cancelLabel="إلغاء"
+        variant="default"
+        loading={submitting}
+      />
 
       {/* 2-Step Admin Action Authorization Modal removed — Lead/Co-Lead/Head act directly */}
     </div>
