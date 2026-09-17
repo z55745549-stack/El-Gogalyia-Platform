@@ -1,7 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
   <style>
-    /* ─── Dynamic Adaptive Theme Engine ─── */
-    /* Light Mode Default (Executive Platinum & Midnight Obsidian) */
+    <![CDATA[
     :root {
       --bg-fill: #FFFFFF;
       --bg-stroke: #E2E8F0;
@@ -11,7 +10,6 @@
       --center-node: #3B82F6;
     }
 
-    /* Dark Mode (Deep Cyber Stealth & Pure Luminous Platinum) */
     @media (prefers-color-scheme: dark) {
       :root {
         --bg-fill: #090B10;
@@ -26,28 +24,20 @@
     .tile-bg {
       fill: var(--bg-fill);
       stroke: var(--bg-stroke);
-      transition: all 0.3s ease;
     }
     .glyph-primary {
       fill: var(--monogram-primary);
-      transition: fill 0.3s ease;
     }
     .glyph-secondary {
       fill: var(--monogram-secondary);
-      transition: fill 0.3s ease;
     }
     .glyph-accent {
       fill: var(--monogram-accent);
-      transition: fill 0.3s ease;
-    }
-    .glyph-stroke {
-      stroke: var(--monogram-primary);
-      transition: stroke 0.3s ease;
     }
     .glyph-node {
       fill: var(--center-node);
-      transition: fill 0.3s ease;
     }
+    ]]>
   </style>
 
   <!-- 1. Adaptive Squircle Tile Container -->
@@ -59,11 +49,10 @@
     rx="124"
     ry="124"
     class="tile-bg"
-    stroke-width="3"
+    stroke-width="4"
   />
 
-  <!-- 2. The Minimalist Executive "G" Nexus Monogram -->
-  <!-- Mathematical Continuous Hex-Prism 'G' Form -->
+  <!-- 2. The Minimalist Executive G Nexus Monogram -->
   <g transform="translate(256, 256)">
     <!-- Outer Sweep: Main Structural Body of G -->
     <path
@@ -88,7 +77,7 @@
       class="glyph-primary"
     />
 
-    <!-- Dynamic Aerodynamic Blade (Upper-Right Crown Accent) -->
+    <!-- Dynamic Aerodynamic Blade -->
     <path
       d="M 80 -148 
          L 174 -148 
@@ -98,14 +87,14 @@
       class="glyph-secondary"
     />
 
-    <!-- Forward-Leaning Center Core Vector (The Energy Gateway) -->
+    <!-- Forward-Leaning Center Core Vector -->
     <polygon
       points="0,12 52,-56 184,-56 132,12"
       class="glyph-accent"
       opacity="0.9"
     />
 
-    <!-- Precision Core Node (The Nexus Dot) -->
+    <!-- Precision Core Node -->
     <circle
       cx="64"
       cy="-22"
