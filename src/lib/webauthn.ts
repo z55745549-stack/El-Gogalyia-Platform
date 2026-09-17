@@ -75,16 +75,15 @@ export async function registerDeviceCredential(
   const encoder = new TextEncoder();
   const userIdHash = await crypto.subtle.digest('SHA-256', encoder.encode(userId));
 
-  async function attemptCreate(usePlatformOnly: boolean): Promise<PublicKeyCredential | null> {
+  async function attemptCreate(strategy: 'strict-passkey' | 'preferred-passkey' | 'flexible'): Promise<PublicKeyCredential | null> {
     const challenge = crypto.getRandomValues(new Uint8Array(32));
 
     const authSelection: AuthenticatorSelectionCriteria = {
-      userVerification: 'preferred',
-      residentKey: 'preferred',
+      authenticatorAttachment: 'platform',
+      userVerification: strategy === 'flexible' ? 'preferred' : 'required',
+      residentKey: strategy === 'flexible' ? 'preferred' : 'required',
+      requireResidentKey: strategy !== 'flexible',
     };
-    if (usePlatformOnly) {
-      authSelection.authenticatorAttachment = 'platform';
-    }
 
     return await navigator.credentials.create({
       publicKey: {
@@ -104,32 +103,46 @@ export async function registerDeviceCredential(
         ],
         authenticatorSelection: authSelection,
         timeout: 60000,
-        attestation: 'none', // Essential for non-enterprise Android phones (Xiaomi, Samsung, etc.)
+        attestation: 'none',
       },
     }) as PublicKeyCredential | null;
   }
 
   let credential: PublicKeyCredential | null = null;
   try {
-    credential = await attemptCreate(true);
+    // Strategy 1: Standard Modern Passkey (Platform + Resident Key Required + UserVerification Required)
+    // This immediately pops up the native Android Fingerprint / Face dialog on Realme, Xiaomi, Samsung, etc.
+    credential = await attemptCreate('strict-passkey');
   } catch (primaryErr: any) {
     if (primaryErr?.name === 'NotAllowedError') {
       return { success: false, error: 'تم إلغاء عملية البصمة أو انتهت مهلتها من الجهاز.' };
     }
-    // Android Credential Manager retry without strict platform attachment
+    console.warn('Primary strict-passkey creation failed, attempting preferred-passkey...', primaryErr);
+
     try {
-      credential = await attemptCreate(false);
-    } catch (fallbackErr: any) {
-      if (fallbackErr?.name === 'NotAllowedError') {
+      // Strategy 2: Relaxed user verification fallback for devices with custom ROM quirks
+      credential = await attemptCreate('preferred-passkey');
+    } catch (secErr: any) {
+      if (secErr?.name === 'NotAllowedError') {
         return { success: false, error: 'تم إلغاء عملية البصمة أو قفل الشاشة.' };
       }
-      if (fallbackErr?.name === 'InvalidStateError') {
-        return { success: false, error: 'هذا الجهاز مسجّل بالفعل لحساب آخر.' };
+      console.warn('Secondary passkey attempt failed, trying flexible fallback...', secErr);
+
+      try {
+        // Strategy 3: Flexible fallback
+        credential = await attemptCreate('flexible');
+      } catch (fallbackErr: any) {
+        if (fallbackErr?.name === 'NotAllowedError') {
+          return { success: false, error: 'تم إلغاء عملية البصمة أو قفل الشاشة.' };
+        }
+        if (fallbackErr?.name === 'InvalidStateError') {
+          return { success: false, error: 'هذا الجهاز مسجّل بالفعل لحساب آخر.' };
+        }
+        return {
+          success: false,
+          error: 'تعذّر تشغيل مستشعر البصمة بالهاتف. يرجى التأكد من تفعيل قفل الشاشة (بصمة الإصبع أو رمز PIN) في إعدادات الهاتف.',
+        };
       }
-      return {
-        success: false,
-        error: 'تعذّر الاتصال بمدير بيانات الاعتماد بالهاتف. يرجى التأكد من تفعيل قفل الشاشة (بصمة أو نمط أو PIN) في إعدادات الهاتف.',
-      };
     }
   }
 
