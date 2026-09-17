@@ -300,7 +300,7 @@ export function FloatingAIAssistant() {
   return (
     <>
       {/* ─── Floating Launcher Button ──────────────────────────────────── */}
-      <div className="fixed bottom-6 left-6 z-50 flex items-center gap-2">
+      <div className="fixed bottom-[4.5rem] sm:bottom-6 left-3 sm:left-6 z-50 flex items-center gap-2" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
         <motion.button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
@@ -330,7 +330,7 @@ export function FloatingAIAssistant() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             transition={{ duration: 0.2 }}
-            className="fixed bottom-24 left-4 sm:left-6 z-50 w-[calc(100vw-2rem)] sm:w-[420px] h-[580px] max-h-[calc(100vh-8rem)] rounded-3xl overflow-hidden shadow-2xl border border-[var(--border-subtle)] bg-[var(--surface)] flex flex-col dir-rtl text-right font-sans"
+            className="fixed bottom-[8.5rem] sm:bottom-24 left-3 sm:left-6 z-50 w-[calc(100vw-1.5rem)] sm:w-[420px] h-[calc(100svh-10rem)] sm:h-[580px] max-h-[calc(100svh-10rem)] sm:max-h-[calc(100vh-8rem)] rounded-3xl overflow-hidden shadow-2xl border border-[var(--border-subtle)] bg-[var(--surface)] flex flex-col dir-rtl text-right font-sans"
             style={{ backdropFilter: 'blur(20px)' }}
           >
             {/* Header */}
