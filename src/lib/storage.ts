@@ -51,7 +51,13 @@ export async function uploadTaskAttachment(
     console.warn('Supabase storage notice, falling back to local data:', err);
   }
 
-  // Fallback to Data URL
+  // Fallback to Data URL only for small files (<500KB) to prevent QuotaExceededError in localStorage
+  if (file.size > 500 * 1024) {
+    throw new Error(
+      'تعذر رفع الملف إلى مساحة التخزين السحابية (Supabase Storage). يرجى التأكد من إعداد الـ Bucket المسمى "attachments" في لوحة تحكم Supabase.'
+    );
+  }
+
   return new Promise((resolve) => {
     const reader = new FileReader();
     reader.onloadend = () => {

@@ -455,7 +455,7 @@ export function FloatingAIAssistant() {
             </div>
 
             {/* Quick Prompts */}
-            <div className="px-3 py-1.5 bg-[var(--surface-elevated)]/50 border-t border-[var(--border-subtle)] overflow-x-auto no-scrollbar flex items-center gap-1.5 shrink-0">
+            <div className="px-3 py-2 bg-[var(--surface-elevated)]/60 border-t border-[var(--border-subtle)] flex flex-wrap items-center gap-1.5 shrink-0 max-h-28 overflow-y-auto">
               {QUICK_PROMPTS.map((prompt, idx) => {
                 const Icon = prompt.icon;
                 return (
@@ -463,10 +463,10 @@ export function FloatingAIAssistant() {
                     key={idx}
                     type="button"
                     onClick={() => handleSendMessage(prompt.label)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] bg-[var(--surface)] hover:bg-[var(--surface-elevated)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] shrink-0 cursor-pointer"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-[var(--surface)] hover:bg-[var(--surface-elevated)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--brand-primary)]/40 transition-all shrink-0 cursor-pointer shadow-2xs active:scale-95"
                   >
                     <Icon className="h-3 w-3 text-[var(--brand-primary)]" />
-                    <span>{prompt.label}</span>
+                    <span className="whitespace-normal">{prompt.label}</span>
                   </button>
                 );
               })}
