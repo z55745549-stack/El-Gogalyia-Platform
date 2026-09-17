@@ -28,6 +28,7 @@ export function AttendanceCheckInPage() {
   const [searchParams] = useSearchParams();
   const sessionId = searchParams.get('sessionId');
   const token = searchParams.get('token');
+  const tb = searchParams.get('tb');
   const navigate = useNavigate();
 
   const { userProfile, loading: authLoading } = useAuth();
@@ -99,12 +100,18 @@ export function AttendanceCheckInPage() {
   const handleConfirmAttendance = async () => {
     if (!sessionId || !token || !userProfile) return;
 
+    if (userProfile.status === 'suspended' || userProfile.status === 'inactive') {
+      toast.error('حسابك معطل أو موقوف حالياً، لا يمكنك تسجيل الحضور.');
+      return;
+    }
+
     setSubmitting(true);
     try {
       const res = await recordAttendance({
         sessionId,
         token,
         employee: userProfile,
+        timeBucket: tb,
       });
 
       setRecordedRecord(res.record);
@@ -335,7 +342,12 @@ export function AttendanceCheckInPage() {
             </div>
 
             {/* Action Button */}
-            {isClosed ? (
+            {userProfile.status === 'suspended' || userProfile.status === 'inactive' ? (
+              <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-center text-xs text-rose-700 dark:text-rose-400 font-bold space-y-1">
+                <p>⚠️ حسابك معطل أو موقوف تأديبياً حالياً.</p>
+                <p className="text-[11px] font-normal text-rose-600 dark:text-rose-300">لا يمكنك تسجيل الحضور حتى يتم رفع الحظر أو تنشيط الحساب من قبل الإدارة.</p>
+              </div>
+            ) : isClosed ? (
               <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-center text-xs text-rose-700 dark:text-rose-400 font-bold">
                 عذراً، جلسة تسجيل الحضور هذه مغلقة حالياً أو انتهى وقت التسجيل.
               </div>

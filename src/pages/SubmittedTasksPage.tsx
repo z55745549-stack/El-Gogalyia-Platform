@@ -58,6 +58,9 @@ export function SubmittedTasksPage() {
       q,
       (snap) => {
         const fsTasks = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Task));
+        try {
+          localStorage.setItem('elgogalyia_local_tasks', JSON.stringify(fsTasks));
+        } catch {}
         const localTasks: Task[] = JSON.parse(localStorage.getItem('elgogalyia_local_tasks') || '[]');
         const map = new Map<string, Task>();
         fsTasks.forEach((t) => map.set(t.id, t));
@@ -89,9 +92,10 @@ export function SubmittedTasksPage() {
 
   const isViceHead = userProfile?.role === 'vice_head';
   const isHead = userProfile?.role === 'head';
+  const isCommitteeRestricted = (isHead || isViceHead) && Boolean(userProfile?.committeeId);
 
   const isTaskInMyCommittee = (t: Task) => {
-    if (!isViceHead) return true;
+    if (!isCommitteeRestricted) return true;
     const commId = userProfile?.committeeId;
     const commName = (userProfile?.committeeName || '').trim().toLowerCase();
     if (commId && t.committeeId === commId) return true;
@@ -156,7 +160,7 @@ export function SubmittedTasksPage() {
       matchStatus = submission.status === 'rejected';
     }
 
-    const matchCommittee = isViceHead
+    const matchCommittee = isCommitteeRestricted
       ? true
       : (!committeeFilter || task.committeeId === committeeFilter);
 
@@ -165,6 +169,10 @@ export function SubmittedTasksPage() {
 
   const handleApprove = async () => {
     if (!approveTarget || !userProfile) return;
+    if (isCommitteeRestricted && !isTaskInMyCommittee(approveTarget.task)) {
+      toast.error('❌ ليس لديك صلاحية لاعتماد مهام خارج لجنتك.');
+      return;
+    }
     setActionLoading(true);
     try {
       await approveTask(
@@ -194,6 +202,10 @@ export function SubmittedTasksPage() {
   const handleReject = async () => {
     if (!rejectTarget || !userProfile || !rejectReason.trim()) {
       toast.error('يرجى كتابة سبب طلب التعديل أو الرفض.');
+      return;
+    }
+    if (isCommitteeRestricted && !isTaskInMyCommittee(rejectTarget.task)) {
+      toast.error('❌ ليس لديك صلاحية لمراجعة مهام خارج لجنتك.');
       return;
     }
     setActionLoading(true);
@@ -242,12 +254,12 @@ export function SubmittedTasksPage() {
             </div>
             <div>
               <h1 className="text-xl sm:text-2xl font-black text-[var(--text-primary)] flex items-center gap-2">
-                {isViceHead 
+                {isCommitteeRestricted 
                   ? `مراجعة تسليمات أعضاء لجنة ${userProfile?.committeeName || 'اللجنة'}`
                   : 'تسليمات المهام والتقييم'}
               </h1>
               <p className="text-xs sm:text-sm text-[var(--text-muted)] mt-0.5">
-                {isViceHead
+                {isCommitteeRestricted
                   ? 'مراجعة تسليمات أعضاء لجنتك، قبول الأعمال وصرف مكافآت O-Coins، أو طلب التعديل'
                   : 'مراجعة تسليمات الموظفين والطلاب، اعتماد الأعمال، وصرف مكافآت O-Coins'}
               </p>
@@ -325,7 +337,7 @@ export function SubmittedTasksPage() {
           />
         </div>
         <div className="w-full sm:w-56">
-          {isViceHead ? (
+          {isCommitteeRestricted ? (
             <div className="w-full px-3 py-2.5 rounded-xl text-xs bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1.5 justify-center">
               <span>🏛️ لجنة {userProfile?.committeeName || 'لجنتك'} (مقيد)</span>
             </div>

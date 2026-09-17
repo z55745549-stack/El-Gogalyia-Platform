@@ -95,7 +95,10 @@ export function TaskDetailPage() {
     return userIdentifiers.some((id) => assigned.includes(id));
   };
 
-  const canReviewTask = isAdmin || (isViceHead && isCommitteeTask(task));
+  const isTopLeader = userProfile?.role === 'lead' || userProfile?.role === 'co_lead';
+  const isHead = userProfile?.role === 'head';
+  const canManageTask = isTopLeader || (isHead && isCommitteeTask(task));
+  const canReviewTask = isTopLeader || ((isHead || isViceHead) && isCommitteeTask(task));
 
   // Robust assignment check
   const isAssignedToCurrentUser = (() => {
@@ -259,6 +262,10 @@ export function TaskDetailPage() {
 
   const handleApproveSubmission = async (submission: TaskSubmission) => {
     if (!task || !userProfile) return;
+    if (!canReviewTask) {
+      toast.error('❌ ليس لديك صلاحية مراجعة أو اعتماد تسليمات هذه المهمة.');
+      return;
+    }
     setApprovingSubmissionId(submission.id);
     try {
       const reviewerEmail = (userProfile.email || userProfile.username || 'admin').toLowerCase();
@@ -294,6 +301,10 @@ export function TaskDetailPage() {
 
   const handleRejectSubmission = async () => {
     if (!task || !userProfile || !rejectTargetSubmission || !rejectReason.trim()) return;
+    if (!canReviewTask) {
+      toast.error('❌ ليس لديك صلاحية مراجعة تسليمات هذه المهمة.');
+      return;
+    }
     setRejecting(true);
     try {
       const reviewerEmail = (userProfile.email || userProfile.username || 'admin').toLowerCase();
@@ -328,6 +339,10 @@ export function TaskDetailPage() {
 
   const handleEndTask = async () => {
     if (!task || !userProfile) return;
+    if (!canManageTask) {
+      toast.error('❌ ليس لديك صلاحية لإنهاء هذه المهمة.');
+      return;
+    }
     setEnding(true);
     try {
       await endTask(task.id, {
@@ -345,6 +360,10 @@ export function TaskDetailPage() {
 
   const handleDeleteTask = async () => {
     if (!task || !userProfile) return;
+    if (!canManageTask) {
+      toast.error('❌ ليس لديك صلاحية لحذف هذه المهمة.');
+      return;
+    }
     setDeleting(true);
     try {
       await deleteTask(task.id, task.title, {
@@ -471,7 +490,7 @@ export function TaskDetailPage() {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto justify-end">
-            {isAdmin && (
+            {canManageTask && (
               <Button
                 size="sm"
                 variant="secondary"
@@ -482,7 +501,7 @@ export function TaskDetailPage() {
               </Button>
             )}
 
-            {isAdmin && task.status !== 'completed' && task.status !== 'archived' && (
+            {canManageTask && task.status !== 'completed' && task.status !== 'archived' && (
               <Button
                 size="sm"
                 variant="secondary"
@@ -493,7 +512,7 @@ export function TaskDetailPage() {
               </Button>
             )}
 
-            {isAdmin && (
+            {canManageTask && (
               <Button
                 size="sm"
                 variant="destructive"

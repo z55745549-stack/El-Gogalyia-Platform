@@ -181,9 +181,30 @@ export async function purchaseDiscount(params: {
   let resultPurchase: DiscountPurchase | null = null;
   let finalNewBalance = 0;
 
+  // 1. Validate per-user purchase limit before starting the transaction to avoid getDocs inside transaction
+  const initialDiscountSnap = await getDoc(discountRef);
+  if (!initialDiscountSnap.exists()) {
+    throw new Error('هذا العرض/الخصم لم يعد متوفراً.');
+  }
+  const initialDiscount = initialDiscountSnap.data() as Discount;
+  const maxAllowed = initialDiscount.maxPurchasesPerUser ?? 1;
+
+  const existingPurchasesSnap = await getDocs(
+    query(
+      collection(db, 'discount_purchases'),
+      where('discountId', '==', discountId),
+      where('employeeId', '==', employee.uid)
+    )
+  );
+  if (existingPurchasesSnap.size >= maxAllowed) {
+    throw new Error(
+      `لقد قمت بالحصول على هذا العرض بالفعل (الحد الأقصى المسموح به هو ${maxAllowed} لكل عضو).`
+    );
+  }
+
   // Execute safe Supabase transaction
   await runTransaction(db, async (tx) => {
-    // 1. Fetch discount
+    // 1. Fetch discount inside tx
     const discountSnap = await tx.get(discountRef);
     if (!discountSnap.exists()) {
       throw new Error('هذا العرض/الخصم لم يعد متوفراً.');
@@ -197,28 +218,13 @@ export async function purchaseDiscount(params: {
     }
 
     // 3. Validate expiration
-    if (discount.expiresAt) {
+    if (discount.expiresAt && String(discount.expiresAt).trim() !== '') {
       const expTime = (discount.expiresAt as any)?.toDate
         ? (discount.expiresAt as any).toDate().getTime()
-        : new Date(String(discount.expiresAt) || 0).getTime();
+        : new Date(String(discount.expiresAt)).getTime();
       if (!isNaN(expTime) && expTime < Date.now()) {
         throw new Error('عفواً، لقد انتهت صلاحية هذا العرض.');
       }
-    }
-
-    // 3.5 Validate per-user purchase limit
-    const maxAllowed = discount.maxPurchasesPerUser ?? 1;
-    const existingSnap = await getDocs(
-      query(
-        collection(db, 'discount_purchases'),
-        where('discountId', '==', discountId),
-        where('employeeId', '==', employee.uid)
-      )
-    );
-    if (existingSnap.size >= maxAllowed) {
-      throw new Error(
-        `لقد قمت بالحصول على هذا العرض بالفعل (الحد الأقصى المسموح به هو ${maxAllowed} لكل عضو).`
-      );
     }
 
     const requiredCoins = Number(discount.ocoinCost) || 0;
@@ -231,7 +237,6 @@ export async function purchaseDiscount(params: {
 
     const userData = userSnap.data() as UserProfile;
     const currentBalance = Number(userData.oCoinsBalance) || 0;
-
     const isUnlimitedUser = hasUnlimitedCoins(userData.role);
 
     // 5. Validate sufficient balance (unlimited roles have unlimited coins)
@@ -284,8 +289,8 @@ export async function purchaseDiscount(params: {
       reason: `شراء عرض: ${discount.title}`,
       description: `شراء قسيمة/خصم "${discount.title}" بقيمة ${discount.discountValue} مقابل ${requiredCoins} O Coins`,
       source: 'discount_shop',
-      previousBalance: currentBalance,
-      newBalance: finalNewBalance,
+      previousBalance: isUnlimitedUser ? null : currentBalance,
+      newBalance: isUnlimitedUser ? null : finalNewBalance,
       discountId: discount.id,
       discountTitle: discount.title,
       referenceId: discount.id,
@@ -303,10 +308,13 @@ export async function purchaseDiscount(params: {
 
     tx.set(ocoinRef, ocoinTxData);
 
-    tx.update(userRef, {
-      oCoinsBalance: finalNewBalance,
-      updatedAt: serverTimestamp(),
-    });
+    // Only update balance if not an unlimited-coin role
+    if (!isUnlimitedUser) {
+      tx.update(userRef, {
+        oCoinsBalance: finalNewBalance,
+        updatedAt: serverTimestamp(),
+      });
+    }
 
     tx.update(discountRef, {
       totalPurchases: increment(1),
@@ -321,20 +329,23 @@ export async function purchaseDiscount(params: {
     throw new Error('حدث خطأ غير متوقع أثناء معالجة عملية الشراء.');
   }
 
-  // 9. Update local state for immediate reactivity across tabs
+  // 9. Update local state for immediate reactivity across tabs (skip balance change for unlimited roles)
   try {
-    const localUsers: any[] = JSON.parse(localStorage.getItem('elgogalyia_local_users') || '[]');
-    const uIdx = localUsers.findIndex((u: any) => u.uid === employee.uid);
-    if (uIdx !== -1) {
-      localUsers[uIdx].oCoinsBalance = finalNewBalance;
-      localStorage.setItem('elgogalyia_local_users', JSON.stringify(localUsers));
-    }
-    const sessRaw = localStorage.getItem('elgogalyia_user_session');
-    if (sessRaw) {
-      const sess: any = JSON.parse(sessRaw);
-      if (sess.uid === employee.uid) {
-        sess.oCoinsBalance = finalNewBalance;
-        localStorage.setItem('elgogalyia_user_session', JSON.stringify(sess));
+    const isUnlimitedUser = hasUnlimitedCoins(employee.role);
+    if (!isUnlimitedUser) {
+      const localUsers: any[] = JSON.parse(localStorage.getItem('elgogalyia_local_users') || '[]');
+      const uIdx = localUsers.findIndex((u: any) => u.uid === employee.uid);
+      if (uIdx !== -1) {
+        localUsers[uIdx].oCoinsBalance = finalNewBalance;
+        localStorage.setItem('elgogalyia_local_users', JSON.stringify(localUsers));
+      }
+      const sessRaw = localStorage.getItem('elgogalyia_user_session');
+      if (sessRaw) {
+        const sess: any = JSON.parse(sessRaw);
+        if (sess.uid === employee.uid) {
+          sess.oCoinsBalance = finalNewBalance;
+          localStorage.setItem('elgogalyia_user_session', JSON.stringify(sess));
+        }
       }
     }
     window.dispatchEvent(new Event('elgogalyia_data_change'));

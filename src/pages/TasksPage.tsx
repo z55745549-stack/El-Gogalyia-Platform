@@ -81,6 +81,9 @@ export function TasksPage() {
       q,
       (snap) => {
         const fsTasks = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Task));
+        try {
+          localStorage.setItem('elgogalyia_local_tasks', JSON.stringify(fsTasks));
+        } catch {}
         loadTasks(fsTasks);
       },
       (err) => {

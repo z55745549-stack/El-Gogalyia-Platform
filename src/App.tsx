@@ -31,9 +31,9 @@ import { MyDiscountsPage } from '@/pages/MyDiscountsPage';
 import { AdminDiscountsPage } from '@/pages/AdminDiscountsPage';
 import { CoursesPage } from '@/pages/CoursesPage';
 import { CoursePlayerPage } from '@/pages/CoursePlayerPage';
-import { AdminCoursesPage } from '@/pages/AdminCoursesPage';
 import { CompliancePage } from '@/pages/CompliancePage';
 import { OperationsPage } from '@/pages/OperationsPage';
+import { ReportsPage } from '@/pages/ReportsPage';
 
 import { AccessDenied } from '@/components/auth/AccessDenied';
 
@@ -100,7 +100,7 @@ export default function App() {
                 <Route path="/admin/courses" element={<Navigate to="/courses?tab=manage" replace />} />
                 <Route path="/admin/support" element={<Navigate to="/support?tab=manage" replace />} />
                 <Route path="/activity-logs" element={<ActivityLogsPage />} />
-                <Route path="/reports" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/reports" element={<ReportsPage />} />
                 <Route path="/access-management" element={<Navigate to="/dashboard" replace />} />
               </Route>
             </Route>

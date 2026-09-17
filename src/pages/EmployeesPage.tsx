@@ -18,7 +18,7 @@ import { subscribeCommittees, assignUserCommittee, createCommittee } from '@/lib
 import { subscribeBans, createBan, endBan, getActiveBan } from '@/lib/bans';
 // 2-Step admin auth removed — Lead/Co-Lead and Head act directly
 import { generateEmployeeCode } from '@/lib/attendance';
-import { canManageRole, isTopTierRole, getRoleLabel, getRoleColor, isAdminRole } from '@/utils/permissions';
+import { canManageRole, canManageUser, isTopTierRole, getRoleLabel, getRoleColor, isAdminRole } from '@/utils/permissions';
 import { formatFullName, hasArabic, hasUnlimitedCoins } from '@/utils';
 
 
@@ -116,7 +116,7 @@ export function EmployeesPage() {
     setFormPassword('');
     setFormRole('member');
     setFormStatus('active');
-    setFormCommitteeId('');
+    setFormCommitteeId(isHeadRole && userProfile?.committeeId ? userProfile.committeeId : '');
     setSelectedUser(null);
     setNewPassword('');
   };
@@ -150,10 +150,16 @@ export function EmployeesPage() {
       return;
     }
 
-    // HEAD can only add member or vice_head
-    if (isHeadRole && !['member', 'vice_head'].includes(formRole)) {
-      toast.error('صلاحيات HEAD تسمح فقط بإضافة أعضاء (MEMBER) ونواب رؤساء (VICE-HEAD).');
-      return;
+    // HEAD can only add member or vice_head to their own committee
+    if (isHeadRole) {
+      if (!['member', 'vice_head'].includes(formRole)) {
+        toast.error('صلاحيات HEAD تسمح فقط بإضافة أعضاء (MEMBER) ونواب رؤساء (VICE-HEAD).');
+        return;
+      }
+      if (userProfile?.committeeId && formCommitteeId && formCommitteeId !== userProfile.committeeId) {
+        toast.error('صلاحيات رئيس اللجنة تسمح بإضافة أعضاء ضمن لجنتك فقط.');
+        return;
+      }
     }
 
     // Block Arabic characters in username and password
@@ -191,9 +197,11 @@ export function EmployeesPage() {
       const generatedUid = 'user_' + unameLower.replace(/[^a-z0-9]/g, '_');
 
       const isTopLeadership = formRole === 'lead' || formRole === 'co_lead';
-      const committee = isTopLeadership ? null : (committees.find(c => c.id === formCommitteeId) || null);
+      const effectiveCommitteeId = isHeadRole && userProfile?.committeeId ? userProfile.committeeId : formCommitteeId;
+      const committee = isTopLeadership ? null : (committees.find(c => c.id === effectiveCommitteeId) || null);
 
       // SECURITY: 'password' plaintext field intentionally omitted
+      // FIX #1: Unlimited-coin roles (head, lead, co_lead) must NOT get a numeric oCoinsBalance
       const newEmpDoc = {
         uid: generatedUid,
         username: unameLower,
@@ -205,7 +213,7 @@ export function EmployeesPage() {
         permissions: ROLE_PERMISSIONS[formRole] || [],
         passwordHash,
         salt,
-        oCoinsBalance: 0,
+        oCoinsBalance: hasUnlimitedCoins(formRole) ? null : 0,
         createdAt: serverTimestamp(),
       };
 
@@ -230,15 +238,43 @@ export function EmployeesPage() {
     }
   };
 
-  // Update Employee Handler
   const handleUpdateEmployee = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedUser) return;
+    if (!canManageUser(userProfile, selectedUser)) {
+      toast.error('ليس لديك صلاحية لتعديل بيانات هذا المستخدم.');
+      return;
+    }
+    if (isHeadRole) {
+      if (!['member', 'vice_head'].includes(formRole)) {
+        toast.error('صلاحيات HEAD تسمح فقط بتعيين رتبة عضو (MEMBER) أو نائب رئيس (VICE-HEAD).');
+        return;
+      }
+      if (userProfile?.committeeId && formCommitteeId && formCommitteeId !== userProfile.committeeId) {
+        toast.error('صلاحيات رئيس اللجنة تسمح بنقل أو تعديل الأعضاء ضمن لجنتك فقط.');
+        return;
+      }
+    }
 
     setSubmitting(true);
     try {
       const isTopLeadership = formRole === 'lead' || formRole === 'co_lead';
-      const committee = isTopLeadership ? null : (committees.find(c => c.id === formCommitteeId) || null);
+      const effectiveCommitteeId = isHeadRole && userProfile?.committeeId ? userProfile.committeeId : formCommitteeId;
+      const committee = isTopLeadership ? null : (committees.find(c => c.id === effectiveCommitteeId) || null);
+
+      // FIX #8: When updating role, correct oCoinsBalance accordingly
+      // - Promoting to unlimited role: set null
+      // - Demoting from unlimited to regular: set 0 (fresh start)
+      const prevRole = selectedUser.role;
+      let balanceUpdate: { oCoinsBalance?: number | null } = {};
+      if (hasUnlimitedCoins(formRole) && !hasUnlimitedCoins(prevRole)) {
+        // Promoted to unlimited role
+        balanceUpdate = { oCoinsBalance: null };
+      } else if (!hasUnlimitedCoins(formRole) && hasUnlimitedCoins(prevRole)) {
+        // Demoted from unlimited role — reset to 0
+        balanceUpdate = { oCoinsBalance: 0 };
+      }
+
       const updates = {
         displayName: formatFullName(formDisplayName.trim()),
         role: formRole,
@@ -247,6 +283,7 @@ export function EmployeesPage() {
         committeeName: isTopLeadership ? 'بدون لجنة' : (committee?.name || 'بدون لجنة'),
         permissions: ROLE_PERMISSIONS[formRole] || [],
         updatedAt: new Date().toISOString(),
+        ...balanceUpdate,
       };
 
       try {
@@ -268,7 +305,6 @@ export function EmployeesPage() {
     }
   };
 
-  // Change Password Handler — direct execution, no 2-Step confirmation
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedUser || !newPassword.trim()) {
@@ -277,6 +313,10 @@ export function EmployeesPage() {
     }
     if (selectedUser.uid === userProfile?.uid) {
       toast.error('لتغيير كلمة مرور حسابك، يرجى التوجه لصفحة الإعدادات.');
+      return;
+    }
+    if (!canManageUser(userProfile, selectedUser)) {
+      toast.error('ليس لديك صلاحية لتغيير كلمة مرور هذا المستخدم.');
       return;
     }
     if (newPassword.trim().length < 8) {
@@ -309,10 +349,13 @@ export function EmployeesPage() {
     }
   };
 
-  // Disable Employee Handler
   const handleToggleStatus = async (user: UserProfile) => {
     if (user.uid === userProfile?.uid) {
       toast.error('لا يمكنك تعطيل حسابك الحالي!');
+      return;
+    }
+    if (!canManageUser(userProfile, user)) {
+      toast.error('ليس لديك صلاحية لتعديل حالة هذا المستخدم.');
       return;
     }
     const nextStatus: UserStatus = user.status === 'active' ? 'suspended' : 'active';
@@ -332,11 +375,14 @@ export function EmployeesPage() {
     }
   };
 
-  // Delete Employee Handler (Preserves Audit History)
   const handleDeleteEmployee = async () => {
     if (!selectedUser) return;
     if (selectedUser.uid === userProfile?.uid) {
       toast.error('لا يمكنك حذف حسابك الحالي!');
+      return;
+    }
+    if (!canManageUser(userProfile, selectedUser)) {
+      toast.error('ليس لديك صلاحية لحذف هذا المستخدم.');
       return;
     }
     setSubmitting(true);
@@ -376,6 +422,10 @@ export function EmployeesPage() {
   const openBanModal = (emp: UserProfile) => {
     if (emp.uid === userProfile?.uid) {
       toast.error('لا يمكنك حظر حسابك الحالي!');
+      return;
+    }
+    if (!canManageUser(userProfile, emp)) {
+      toast.error('ليس لديك صلاحية لحظر هذا المستخدم.');
       return;
     }
     const active = getActiveBan(bans, emp.uid);
@@ -421,6 +471,10 @@ export function EmployeesPage() {
     }
   };
   const handleEndBan = async (emp: UserProfile) => {
+    if (!canManageUser(userProfile, emp)) {
+      toast.error('ليس لديك صلاحية لرفع الحظر عن هذا المستخدم.');
+      return;
+    }
     const active = getActiveBan(bans, emp.uid);
     if (!active) { toast.error('No active ban'); return; }
     setSubmitting(true);
@@ -434,6 +488,10 @@ export function EmployeesPage() {
   // Pending Approval Handlers
   const handleApprovePending = async (emp: UserProfile) => {
     const assignedRole = pendingRoles[emp.uid] || emp.role || 'member';
+    if (isHeadRole && !['member', 'vice_head'].includes(assignedRole)) {
+      toast.error('صلاحيات رئيس اللجنة تسمح فقط باعتماد أعضاء (MEMBER) ونواب رؤساء (VICE-HEAD).');
+      return;
+    }
     const isLeader = assignedRole === 'lead' || assignedRole === 'co_lead';
     const chosenCommId = pendingCommittees[emp.uid] !== undefined
       ? pendingCommittees[emp.uid]
@@ -450,13 +508,20 @@ export function EmployeesPage() {
       }
     }
 
+    if (isHeadRole && userProfile?.committeeId && commId !== userProfile.committeeId) {
+      toast.error('صلاحيات رئيس اللجنة تسمح باعتماد وتعيين الأعضاء ضمن لجنتك فقط.');
+      return;
+    }
+
     try {
+      // FIX #2: Unlimited-coin roles must NEVER have a numeric ocoins_balance
+      const isUnlimitedAssignedRole = assignedRole === 'lead' || assignedRole === 'co_lead' || assignedRole === 'head';
       await updateDoc(doc(db, 'users', emp.uid), {
         status: 'active',
         role: assignedRole,
         committeeId: commId,
         committeeName: commName,
-        ocoins_balance: emp.oCoinsBalance ?? 0,
+        ocoins_balance: isUnlimitedAssignedRole ? null : (emp.oCoinsBalance ?? 0),
         updated_at: new Date().toISOString(),
       });
       toast.success(`تم قبول واعتماد ${emp.displayName} كـ (${getRoleLabel(assignedRole)}) في (${commName}) بنجاح! 🎉`);
@@ -819,7 +884,7 @@ export function EmployeesPage() {
                               حسابك الحالي (أنت)
                             </span>
                           </div>
-                        ) : canManageRole(userProfile?.role ?? 'member', emp.role) ? (
+                        ) : canManageUser(userProfile, emp) ? (
                           <div className="flex items-center justify-end gap-1">
                             <button onClick={() => handleOpenEdit(emp)} title="تعديل" className="p-2 hover:bg-[var(--surface-elevated)] rounded-lg text-[var(--text-muted)] cursor-pointer"><Edit3 className="h-4 w-4" /></button>
                             <button onClick={() => { setSelectedUser(emp); setShowPassModal(true); }} title="كلمة المرور" className="p-2 hover:bg-amber-500/10 rounded-lg text-amber-500 cursor-pointer"><KeyRound className="h-4 w-4" /></button>
@@ -886,7 +951,7 @@ export function EmployeesPage() {
                     <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
                     <span>حسابك الحالي (أنت)</span>
                   </div>
-                ) : canManageRole(userProfile?.role ?? 'member', emp.role) ? (
+                ) : canManageUser(userProfile, emp) ? (
                   <div className="grid grid-cols-5 gap-1.5 mt-3">
                     <button onClick={() => handleOpenEdit(emp)} className="py-2 rounded-xl bg-[var(--surface-elevated)] hover:bg-[var(--brand-primary)]/10 text-[var(--text-secondary)] flex flex-col items-center gap-1 text-[10px] font-bold"><Edit3 className="h-4 w-4" /> تعديل</button>
                     <button onClick={() => { setSelectedUser(emp); setShowPassModal(true); }} className="py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 flex flex-col items-center gap-1 text-[10px] font-bold"><KeyRound className="h-4 w-4" /> كلمة السر</button>
@@ -945,8 +1010,8 @@ export function EmployeesPage() {
               options={[
                 { value: 'member', label: '👤 MEMBER (عضو)' },
                 { value: 'vice_head', label: '🔹 VICE-HEAD / CO-HEAD (نائب رئيس لجنة)' },
-                { value: 'head', label: '👑 HEAD (رئيس لجنة - إدارة وصلاحيات)' },
                 ...(isTopTierRole(userProfile?.role ?? 'member') ? [
+                  { value: 'head', label: '👑 HEAD (رئيس لجنة - إدارة وصلاحيات)' },
                   { value: 'co_lead', label: '🌟 CO-LEAD (نائب القائد)' },
                   { value: 'lead', label: '🏆 LEAD (قائد المنصة)' },
                 ] : []),
@@ -965,7 +1030,12 @@ export function EmployeesPage() {
             />
           </div>
 
-          {formRole === 'lead' || formRole === 'co_lead' ? (
+          {isHeadRole && userProfile?.committeeId ? (
+            <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 text-xs text-blue-800 dark:text-blue-300 font-medium flex items-center justify-between">
+              <span>🏛️ اللجنة المخصصة:</span>
+              <span className="font-bold">{userProfile.committeeName || 'لجنتك'} (مقيد لرئيس اللجنة)</span>
+            </div>
+          ) : formRole === 'lead' || formRole === 'co_lead' ? (
             <div className="p-3 rounded-xl bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 text-xs text-purple-800 dark:text-purple-300 font-medium flex items-center gap-2">
               <span>🌟</span>
               <span>رتبة القيادة العامة ({getRoleLabel(formRole)}) فوق جميع اللجان ولا تتبع أي لجنة منفردة.</span>
@@ -1022,8 +1092,8 @@ export function EmployeesPage() {
               options={[
                 { value: 'member', label: '👤 MEMBER (عضو)' },
                 { value: 'vice_head', label: '🔹 VICE-HEAD / CO-HEAD (نائب رئيس لجنة)' },
-                { value: 'head', label: '👑 HEAD (رئيس لجنة - إدارة وصلاحيات)' },
                 ...(isTopTierRole(userProfile?.role ?? 'member') ? [
+                  { value: 'head', label: '👑 HEAD (رئيس لجنة - إدارة وصلاحيات)' },
                   { value: 'co_lead', label: '🌟 CO-LEAD (نائب القائد)' },
                   { value: 'lead', label: '🏆 LEAD (قائد المنصة)' },
                 ] : []),
@@ -1042,7 +1112,12 @@ export function EmployeesPage() {
             />
           </div>
 
-          {formRole === 'lead' || formRole === 'co_lead' ? (
+          {isHeadRole && userProfile?.committeeId ? (
+            <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 text-xs text-blue-800 dark:text-blue-300 font-medium flex items-center justify-between">
+              <span>🏛️ اللجنة المخصصة:</span>
+              <span className="font-bold">{userProfile.committeeName || 'لجنتك'} (مقيد لرئيس اللجنة)</span>
+            </div>
+          ) : formRole === 'lead' || formRole === 'co_lead' ? (
             <div className="p-3 rounded-xl bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 text-xs text-purple-800 dark:text-purple-300 font-medium flex items-center gap-2">
               <span>🌟</span>
               <span>رتبة القيادة العامة ({getRoleLabel(formRole)}) فوق جميع اللجان ولا تتبع أي لجنة منفردة.</span>

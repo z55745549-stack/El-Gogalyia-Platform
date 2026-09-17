@@ -11,28 +11,38 @@ export function useNotifications(maxCount = 50) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Accept both username and email as the recipient identifier
-    const recipientId = (userProfile?.email || userProfile?.username || '').toLowerCase();
-    if (!recipientId) {
+    if (!userProfile?.uid && !userProfile?.email && !userProfile?.username) {
       setNotifications([]);
       setLoading(false);
       return;
     }
 
+    const validIdentifiers = [
+      userProfile?.email?.toLowerCase(),
+      userProfile?.username?.toLowerCase(),
+      userProfile?.uid?.toLowerCase(),
+    ].filter(Boolean) as string[];
+    const userUid = userProfile?.uid;
+
     try {
       const q = query(
         collection(db, 'notifications'),
-        where('recipientEmail', '==', recipientId),
-        orderBy('createdAt', 'desc'),
-        limit(maxCount)
+        orderBy('createdAt', 'desc')
       );
 
       const unsub = onSnapshot(
         q,
         (snap) => {
-          setNotifications(
-            snap.docs.map((d) => ({ id: d.id, ...d.data() } as Notification))
-          );
+          const all = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Notification));
+          const userNotifications = all.filter((n: any) => {
+            const rEmail = (n.recipientEmail || n.recipient_email || '').toLowerCase();
+            const rUid = n.recipientUid || n.recipient_uid || '';
+            if (userUid && rUid && userUid === rUid) return true;
+            if (rEmail && validIdentifiers.includes(rEmail)) return true;
+            return false;
+          }).slice(0, maxCount);
+
+          setNotifications(userNotifications);
           setLoading(false);
         },
         (err) => {
@@ -46,7 +56,7 @@ export function useNotifications(maxCount = 50) {
       console.warn('Failed to query notifications:', e);
       setLoading(false);
     }
-  }, [userProfile?.email, userProfile?.username, maxCount]);
+  }, [userProfile?.uid, userProfile?.email, userProfile?.username, maxCount]);
 
   return { notifications, loading };
 }
@@ -56,23 +66,36 @@ export function useNotificationCount(): number {
   const [count, setCount] = useState(0);
 
   useEffect(() => {
-    const recipientId = (userProfile?.email || userProfile?.username || '').toLowerCase();
-    if (!recipientId) {
+    if (!userProfile?.uid && !userProfile?.email && !userProfile?.username) {
       setCount(0);
       return;
     }
 
+    const validIdentifiers = [
+      userProfile?.email?.toLowerCase(),
+      userProfile?.username?.toLowerCase(),
+      userProfile?.uid?.toLowerCase(),
+    ].filter(Boolean) as string[];
+    const userUid = userProfile?.uid;
+
     try {
       const q = query(
         collection(db, 'notifications'),
-        where('recipientEmail', '==', recipientId),
         where('read', '==', false)
       );
 
       const unsub = onSnapshot(
         q,
         (snap) => {
-          setCount(snap.size);
+          const all = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Notification));
+          const unreadCount = all.filter((n: any) => {
+            const rEmail = (n.recipientEmail || n.recipient_email || '').toLowerCase();
+            const rUid = n.recipientUid || n.recipient_uid || '';
+            if (userUid && rUid && userUid === rUid) return true;
+            if (rEmail && validIdentifiers.includes(rEmail)) return true;
+            return false;
+          }).length;
+          setCount(unreadCount);
         },
         (err) => {
           console.warn('Notification count notice:', err);
@@ -83,7 +106,7 @@ export function useNotificationCount(): number {
     } catch {
       setCount(0);
     }
-  }, [userProfile?.email, userProfile?.username]);
+  }, [userProfile?.uid, userProfile?.email, userProfile?.username]);
 
   return count;
 }

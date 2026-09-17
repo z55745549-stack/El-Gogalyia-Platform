@@ -236,13 +236,22 @@ export function OCoinsPage() {
     : allTransactions.filter((t) => txBelongsTo(t, myId || '', myEmail, myUsername));
 
   // Calculate totals
-  const totalEarned = userTransactions
-    .filter((t) => t.amount > 0)
-    .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+  // FIX #11: For unlimited-coin roles, totals are meaningless numeric values — skip calculation
+  const viewingUnlimitedUser = canManage && selectedUser
+    ? hasUnlimitedCoins(selectedUser.role)
+    : hasUnlimitedCoins(role);
 
-  const totalSpent = userTransactions
-    .filter((t) => t.amount < 0)
-    .reduce((sum, t) => sum + Math.abs(Number(t.amount || 0)), 0);
+  const totalEarned = viewingUnlimitedUser
+    ? null
+    : userTransactions
+        .filter((t) => t.amount > 0)
+        .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+
+  const totalSpent = viewingUnlimitedUser
+    ? null
+    : userTransactions
+        .filter((t) => t.amount < 0)
+        .reduce((sum, t) => sum + Math.abs(Number(t.amount || 0)), 0);
 
   // Apply tab and text search filters
   const filteredTransactions = userTransactions.filter((t) => {
@@ -548,11 +557,22 @@ export function OCoinsPage() {
         {/* Total Earned */}
         <div className="card p-5 rounded-2xl flex items-center justify-between shadow-xs">
           <div>
-            <p className="text-xs font-bold text-[var(--text-muted)]">إجمالي العملات المكتسبة</p>
-            <p className="text-3xl font-black text-[var(--brand-accent)] mt-1">
-              +{formatOCoins(totalEarned)}
-              <span className="text-sm font-bold text-[var(--brand-accent)]/80 mr-1.5">OC</span>
+            <p className="text-xs font-bold text-[var(--text-muted)]">
+              {viewingUnlimitedUser ? 'عمليات الإيداع المسجَّلة' : 'إجمالي العملات المكتسبة'}
             </p>
+            {viewingUnlimitedUser ? (
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-4xl font-black text-[var(--brand-accent)]">∞</span>
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+                  خزينة لا نهائية
+                </span>
+              </div>
+            ) : (
+              <p className="text-3xl font-black text-[var(--brand-accent)] mt-1">
+                +{formatOCoins(totalEarned ?? 0)}
+                <span className="text-sm font-bold text-[var(--brand-accent)]/80 mr-1.5">OC</span>
+              </p>
+            )}
           </div>
           <div className="w-12 h-12 bg-[var(--brand-accent)]/10 text-[var(--brand-accent)] rounded-2xl flex items-center justify-center border border-[var(--brand-accent)]/20 shrink-0">
             <TrendingUp className="h-6 w-6" />
@@ -562,11 +582,22 @@ export function OCoinsPage() {
         {/* Total Spent / Deducted */}
         <div className="card p-5 rounded-2xl flex items-center justify-between shadow-xs">
           <div>
-            <p className="text-xs font-bold text-[var(--text-muted)]">إجمالي الخصومات والمصروفات</p>
-            <p className="text-3xl font-black text-[var(--brand-danger)] mt-1">
-              -{formatOCoins(totalSpent)}
-              <span className="text-sm font-bold text-[var(--brand-danger)]/80 mr-1.5">OC</span>
+            <p className="text-xs font-bold text-[var(--text-muted)]">
+              {viewingUnlimitedUser ? 'عمليات الخصم المسجَّلة' : 'إجمالي الخصومات والمصروفات'}
             </p>
+            {viewingUnlimitedUser ? (
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-4xl font-black text-[var(--brand-danger)]">—</span>
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-slate-500/15 text-slate-600 dark:text-slate-300 border border-slate-500/30">
+                  لا تؤثر على الرصيد
+                </span>
+              </div>
+            ) : (
+              <p className="text-3xl font-black text-[var(--brand-danger)] mt-1">
+                -{formatOCoins(totalSpent ?? 0)}
+                <span className="text-sm font-bold text-[var(--brand-danger)]/80 mr-1.5">OC</span>
+              </p>
+            )}
           </div>
           <div className="w-12 h-12 bg-[var(--brand-danger)]/10 text-[var(--brand-danger)] rounded-2xl flex items-center justify-center border border-[var(--brand-danger)]/20 shrink-0">
             <TrendingDown className="h-6 w-6" />

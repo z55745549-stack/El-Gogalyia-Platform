@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { collection, doc, setDoc, getDocs, getDoc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, serverTimestamp, writeBatch, Timestamp, db } from './supabase';
 import type { Ban, UserProfile } from '@/types';
 import { canViewAllBans, filterBansForUser, sanitizeBansForViewer } from './security';
@@ -82,14 +81,27 @@ export async function createBan(params: {
   const { employee, startAt, endAt, actor } = params;
   const reason = sanitizedReason;
   const internalNote = sanitizedNote;
-  if (endAt.getTime() <= startAt.getTime()) throw new Error('End must be after start');
+  if (endAt.getTime() <= startAt.getTime()) throw new Error('تاريخ الانتهاء يجب أن يكون بعد تاريخ البدء');
   const nowIso = new Date().toISOString();
   const banId = `ban_${employee.uid}_${Date.now()}`;
-  const currentBalance = employee.oCoinsBalance ?? 0;
-  const penalty = currentBalance;
+
+  // Fetch fresh user balance and role from database to avoid stale cache penalty
+  let freshBalance = Number(employee.oCoinsBalance ?? 0);
+  let employeeRole = employee.role;
+  try {
+    const uSnap = await getDoc(doc(db, 'users', employee.uid));
+    if (uSnap.exists()) {
+      const uData = uSnap.data() as any;
+      freshBalance = Number(uData.oCoinsBalance ?? uData.ocoins_balance ?? 0);
+      if (uData.role) employeeRole = uData.role;
+    }
+  } catch {}
+
+  const isUnlimitedEmployee = employeeRole === 'lead' || employeeRole === 'co_lead' || employeeRole === 'head';
+  const penalty = isUnlimitedEmployee ? 0 : Math.max(0, freshBalance);
 
   const existing = readLocal().find(b => b.employeeId === employee.uid && b.status === 'active' && toDate(b.endAt).getTime() > Date.now());
-  if (existing) throw new Error('Employee already has an active ban');
+  if (existing) throw new Error('العضو لديه حظر نشط بالفعل');
 
   const ban: Ban = {
     id: banId,
@@ -111,7 +123,12 @@ export async function createBan(params: {
 
   const batch = writeBatch(db);
   batch.set(doc(db, 'bans', banId), ban);
-  batch.update(doc(db, 'users', employee.uid), { status: 'suspended', oCoinsBalance: 0, updatedAt: serverTimestamp() });
+  // Unlimited-coin roles must NEVER have their balance zeroed
+  if (isUnlimitedEmployee) {
+    batch.update(doc(db, 'users', employee.uid), { status: 'suspended', updatedAt: serverTimestamp() });
+  } else {
+    batch.update(doc(db, 'users', employee.uid), { status: 'suspended', oCoinsBalance: 0, updatedAt: serverTimestamp() });
+  }
   if (penalty > 0) {
     const ocoinRef = doc(collection(db, 'oCoins'));
     batch.set(ocoinRef, {
@@ -123,7 +140,7 @@ export async function createBan(params: {
       employeeId: employee.uid,
       amount: -penalty,
       type: 'ban_penalty' as const,
-      reason: `Ban penalty: ${reason.trim()}`,
+      reason: `عقوبة حظر: ${reason.trim()}`,
       taskId: null,
       taskTitle: null,
       createdBy: actor.email.toLowerCase(),
@@ -147,7 +164,11 @@ export async function createBan(params: {
     const idx = users.findIndex((u: any) => u.uid === employee.uid);
     if (idx !== -1) {
       users[idx].status = 'suspended';
-      users[idx].oCoinsBalance = 0;
+      // FIX: Never zero the balance for unlimited-coin roles
+      const isUnlimitedLocal = users[idx].role === 'lead' || users[idx].role === 'co_lead' || users[idx].role === 'head';
+      if (!isUnlimitedLocal) {
+        users[idx].oCoinsBalance = 0;
+      }
       localStorage.setItem('elgogalyia_local_users', JSON.stringify(users));
     }
     const sessRaw = localStorage.getItem('elgogalyia_user_session');
@@ -155,7 +176,10 @@ export async function createBan(params: {
       const sess: any = JSON.parse(sessRaw);
       if (sess.uid === employee.uid) {
         sess.status = 'suspended';
-        sess.oCoinsBalance = 0;
+        const isUnlimitedSess = sess.role === 'lead' || sess.role === 'co_lead' || sess.role === 'head';
+        if (!isUnlimitedSess) {
+          sess.oCoinsBalance = 0;
+        }
         localStorage.setItem('elgogalyia_user_session', JSON.stringify(sess));
       }
     }
@@ -164,8 +188,8 @@ export async function createBan(params: {
         recipientEmail: (employee.email || employee.username || '').toLowerCase(),
         recipientUid: employee.uid,
         type: 'ban.suspended' as any,
-        title: 'Account suspended',
-        message: `Your account is suspended until ${endAt.toLocaleString()}. Reason: ${reason}`,
+        title: 'تم تعطيل حسابك ❗',
+        message: `تم تعطيل حسابك حتى ${endAt.toLocaleString('ar-EG')}. السبب: ${reason}`,
         taskId: null,
       });
     } catch {}
@@ -186,9 +210,27 @@ export async function endBan(banId: string, actor: { uid: string; email: string;
   const bans = readLocal();
   const ban = bans.find(b => b.id === banId);
   const employeeId = ban?.employeeId;
+  const coinPenaltyToRestore = ban?.coinPenalty ?? 0;
   try {
     await updateDoc(doc(db, 'bans', banId), { status: 'ended_early', endedAt: serverTimestamp(), endedBy: actor.uid || actor.email, endedByName: actor.displayName });
-    if (employeeId) await updateDoc(doc(db, 'users', employeeId), { status: 'active', updatedAt: serverTimestamp() });
+    if (employeeId) {
+      // FIX #9: Restore the coinPenalty that was deducted when the ban was created
+      const userUpdate: any = { status: 'active', updatedAt: serverTimestamp() };
+      if (coinPenaltyToRestore > 0) {
+        // Check if the user is an unlimited-coin role (shouldn't have been penalized, but just in case)
+        try {
+          const uSnap = await (await import('./supabase')).getDoc((await import('./supabase')).doc(db, 'users', employeeId));
+          if (uSnap.exists()) {
+            const userData = uSnap.data() as any;
+            const isUnlimited = userData.role === 'lead' || userData.role === 'co_lead' || userData.role === 'head';
+            if (!isUnlimited) {
+              userUpdate.oCoinsBalance = coinPenaltyToRestore;
+            }
+          }
+        } catch {}
+      }
+      await updateDoc(doc(db, 'users', employeeId), userUpdate);
+    }
   } catch (e) { console.warn('endBan supabase notice', e); }
   const updated = readLocal().map(b => b.id === banId ? { ...b, status: 'ended_early' as const, endedAt: new Date().toISOString() as any, endedBy: actor.uid || actor.email } : b);
   writeLocal(updated);
@@ -198,6 +240,10 @@ export async function endBan(banId: string, actor: { uid: string; email: string;
       const idx = users.findIndex((u: any) => u.uid === employeeId);
       if (idx !== -1) {
         users[idx].status = 'active';
+        // Restore the deducted coin penalty in local storage too
+        if (coinPenaltyToRestore > 0 && !(users[idx].role === 'lead' || users[idx].role === 'co_lead' || users[idx].role === 'head')) {
+          users[idx].oCoinsBalance = coinPenaltyToRestore;
+        }
         localStorage.setItem('elgogalyia_local_users', JSON.stringify(users));
       }
       const sessRaw = localStorage.getItem('elgogalyia_user_session');
@@ -205,13 +251,16 @@ export async function endBan(banId: string, actor: { uid: string; email: string;
         const sess: any = JSON.parse(sessRaw);
         if (sess.uid === employeeId) {
           sess.status = 'active';
+          if (coinPenaltyToRestore > 0 && !(sess.role === 'lead' || sess.role === 'co_lead' || sess.role === 'head')) {
+            sess.oCoinsBalance = coinPenaltyToRestore;
+          }
           localStorage.setItem('elgogalyia_user_session', JSON.stringify(sess));
         }
       }
     } catch {}
   }
   try {
-    if (ban) await createNotification({ recipientEmail: (ban as any).employeeUsername?.toLowerCase() || ban.employeeId, recipientUid: ban.employeeId, type: 'ban.lifted' as any, title: 'Suspension lifted', message: 'Your suspension has been lifted. You may resume work.', taskId: null });
+    if (ban) await createNotification({ recipientEmail: (ban as any).employeeUsername?.toLowerCase() || ban.employeeId, recipientUid: ban.employeeId, type: 'ban.lifted' as any, title: 'تم رفع التعطيل عن حسابك ✅', message: 'تم رفع التعطيل عن حسابك. يمكنك استئناف العمل الآن.', taskId: null });
     await logActivity({ actor: actor.email, actorName: actor.displayName, action: 'user.unbanned' as any, targetType: 'ban' as any, targetId: banId, targetName: ban?.employeeName || banId, metadata: {} });
   } catch {}
   logBanAccess(actor.uid, 'end', `Ended ban ${banId}`);
@@ -272,7 +321,9 @@ export async function deleteBan(banId: string, actor: { uid: string; email: stri
 
 export async function clearAllBans(actor: { uid: string; email: string; displayName: string }): Promise<void> {
   const viewer = getCurrentViewer();
-  if (!canViewAllBans(viewer)) throw new Error('Forbidden: Only admins can clear ban records');
+  if (!viewer || (viewer.role !== 'lead' && viewer.role !== 'co_lead')) {
+    throw new Error('Forbidden: Only top platform leaders (lead and co_lead) can clear all ban records');
+  }
 
   try {
     const snap = await getDocs(collection(db, 'bans'));

@@ -31,7 +31,7 @@ export async function logAudit(entry: Omit<AuditEntry, 'timestamp'>): Promise<vo
   }
 }
 
-export function logBanAccess(actorId: string, action: 'view_all' | 'view_own' | 'view_single' | 'create' | 'end', details?: string) {
+export function logBanAccess(actorId: string, action: 'view_all' | 'view_own' | 'view_single' | 'create' | 'end' | 'delete', details?: string) {
   logAudit({
     actorId,
     action: `ban.${action}`,

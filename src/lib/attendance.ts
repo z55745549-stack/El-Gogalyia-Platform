@@ -180,11 +180,17 @@ export async function recordAttendance(params: {
   sessionId: string;
   token: string;
   employee: UserProfile;
+  timeBucket?: string | number | null;
 }): Promise<{ alreadyRecorded: boolean; record: AttendanceRecord }> {
-  const { sessionId, token, employee } = params;
+  const { sessionId, token, employee, timeBucket } = params;
 
   if (!employee || !employee.uid) {
     throw new Error('يرجى تسجيل الدخول بحسابك أولاً لتسجيل الحضور.');
+  }
+
+  // Check account suspension / inactivation
+  if (employee.status === 'suspended' || employee.status === 'inactive') {
+    throw new Error('حسابك معطل أو موقوف حالياً، لا يمكنك تسجيل الحضور.');
   }
 
   // 1. Fetch and validate session
@@ -210,6 +216,37 @@ export async function recordAttendance(params: {
     );
   }
 
+  const now = new Date();
+
+  // Validate timeBucket anti-cheat (dynamic rotating QR code)
+  if (timeBucket !== undefined && timeBucket !== null) {
+    const tbNum = Number(timeBucket);
+    if (!isNaN(tbNum)) {
+      const currentBucket = Math.floor(Date.now() / 60000);
+      // Allow +/- 3 minutes tolerance for network/clock differences
+      if (Math.abs(currentBucket - tbNum) > 3) {
+        throw new Error('رمز التحقق السريع (QR) منتهي الصلاحية (تم تصويره أو مشاركته مسبقاً). يرجى مسح الرمز المباشر المعروض على الشاشة حالياً.');
+      }
+    }
+  }
+
+  // Validate session scheduled endTime expiration
+  try {
+    if (session.endTime && session.date) {
+      const [year, month, day] = session.date.split('-').map(Number);
+      const [endH, endM] = session.endTime.split(':').map(Number);
+      if (!isNaN(year) && !isNaN(month) && !isNaN(day) && !isNaN(endH) && !isNaN(endM)) {
+        const endObj = new Date(year, month - 1, day, endH, endM, 0, 0);
+        // Allow 15 minutes grace window after endTime
+        if (now.getTime() > endObj.getTime() + 15 * 60 * 1000) {
+          throw new Error('انتهت فترة هذه الجلسة المحددة ولم تعد تقبل تسجيل الحضور.');
+        }
+      }
+    }
+  } catch (e: any) {
+    if (e.message.includes('انتهت فترة')) throw e;
+  }
+
   // Ensure employee has a permanent employee code
   const code = employee.employeeCode || (await ensureUserEmployeeCode(employee));
 
@@ -226,19 +263,19 @@ export async function recordAttendance(params: {
   }
 
   // Format current check-in time e.g. "5:14 PM"
-  const now = new Date();
   const checkInTimeStr = now.toLocaleTimeString('en-US', {
     hour: 'numeric',
     minute: '2-digit',
     hour12: true,
   });
 
-  // Calculate if late: compare current time to session startTime
+  // Calculate if late: compare current time to session date + startTime
   let recordStatus: 'present' | 'late' = 'present';
   try {
+    const sessionDateStr = session.date || now.toISOString().split('T')[0];
+    const [year, month, day] = sessionDateStr.split('-').map(Number);
     const [startH, startM] = (session.startTime || '00:00').split(':').map(Number);
-    const startObj = new Date();
-    startObj.setHours(startH, startM + 15, 0, 0); // 15 mins grace period
+    const startObj = new Date(year, month - 1, day, startH, startM + 15, 0, 0); // 15 mins grace period
     if (now.getTime() > startObj.getTime()) {
       recordStatus = 'late';
     }

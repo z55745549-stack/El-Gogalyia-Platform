@@ -27,10 +27,11 @@ import type {
 import type { UserProfile } from '@/types';
 import { isAdminRole } from '@/utils/permissions';
 
-// Generate short readable ticket numbers e.g. #TK-1042
+// Generate unique readable ticket numbers e.g. #TK-841920
 function generateTicketNumber(): string {
-  const num = Math.floor(1000 + Math.random() * 9000);
-  return `#TK-${num}`;
+  const timeSuffix = Date.now().toString().slice(-4);
+  const randomPrefix = Math.floor(10 + Math.random() * 90);
+  return `#TK-${randomPrefix}${timeSuffix}`;
 }
 
 // ─── 1. Create a Support Ticket ──────────────────────────────────────────────
@@ -102,7 +103,7 @@ export async function createSupportTicket(params: {
   // Notify Admins about new ticket
   try {
     const adminSnap = await getDocs(
-      query(collection(db, 'users'), where('role', 'in', ['lead', 'co_lead', 'head']))
+      query(collection(db, 'users'), where('role', 'in', ['lead', 'co_lead', 'head', 'vice_head']))
     );
     for (const adminDoc of adminSnap.docs) {
       const adminData = adminDoc.data();

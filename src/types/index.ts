@@ -47,7 +47,7 @@ export interface UserProfile {
   isTwoFactorEnabled?: boolean;
   googleLinkedUid?: string;
   employeeCode?: string; // Unique permanent attendance code e.g. GOGA-33001
-  oCoinsBalance: number;
+  oCoinsBalance?: number | null;
   createdAt: Timestamp | string;
   updatedAt?: Timestamp | string;
 }

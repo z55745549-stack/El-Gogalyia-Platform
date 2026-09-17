@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { subscribeBans, deleteBan, clearAllBans } from '@/lib/bans';
 import { canViewAllBans } from '@/lib/security';
+import { isTopTierRole } from '@/utils/permissions';
 import { Input } from '@/components/ui/input';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Avatar } from '@/components/ui/avatar';
@@ -16,6 +17,7 @@ import type { Ban as BanRecord } from '@/types';
 export function BansPage() {
   const { userProfile } = useAuth();
   const isPrivileged = canViewAllBans(userProfile);
+  const isTopTier = userProfile ? isTopTierRole(userProfile.role) : false;
   const [bans, setBans] = useState<BanRecord[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
@@ -62,7 +64,10 @@ export function BansPage() {
   };
 
   const handleClearAllBans = async () => {
-    if (!userProfile) return;
+    if (!userProfile || !isTopTier) {
+      toast.error('هذا الإجراء مخصص للقيادة العليا (القائد والنائب) فقط.');
+      return;
+    }
     setClearing(true);
     try {
       await clearAllBans({
@@ -114,7 +119,7 @@ export function BansPage() {
             سجل إداري موثق لعقوبات الحظر، الخصومات التأديبية، وتاريخ إيقاف الحسابات.
           </p>
         </div>
-        {isPrivileged && bans.length > 0 && (
+        {isTopTier && bans.length > 0 && (
           <button
             onClick={() => setShowClearAll(true)}
             className="text-xs font-bold text-[var(--brand-danger)] hover:bg-[var(--brand-danger)]/10 px-3.5 py-2 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 self-start sm:self-auto border border-[var(--brand-danger)]/20"

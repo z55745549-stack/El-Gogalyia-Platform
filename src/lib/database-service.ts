@@ -15,6 +15,7 @@ import {
   writeBatch,
   Timestamp,
   onSnapshot,
+  increment,
   db,
 } from './supabase';
 import type {
@@ -32,7 +33,15 @@ import type {
   OCoinTransaction,
   OCoinTransactionType,
 } from '@/types';
-import { safeDate } from '@/utils';
+import { safeDate, hasUnlimitedCoins } from '@/utils';
+
+/**
+ * Returns true if a role should NEVER have a numeric oCoinsBalance stored in DB.
+ * These roles have conceptually infinite coins and are excluded from all financial tracking.
+ */
+function isUnlimitedRole(role: string | undefined): boolean {
+  return hasUnlimitedCoins(role);
+}
 
 // ─── Activity Logs ─────────────────────────────────────────────────────────────
 
@@ -144,7 +153,7 @@ export async function broadcastNotificationToAll(params: {
     await logActivity({
       actor: params.createdByName,
       actorName: params.createdByName,
-      action: 'user.status_changed' as ActivityLog['action'],
+      action: 'notification.broadcast' as ActivityLog['action'],
       targetType: 'system',
       targetId: 'broadcast',
       targetName: `إذاعة: ${params.title}`,
@@ -245,8 +254,9 @@ export async function createTask(
   for (const recipientId of assignedToNormalized) {
     createNotification({
       recipientEmail: recipientId,
+      recipientUid: recipientId,
       type: 'task_assigned',
-      title: 'مهمة جديدة إسنادها إليك 📋',
+      title: 'مهمة جديدة مسندة إليك 📋',
       message: `تم إسناد المهمة: "${data.title}"`,
       taskId: generatedId,
     }).catch(() => {});
@@ -454,11 +464,15 @@ export async function submitTask(
   } catch (e: any) {
     if (e?.message?.includes('suspended') || e?.message?.includes('مغلقة') || e?.message?.includes('الموعد النهائي')) throw e;
   }
+  // FIX #7: localStorage ban check — must re-throw the suspension error, not silently swallow it
   try {
     const localBans: any[] = JSON.parse(localStorage.getItem('elgogalyia_local_bans') || '[]');
     const active = localBans.find((b: any) => b.employeeId === submitter.uid && b.status === 'active' && new Date(b.endAt).getTime() > Date.now());
     if (active) throw new Error('Account is suspended — submission blocked');
-  } catch {}
+  } catch (e: any) {
+    if (e?.message?.includes('suspended')) throw e;
+    // Ignore JSON parse or other non-ban errors
+  }
 
   const submitterIdentifier = (submitter.uid || submitter.email || submitter.username || '').toLowerCase().trim();
 
@@ -490,8 +504,33 @@ export async function submitTask(
     rejectionReason: null,
   };
 
+  // FIX #6: For multi-assignee tasks, only mark 'submitted' if ALL assigned members have submitted.
+  // Otherwise set status to 'in_progress' to reflect partial submission state.
+  let newTaskStatus: TaskStatus = 'submitted';
+  try {
+    const taskSnap2 = await getDoc(doc(db, 'tasks', taskId));
+    if (taskSnap2.exists()) {
+      const taskData2 = taskSnap2.data() as Task;
+      const allAssigned = taskData2.assignedTo || [];
+      if (allAssigned.length > 1) {
+        // Build updated statuses map including the current submitter
+        const updatedStatuses: Record<string, UserTaskStatus> = { ...(taskData2.userStatuses || {}) };
+        updatedStatuses[submitterIdentifier] = userStatusObj;
+        if (submitter.email) updatedStatuses[(submitter.email || '').toLowerCase()] = userStatusObj;
+        if (submitter.username) updatedStatuses[submitter.username.toLowerCase()] = userStatusObj;
+
+        const allSubmitted = allAssigned.every((memberId) => {
+          const mid = memberId.toLowerCase().trim();
+          const st = updatedStatuses[mid]?.status;
+          return st === 'submitted' || st === 'approved';
+        });
+        newTaskStatus = allSubmitted ? 'submitted' : 'in_progress';
+      }
+    }
+  } catch { /* fallback to 'submitted' */ }
+
   await updateDoc(doc(db, 'tasks', taskId), {
-    status: 'submitted',
+    status: newTaskStatus,
     latestSubmission: { ...submissionData, id: subDocRef.id },
     [`userStatuses.${submitterIdentifier}`]: userStatusObj,
     [`userStatuses.${(submitter.email || '').toLowerCase()}`]: userStatusObj,
@@ -515,7 +554,7 @@ export async function submitTask(
 
     return {
       ...t,
-      status: 'submitted',
+      status: newTaskStatus,
       latestSubmission: { ...submissionData, id: subDocRef.id, submittedAt: new Date().toISOString() as any } as any,
       userStatuses: uStatuses,
       updatedAt: new Date().toISOString() as any,
@@ -726,8 +765,22 @@ export async function approveTask(
     } catch {}
   }
 
-  // 5. Award O Coins Transaction ONLY if not already rewarded
-  if (!alreadyRewarded) {
+  // 5. Award O Coins Transaction ONLY if not already rewarded AND the assignee is NOT an unlimited-coin role
+  // FIX #3: Heads/Leads/Co-Leads have infinite coins — never write a numeric transaction for them
+  let assigneeRole: string | undefined;
+  try {
+    if (resolvedUid) {
+      const uSnap2 = await getDoc(doc(db, 'users', resolvedUid));
+      if (uSnap2.exists()) assigneeRole = (uSnap2.data() as any).role;
+    }
+    if (!assigneeRole) {
+      const locals: any[] = JSON.parse(localStorage.getItem('elgogalyia_local_users') || '[]');
+      const found = locals.find((u: any) => u.uid === resolvedUid);
+      if (found) assigneeRole = found.role;
+    }
+  } catch {}
+
+  if (!alreadyRewarded && !isUnlimitedRole(assigneeRole)) {
     const ocoinRef = doc(collection(db, 'oCoins'));
     batch.set(ocoinRef, {
       userId: resolvedUid || '',
@@ -751,9 +804,9 @@ export async function approveTask(
       try {
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
-          const currentBalance = (userSnap.data() as any).oCoinsBalance ?? 0;
+          // FIX: Use atomic increment() to prevent race conditions with concurrent approvals
           batch.update(userRef, {
-            oCoinsBalance: currentBalance + task.oCoinsReward,
+            oCoinsBalance: increment(task.oCoinsReward),
           });
         }
       } catch {}
@@ -762,9 +815,9 @@ export async function approveTask(
 
   await batch.commit();
 
-  // 6. Update local session & cache for instant UI response
+  // 6. Update local session & cache for instant UI response (skip for unlimited-coin roles)
   try {
-    if (resolvedUid && !alreadyRewarded) {
+    if (resolvedUid && !alreadyRewarded && !isUnlimitedRole(assigneeRole)) {
       const localUsers: any[] = JSON.parse(localStorage.getItem('elgogalyia_local_users') || '[]');
       const idx = localUsers.findIndex((u: any) => u.uid === resolvedUid);
       if (idx !== -1) {
@@ -1001,6 +1054,11 @@ export async function manualOCoinAdjustment(params: {
   source?: string;
   actor: { email: string; displayName: string; photoURL?: string };
 }) {
+  // FIX (safety guard): Unlimited-coin roles must never have their numeric balance touched
+  if (isUnlimitedRole(params.targetUser.role)) {
+    throw new Error('لا يمكن تعديل رصيد عضو ذي رصيد لا نهائي (Head / Lead / Co-Lead).');
+  }
+
   const { targetUser, amount, reason, description, source = 'admin_manual', actor } = params;
   const isDeduction = params.type === 'manual_remove' || params.type === 'penalty_deduction';
   const finalType: OCoinTransactionType = params.type || (isDeduction ? 'penalty_deduction' : 'manual_reward');
@@ -1127,7 +1185,57 @@ export async function deleteOCoinTransaction(
   transactionId: string,
   actor: { email: string; displayName: string }
 ) {
+  // FIX #4: Recalculate affected user's balance before deleting the transaction record
   try {
+    const txSnap = await getDoc(doc(db, 'oCoins', transactionId));
+    if (txSnap.exists()) {
+      const txData = txSnap.data() as any;
+      const affectedUid = txData.uid || txData.userId || txData.user_id || txData.employeeId || '';
+      const txAmount = Number(txData.amount || 0);
+
+      if (affectedUid && txAmount !== 0) {
+        // Check if this user is an unlimited-coin role — skip balance fix if so
+        let affectedRole: string | undefined;
+        try {
+          const uSnap = await getDoc(doc(db, 'users', affectedUid));
+          if (uSnap.exists()) affectedRole = (uSnap.data() as any).role;
+        } catch {}
+
+        if (!isUnlimitedRole(affectedRole)) {
+          // Reverting: subtract if it was a credit, add back if it was a debit
+          const reversal = -txAmount;
+          try {
+            const uRef = doc(db, 'users', affectedUid);
+            const uSnap = await getDoc(uRef);
+            if (uSnap.exists()) {
+              const currentBal = Number((uSnap.data() as any).oCoinsBalance ?? 0);
+              const newBal = Math.max(0, currentBal + reversal);
+              await updateDoc(uRef, { oCoinsBalance: newBal });
+
+              // Update local cache
+              try {
+                const localUsers: any[] = JSON.parse(localStorage.getItem('elgogalyia_local_users') || '[]');
+                const idx = localUsers.findIndex((u: any) => u.uid === affectedUid);
+                if (idx !== -1) {
+                  localUsers[idx].oCoinsBalance = newBal;
+                  localStorage.setItem('elgogalyia_local_users', JSON.stringify(localUsers));
+                }
+                const sessRaw = localStorage.getItem('elgogalyia_user_session');
+                if (sessRaw) {
+                  const sess: any = JSON.parse(sessRaw);
+                  if (sess.uid === affectedUid) {
+                    sess.oCoinsBalance = newBal;
+                    localStorage.setItem('elgogalyia_user_session', JSON.stringify(sess));
+                  }
+                }
+              } catch {}
+            }
+          } catch (balErr) {
+            console.warn('deleteOCoinTransaction balance reversal warning:', balErr);
+          }
+        }
+      }
+    }
     await deleteDoc(doc(db, 'oCoins', transactionId));
   } catch (err) {
     console.warn('deleteOCoinTransaction Supabase error:', err);
@@ -1147,11 +1255,46 @@ export async function deleteOCoinTransaction(
 export async function clearAllOCoinTransactions(
   actor: { email: string; displayName: string }
 ) {
+  // FIX #5: When clearing all transactions, also reset oCoinsBalance for all non-unlimited users
   try {
-    const snap = await getDocs(collection(db, 'oCoins'));
+    const [txSnap, usersSnap] = await Promise.all([
+      getDocs(collection(db, 'oCoins')),
+      getDocs(collection(db, 'users')),
+    ]);
+
     const batch = writeBatch(db);
-    snap.docs.forEach((d) => batch.delete(d.ref));
+
+    // Delete all transactions
+    txSnap.docs.forEach((d) => batch.delete(d.ref));
+
+    // Reset balances for all non-unlimited users to 0
+    usersSnap.docs.forEach((d) => {
+      const data = d.data() as any;
+      if (!isUnlimitedRole(data.role)) {
+        batch.update(d.ref, { oCoinsBalance: 0 });
+      }
+    });
+
     await batch.commit();
+
+    // Update local caches
+    try {
+      const localUsers: any[] = JSON.parse(localStorage.getItem('elgogalyia_local_users') || '[]');
+      const updated = localUsers.map((u: any) =>
+        isUnlimitedRole(u.role) ? u : { ...u, oCoinsBalance: 0 }
+      );
+      localStorage.setItem('elgogalyia_local_users', JSON.stringify(updated));
+
+      const sessRaw = localStorage.getItem('elgogalyia_user_session');
+      if (sessRaw) {
+        const sess: any = JSON.parse(sessRaw);
+        if (!isUnlimitedRole(sess.role)) {
+          sess.oCoinsBalance = 0;
+          localStorage.setItem('elgogalyia_user_session', JSON.stringify(sess));
+        }
+      }
+      window.dispatchEvent(new Event('elgogalyia_data_change'));
+    } catch {}
   } catch (err) {
     console.warn('clearAllOCoinTransactions Supabase error:', err);
   }
@@ -1162,7 +1305,7 @@ export async function clearAllOCoinTransactions(
     action: 'ocoin.deleted' as any,
     targetType: 'ocoin',
     targetId: 'all',
-    targetName: 'مسح جميع سجلات معاملات O Coins',
+    targetName: 'مسح جميع سجلات معاملات O Coins وإعادة ضبط أرصدة الأعضاء',
     metadata: {},
   }).catch(() => {});
 }
@@ -1183,16 +1326,18 @@ export async function addAuthorizedUser(
   };
 
   const generatedUid = 'user_' + emailKey.replace(/[^a-z0-9]/g, '_');
+  const assignedRole = userData.role || 'member';
   const userProfileDoc = {
     uid: generatedUid,
     email: emailKey,
     username: userData.username || emailKey,
     displayName: userData.displayName || emailKey.split('@')[0],
     photoURL: userData.photoURL || '',
-    role: userData.role || 'member',
+    role: assignedRole,
     permissions: userData.permissions || [],
     status: userData.status || 'active',
-    oCoinsBalance: 0,
+    // FIX #2: Unlimited-coin roles (head, lead, co_lead) don't have a numeric balance — set null
+    oCoinsBalance: isUnlimitedRole(assignedRole) ? null : 0,
     createdAt: serverTimestamp(),
   };
 
@@ -1347,6 +1492,8 @@ export async function addAuthorizedAdmin(
   // Also sync with users collection for Supabase Rules and local storage
   const generatedUid = 'user_' + emailKey.replace(/[^a-z0-9]/g, '_');
   try {
+    // FIX #1: Unlimited-coin roles (head, lead, co_lead) must NOT get a numeric oCoinsBalance
+    const adminBalance = isUnlimitedRole(adminData.role) ? null : 0;
     await setDoc(doc(db, 'users', generatedUid), {
       uid: generatedUid,
       email: emailKey,
@@ -1360,7 +1507,7 @@ export async function addAuthorizedAdmin(
         'ocoins.manage', 'ocoins.view_all', 'reports.view', 'reports.export',
         'access.manage', 'activity.view', 'notifications.send'
       ],
-      oCoinsBalance: 1000,
+      oCoinsBalance: adminBalance,
       createdAt: serverTimestamp(),
     }, { merge: true });
   } catch (e) {

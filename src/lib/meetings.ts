@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { collection, doc, setDoc, getDocs, getDoc, updateDoc, deleteDoc, serverTimestamp, query, orderBy, onSnapshot, Timestamp, db } from './supabase';
 import type { Meeting } from '@/types';
 import { canViewAllBans } from './security';
@@ -177,12 +176,12 @@ export function getCountdown(date: any, startTime: string): string {
     const start = new Date(d);
     start.setHours(h||0, m||0, 0, 0);
     const diff = start.getTime() - Date.now();
-    if (diff <= 0) return 'Started';
+    if (diff <= 0) return 'بدأ الآن';
     const days = Math.floor(diff / (1000*60*60*24));
     const hours = Math.floor((diff % (1000*60*60*24)) / (1000*60*60));
-    if (days > 0) return `in ${days}d ${hours}h`;
+    if (days > 0) return `خلال ${days} يوم و ${hours} ساعة`;
     const mins = Math.floor((diff % (1000*60*60)) / (1000*60));
-    if (hours > 0) return `in ${hours}h ${mins}m`;
-    return `in ${mins}m`;
+    if (hours > 0) return `خلال ${hours} ساعة و ${mins} دقيقة`;
+    return `خلال ${mins} دقيقة`;
   } catch { return ''; }
 }

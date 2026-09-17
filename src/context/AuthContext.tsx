@@ -16,7 +16,7 @@ import { parseErrorMessage, logError } from '@/lib/errors';
 import type { UserProfile, Permission } from '@/types';
 import { isAdminRole } from '@/utils/permissions';
 import { authenticateWithDevice } from '@/lib/webauthn';
-import { formatFullName } from '@/utils';
+import { formatFullName, hasUnlimitedCoins } from '@/utils';
 
 // -------------------------------------------------------------------
 // Login Rate Limiter (In-memory + Session scoped protection)
@@ -120,18 +120,23 @@ async function fetchProfileFromSupabase(uid: string): Promise<UserProfile | null
 // Map a Supabase users row → UserProfile shape
 // -------------------------------------------------------------------
 function mapRowToProfile(row: any): UserProfile {
+  const role = row.role;
+  // FIX #3: Unlimited-coin roles (head, lead, co_lead) must preserve null balance — never default to 0
+  const oCoinsBalance = hasUnlimitedCoins(role)
+    ? (row.ocoins_balance ?? null)
+    : (row.ocoins_balance ?? 0);
   return {
     uid: row.id,
     username: row.username,
     displayName: row.display_name,
     email: row.email ?? '',
     photoURL: row.photo_url ?? '',
-    role: row.role,
+    role,
     status: row.status,
     committeeId: row.committee_id ?? undefined,
     committeeName: row.committee_name || (row.role === 'lead' || row.role === 'co_lead' ? 'بدون لجنة' : undefined),
     employeeCode: row.employee_code ?? undefined,
-    oCoinsBalance: row.ocoins_balance ?? 0,
+    oCoinsBalance,
     permissions: row.permissions ?? [],
     isTwoFactorEnabled: row.is_two_factor_enabled ?? false,
     googleLinkedEmail: row.google_linked_email ?? undefined,
@@ -146,6 +151,10 @@ function mapRowToProfile(row: any): UserProfile {
 // -------------------------------------------------------------------
 async function upsertProfileToSupabase(profile: UserProfile & { passwordHash?: string; salt?: string }) {
   try {
+    // FIX #4: Unlimited-coin roles must never have ocoins_balance overwritten with 0
+    const ocoins_balance = hasUnlimitedCoins(profile.role)
+      ? null
+      : (profile.oCoinsBalance ?? 0);
     await supabase.from('users').upsert({
       id: profile.uid,
       username: profile.username,
@@ -157,7 +166,7 @@ async function upsertProfileToSupabase(profile: UserProfile & { passwordHash?: s
       committee_id: profile.committeeId || null,
       committee_name: profile.committeeName || null,
       employee_code: profile.employeeCode || null,
-      ocoins_balance: profile.oCoinsBalance ?? 0,
+      ocoins_balance,
       permissions: profile.permissions ?? [],
       is_two_factor_enabled: profile.isTwoFactorEnabled ?? false,
       google_linked_email: profile.googleLinkedEmail || null,
@@ -341,10 +350,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           unameLower.replace(/_/g, '-'),
           unameLower.replace(/[^a-z0-9]/g, ''),
         ];
-        if (unameLower.includes('zeyad')) {
-          unameVariants.push('zeyad-eltmsah', 'zeyad_eltmsah');
-        }
-
         const { data } = await supabase
           .from('users')
           .select('*')
@@ -411,6 +416,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               isMasterVerified = true;
             } else {
               // Build profile directly from auth user if not yet in public.users
+              // FIX #9: Lead/Co-Lead must never have numeric oCoinsBalance
               matchedProfile = {
                 uid: authData.user.id,
                 username: authData.user.email?.split('@')[0] || 'lead',
@@ -427,7 +433,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   'reports.view', 'reports.export',
                   'access.manage', 'activity.view', 'notifications.send',
                 ],
-                oCoinsBalance: 0,
+                oCoinsBalance: null as any,
                 createdAt: new Date().toISOString(),
               } as any;
               upsertProfileToSupabase(matchedProfile!);
@@ -547,7 +553,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // -------------------------------------------------------------------
   const updateCurrentUserProfile = useCallback(async (updated: Partial<UserProfile>) => {
     if (!userProfile?.uid) return;
-    const merged = { ...userProfile, ...updated };
+    // Security: explicitly drop role to prevent privilege escalation from client-side calls
+    const { role: _droppedRole, ...safeUpdated } = updated;
+    const merged = { ...userProfile, ...safeUpdated };
     const safeMerged = sanitizeProfileForSession(merged);
     setUserProfile(safeMerged);
     saveSession(safeMerged);
@@ -555,18 +563,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       // Build Supabase column map from UserProfile fields
       const dbUpdate: Record<string, any> = { updated_at: new Date().toISOString() };
-      if (updated.displayName !== undefined) dbUpdate.display_name = updated.displayName;
-      if (updated.email !== undefined) dbUpdate.email = updated.email;
-      if (updated.photoURL !== undefined) dbUpdate.photo_url = updated.photoURL;
-      if (updated.role !== undefined) dbUpdate.role = updated.role;
-      if (updated.status !== undefined) dbUpdate.status = updated.status;
-      if (updated.committeeId !== undefined) dbUpdate.committee_id = updated.committeeId;
-      if (updated.committeeName !== undefined) dbUpdate.committee_name = updated.committeeName;
-      if (updated.employeeCode !== undefined) dbUpdate.employee_code = updated.employeeCode;
-      if (updated.oCoinsBalance !== undefined) dbUpdate.ocoins_balance = updated.oCoinsBalance;
-      if (updated.permissions !== undefined) dbUpdate.permissions = updated.permissions;
-      if (updated.isTwoFactorEnabled !== undefined) dbUpdate.is_two_factor_enabled = updated.isTwoFactorEnabled;
-      if (updated.googleLinkedEmail !== undefined) dbUpdate.google_linked_email = updated.googleLinkedEmail;
+      if (safeUpdated.displayName !== undefined) dbUpdate.display_name = safeUpdated.displayName;
+      if (safeUpdated.email !== undefined) dbUpdate.email = safeUpdated.email;
+      if (safeUpdated.photoURL !== undefined) dbUpdate.photo_url = safeUpdated.photoURL;
+      // NOTE: role changes are NOT allowed from the client via this function.
+      // Role must be changed only by admins through EmployeesPage (dedicated admin flow).
+      if (safeUpdated.status !== undefined) dbUpdate.status = safeUpdated.status;
+      if (safeUpdated.committeeId !== undefined) dbUpdate.committee_id = safeUpdated.committeeId;
+      if (safeUpdated.committeeName !== undefined) dbUpdate.committee_name = safeUpdated.committeeName;
+      if (safeUpdated.employeeCode !== undefined) dbUpdate.employee_code = safeUpdated.employeeCode;
+      // FIX: Never update ocoins_balance to a number for unlimited-coin roles
+      if (safeUpdated.oCoinsBalance !== undefined) {
+        dbUpdate.ocoins_balance = hasUnlimitedCoins(merged.role) ? null : safeUpdated.oCoinsBalance;
+      }
+      if (safeUpdated.permissions !== undefined) dbUpdate.permissions = safeUpdated.permissions;
+      if (safeUpdated.isTwoFactorEnabled !== undefined) dbUpdate.is_two_factor_enabled = safeUpdated.isTwoFactorEnabled;
+      if (safeUpdated.googleLinkedEmail !== undefined) dbUpdate.google_linked_email = safeUpdated.googleLinkedEmail;
 
       await supabase.from('users').update(dbUpdate).eq('id', userProfile.uid);
     } catch (e) {
@@ -616,8 +628,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error('يرجى ملء جميع الحقول المطلوبة.');
     }
 
-    if (passClean.length < 6) {
-      throw new Error('كلمة المرور يجب أن تكون 6 أحرف على الأقل.');
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(emailClean)) {
+      throw new Error('صيغة البريد الإلكتروني غير صحيحة، يرجى التحقق منه.');
+    }
+
+    // Password strength: minimum 8 characters with letters and numbers
+    if (passClean.length < 8) {
+      throw new Error('كلمة المرور يجب أن تتكون من 8 أحرف على الأقل.');
+    }
+    if (!/[A-Za-z]/.test(passClean) || !/[0-9]/.test(passClean)) {
+      throw new Error('كلمة المرور يجب أن تحتوي على أحرف إنجليزية وأرقام لضمان أمان الحساب.');
     }
 
     // Check if username or email is already taken
@@ -638,8 +660,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const salt = generateSalt();
     const passwordHash = await hashPassword(passClean, salt);
     const genId = 'user_reg_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
-    const codeNum = Math.floor(1000 + Math.random() * 9000);
-    const employeeCode = `GOGA-${codeNum}`;
+
+    // Generate unique employeeCode with collision check
+    let employeeCode = '';
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const codeNum = Math.floor(33000 + Math.random() * 6999);
+      const candidateCode = `GOGA-${codeNum}`;
+      const { data: codeSnap } = await supabase
+        .from('users')
+        .select('id')
+        .eq('employee_code', candidateCode)
+        .limit(1)
+        .maybeSingle();
+      if (!codeSnap) {
+        employeeCode = candidateCode;
+        break;
+      }
+    }
+    if (!employeeCode) {
+      employeeCode = `GOGA-${Date.now().toString().slice(-5)}`;
+    }
 
     const newProfile = {
       id: genId,

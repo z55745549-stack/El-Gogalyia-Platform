@@ -241,8 +241,17 @@ export function AdminDashboard() {
   const handleHeadReward = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!rewardTargetUser || !rewardAmount || !rewardReason.trim() || !userProfile) return;
-    if (rewardTargetUser.uid === userProfile.uid) {
+    const isSelf =
+      rewardTargetUser.uid === userProfile.uid ||
+      Boolean(rewardTargetUser.username && userProfile.username && rewardTargetUser.username.toLowerCase() === userProfile.username.toLowerCase()) ||
+      Boolean(rewardTargetUser.email && userProfile.email && rewardTargetUser.email.toLowerCase() === userProfile.email.toLowerCase());
+    if (isSelf) {
       toast.error('❌ محظور: لا يمكنك منح كوينز لنفسك.');
+      return;
+    }
+    // FIX: Unlimited-coin roles must never receive a numeric reward
+    if (hasUnlimitedCoins(rewardTargetUser.role)) {
+      toast.error('❌ لا يمكن منح كوينز لشخص رصيده لا نهائي (Head / Lead / Co-Lead).');
       return;
     }
     const amt = parseInt(rewardAmount, 10);

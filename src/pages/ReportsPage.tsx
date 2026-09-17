@@ -20,6 +20,7 @@ import { StatCard } from '@/components/ui/stat-card';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { formatOCoins, formatPercent, isOverdue, cn, formatFullName, hasUnlimitedCoins } from '@/utils';
+import { getRoleLabel, getRoleColor } from '@/utils/permissions';
 import { subscribeCommittees } from '@/lib/committees';
 import type { Task, UserProfile, OCoinTransaction, Committee } from '@/types';
 
@@ -393,7 +394,12 @@ export function ReportsPage() {
                 <div className="flex items-center gap-3.5 sm:w-64 min-w-0">
                   <Avatar src={user.photoURL} name={formatFullName(user.displayName || user.username || 'User')} size="md" />
                   <div className="min-w-0">
-                    <p className="font-bold text-[var(--text-primary)] truncate text-sm">{formatFullName(user.displayName || 'عضو الفريق')}</p>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <p className="font-bold text-[var(--text-primary)] truncate text-sm">{formatFullName(user.displayName || 'عضو الفريق')}</p>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold border ${getRoleColor(user.role)}`}>
+                        {getRoleLabel(user.role)}
+                      </span>
+                    </div>
                     <p className="text-xs text-[var(--text-muted)] truncate font-mono">@{user.username || user.email}</p>
                   </div>
                 </div>

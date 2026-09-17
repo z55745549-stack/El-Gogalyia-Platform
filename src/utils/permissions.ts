@@ -2,7 +2,7 @@ import type { Permission, UserRole } from '@/types';
 import { ROLE_PERMISSIONS } from '@/types';
 
 // ─── Role Hierarchy ────────────────────────────────────────────────────────────
-// LEAD (100) = CO-LEAD (100) > HEAD (80) > VICE-HEAD (10) = MEMBER (10)
+// LEAD (100) = CO-LEAD (100) > HEAD (80) > VICE-HEAD (15) > MEMBER (10)
 export const ROLE_HIERARCHY: Record<UserRole, number> = {
   lead:       100, // قائد المنصة (متساوي مع الكو ليد 100٪ فوق الجميع)
   co_lead:    100, // نائب القائد (متساوي مع الليد 100٪ فوق الجميع)
@@ -24,6 +24,30 @@ export function getRoleRank(role: UserRole): number {
 export function canManageRole(actorRole: UserRole, targetRole: UserRole): boolean {
   if (actorRole === 'lead' || actorRole === 'co_lead') return true;
   return getRoleRank(actorRole) > getRoleRank(targetRole);
+}
+
+/**
+ * True if actor user can manage target user:
+ * - Cannot manage yourself (actor.uid === target.uid)
+ * - LEAD and CO-LEAD can manage anyone
+ * - HEAD can only manage members and vice_heads in their own committee (or those without committee)
+ * - VICE-HEAD and MEMBER cannot manage anyone
+ */
+export function canManageUser(
+  actor: { role: UserRole; committeeId?: string | null; uid?: string } | null | undefined,
+  target: { role: UserRole; committeeId?: string | null; uid?: string }
+): boolean {
+  if (!actor || !target) return false;
+  if (actor.uid && target.uid && actor.uid === target.uid) return false;
+  if (actor.role === 'lead' || actor.role === 'co_lead') return true;
+  if (actor.role === 'head') {
+    if (getRoleRank(actor.role) <= getRoleRank(target.role)) return false;
+    if (actor.committeeId && target.committeeId && actor.committeeId !== target.committeeId) {
+      return false;
+    }
+    return true;
+  }
+  return false;
 }
 
 /** True if actor is top tier leadership (LEAD or CO-LEAD) */
