@@ -1,10 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import { collection, query, orderBy, onSnapshot, limit, db } from '@/lib/supabase';
-import { Search, ClipboardList, Shield, Filter, Download, Users, Crown } from 'lucide-react';
+import { Search, ClipboardList, Shield, Filter, Download, Users, Crown, Eye, Info, Copy, Check, Calendar, User, Tag } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Avatar } from '@/components/ui/avatar';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SkeletonTable } from '@/components/ui/skeleton';
+import { Modal } from '@/components/ui/modal';
+import { toast } from 'sonner';
 import { formatDateTime } from '@/utils';
 import type { ActivityLog, UserProfile, Task } from '@/types';
 
@@ -71,10 +73,11 @@ export function ActivityLogsPage() {
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
 
-  // If not high leadership, subscribe to users and tasks to accurately isolate committee members and tasks
-  useEffect(() => {
-    if (isHighLeadership) return;
+  const [selectedLog, setSelectedLog] = useState<ActivityLog | null>(null);
+  const [copied, setCopied] = useState(false);
 
+  // Subscribe to users and tasks for all roles so IDs can be resolved to actual names
+  useEffect(() => {
     const unsubUsers = onSnapshot(collection(db, 'users'), (snap) => {
       const uList = snap.docs.map((d) => ({ uid: d.id, ...d.data() } as UserProfile));
       setUsers(uList);
@@ -89,7 +92,7 @@ export function ActivityLogsPage() {
       unsubUsers();
       unsubTasks();
     };
-  }, [isHighLeadership]);
+  }, []);
 
   useEffect(() => {
     // 1. Instant paint from local cache
@@ -107,26 +110,50 @@ export function ActivityLogsPage() {
       setLoading(false);
     }
 
-    // 2. Real-time Supabase snapshot listener
+    // 2. Real-time Supabase snapshot listener with smart deduplication
     const unsub = onSnapshot(
       query(collection(db, 'activityLogs'), orderBy('createdAt', 'desc'), limit(200)),
       (snap) => {
         const remote = snap.docs.map((d) => ({ id: d.id, ...d.data() } as ActivityLog));
-        const mergedMap = new Map<string, ActivityLog>();
-        // Add remote first
-        for (const r of remote) mergedMap.set(r.id, r);
-        // Add local
-        for (const l of getLocal()) {
-          if (!mergedMap.has(l.id)) mergedMap.set(l.id, l);
+
+        // Deduplication fingerprint to catch duplicate local vs remote or repeated actions
+        const getFingerprint = (l: any) => {
+          const t = new Date(l.createdAt?.toDate?.() || l.createdAt || 0).getTime();
+          // Group timestamps within 15 seconds to collapse duplicate local+remote calls
+          const timeBucket = Math.round(t / 15000);
+          const act = (l.actorId || l.actor || l.actorName || '').toLowerCase().trim();
+          const target = (l.targetId || l.targetName || '').toLowerCase().trim();
+          return `${act}__${l.action}__${target}__${timeBucket}`;
+        };
+
+        const seenFps = new Set<string>();
+        const deduplicated: ActivityLog[] = [];
+
+        // Add remote records first (they are canonical)
+        for (const r of remote) {
+          const fp = getFingerprint(r);
+          if (!seenFps.has(fp)) {
+            seenFps.add(fp);
+            deduplicated.push(r);
+          }
         }
 
-        const mergedList = Array.from(mergedMap.values()).sort((a: any, b: any) => {
+        // Add local-only records that haven't arrived via remote
+        for (const l of getLocal()) {
+          const fp = getFingerprint(l);
+          if (!seenFps.has(fp)) {
+            seenFps.add(fp);
+            deduplicated.push(l);
+          }
+        }
+
+        deduplicated.sort((a: any, b: any) => {
           const tA = new Date(a.createdAt?.toDate?.() || a.createdAt || 0).getTime();
           const tB = new Date(b.createdAt?.toDate?.() || b.createdAt || 0).getTime();
           return tB - tA;
         });
 
-        setLogs(mergedList);
+        setLogs(deduplicated);
         setLoading(false);
       },
       (err) => {
@@ -360,6 +387,62 @@ export function ActivityLogsPage() {
     URL.revokeObjectURL(url);
   };
 
+  const usersMap = useMemo(() => {
+    const map = new Map<string, string>();
+    users.forEach((u) => {
+      if (u.uid) map.set(u.uid, u.displayName || u.username);
+      if (u.username) map.set(u.username, u.displayName || u.username);
+      if (u.email) map.set(u.email, u.displayName || u.username);
+    });
+    if (userProfile?.uid) map.set(userProfile.uid, userProfile.displayName || userProfile.username);
+    return map;
+  }, [users, userProfile]);
+
+  const METADATA_KEY_LABELS: Record<string, string> = {
+    assignedTo: 'المسند إليه',
+    reward: 'المكافأة (O Coins)',
+    priority: 'الأولوية',
+    deadline: 'الموعد النهائي',
+    role: 'الرتبة',
+    newRole: 'الرتبة الجديدة',
+    status: 'الحالة',
+    newStatus: 'الحالة الجديدة',
+    committee: 'اللجنة',
+    committeeId: 'معرف اللجنة',
+    committeeName: 'اسم اللجنة',
+    amount: 'المبلغ',
+    reason: 'السبب',
+    notes: 'ملاحظات',
+    location: 'المقر / الرابط',
+  };
+
+  const formatMetaValue = (key: string, val: any): string => {
+    if (val === null || val === undefined) return '';
+    if (Array.isArray(val)) {
+      return val.map((item) => usersMap.get(String(item)) || String(item)).join('، ');
+    }
+    const str = String(val);
+    if (usersMap.has(str)) return usersMap.get(str)!;
+    if (key === 'priority') {
+      if (str === 'high') return 'عاجلة / قصوى';
+      if (str === 'medium') return 'متوسطة';
+      if (str === 'low') return 'عادية / منخفضة';
+    }
+    return str;
+  };
+
+  const handleCopyLog = (log: ActivityLog) => {
+    const text = `سجل عملية: ${ACTION_LABELS[log.action]?.label || log.action}
+المسؤول: ${log.actorName || log.actor}
+الهدف: ${log.targetName || ''} (${log.targetType})
+التاريخ: ${(log as any).createdAt ? formatDateTime((log as any).createdAt) : ''}
+المعرف: ${log.id}`;
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    toast.success('تم نسخ تفاصيل السجل للحافظة');
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
     <div className="space-y-6 text-right">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -369,7 +452,7 @@ export function ActivityLogsPage() {
             <span className="text-[var(--text-primary)]">سجل العمليات والرقابة (Audit Logs)</span>
           </h1>
           <p className="text-xs sm:text-sm mt-1 text-[var(--text-muted)]">
-            سجل غير قابل للتعديل يوثق جميع العمليات الإدارية، المالية، وتغييرات الصلاحيات بالنظام.
+            سجل غير قابل للتعديل يوثق جميع العمليات الإدارية، المالية، وتغييرات الصلاحيات بالنظام. انقر على أي عملية لعرض تفاصيلها.
           </p>
         </div>
 
@@ -457,45 +540,177 @@ export function ActivityLogsPage() {
               return (
                 <div
                   key={log.id}
-                  className="flex items-start gap-4 px-5 py-4 hover:bg-[var(--surface-elevated)]/60 transition-colors"
+                  onClick={() => setSelectedLog(log)}
+                  className="flex items-start gap-3 sm:gap-4 px-4 sm:px-5 py-3.5 sm:py-4 hover:bg-[var(--surface-elevated)]/80 transition-all cursor-pointer group active:scale-[0.998]"
+                  title="انقر لعرض كامل تفاصيل العملية"
                 >
                   <Avatar src={log.actorPhoto} name={log.actorName || log.actor} size="sm" />
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <strong className="text-xs sm:text-sm font-bold text-[var(--text-primary)]">
+                      <strong className="text-xs sm:text-sm font-bold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] transition-colors">
                         {log.actorName || log.actor}
                       </strong>
                       <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-lg border ${actionMeta.color}`}>
                         {actionMeta.label}
                       </span>
                       {log.targetName && (
-                        <span className="text-xs font-semibold text-[var(--text-secondary)] bg-[var(--surface-elevated)] border border-[var(--border-subtle)] px-2 py-0.5 rounded-lg">
+                        <span className="text-xs font-semibold text-[var(--text-secondary)] bg-[var(--surface-elevated)] border border-[var(--border-subtle)] px-2 py-0.5 rounded-lg truncate max-w-[200px] sm:max-w-xs">
                           {log.targetName}
                         </span>
                       )}
                     </div>
+
+                    {/* Human-readable metadata chips */}
                     {log.metadata && Object.keys(log.metadata).length > 0 && (
                       <div className="flex flex-wrap gap-1.5 mt-2">
-                        {Object.entries(log.metadata).map(([k, v]) => (
-                          <span
-                            key={k}
-                            className="text-[10px] font-mono bg-[var(--surface-elevated)] text-[var(--text-muted)] border border-[var(--border-subtle)] px-2 py-0.5 rounded-md"
-                          >
-                            <span className="font-semibold text-[var(--text-secondary)]">{k}:</span> {String(v)}
-                          </span>
-                        ))}
+                        {Object.entries(log.metadata).map(([k, v]) => {
+                          const label = METADATA_KEY_LABELS[k] || k;
+                          const valStr = formatMetaValue(k, v);
+                          if (!valStr) return null;
+                          return (
+                            <span
+                              key={k}
+                              className="text-[10px] font-medium bg-[var(--surface-elevated)] text-[var(--text-muted)] border border-[var(--border-subtle)] px-2 py-0.5 rounded-md"
+                            >
+                              <span className="font-bold text-[var(--text-secondary)]">{label}:</span> {valStr}
+                            </span>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
-                  <p className="text-[11px] text-[var(--text-muted)] shrink-0 font-medium pt-1">
-                    {(log as any).createdAt ? formatDateTime((log as any).createdAt) : 'الآن'}
-                  </p>
+
+                  <div className="flex flex-col items-end gap-1.5 shrink-0 pt-0.5">
+                    <p className="text-[11px] text-[var(--text-muted)] font-medium">
+                      {(log as any).createdAt ? formatDateTime((log as any).createdAt) : 'الآن'}
+                    </p>
+                    <span className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-[10px] text-[var(--brand-primary)] font-bold">
+                      <Eye className="h-3 w-3" /> التفاصيل
+                    </span>
+                  </div>
                 </div>
               );
             })}
           </div>
         )}
       </div>
+
+      {/* Log Details Modal */}
+      <Modal
+        open={Boolean(selectedLog)}
+        onClose={() => setSelectedLog(null)}
+        title="تفاصيل العملية المسجلة (Audit Log Details)"
+        size="lg"
+        footer={
+          <div className="flex items-center justify-between w-full">
+            <button
+              onClick={() => selectedLog && handleCopyLog(selectedLog)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-[var(--surface-elevated)] border border-[var(--border-subtle)] text-[var(--text-primary)] hover:border-[var(--brand-primary)] cursor-pointer"
+            >
+              {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5 text-[var(--text-muted)]" />}
+              <span>{copied ? 'تم النسخ' : 'نسخ البيانات'}</span>
+            </button>
+            <button
+              onClick={() => setSelectedLog(null)}
+              className="px-4 py-2 rounded-xl text-xs font-bold bg-[var(--brand-primary)] text-white hover:opacity-90 cursor-pointer"
+            >
+              إغلاق
+            </button>
+          </div>
+        }
+      >
+        {selectedLog && (
+          <div className="space-y-5 text-right font-sans">
+            {/* Action Badge & Timestamp Banner */}
+            <div className="p-3.5 rounded-2xl bg-[var(--surface-elevated)] border border-[var(--border-subtle)] flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <span className={`text-xs font-bold px-3 py-1 rounded-xl border ${ACTION_LABELS[selectedLog.action]?.color || 'text-indigo-600 bg-indigo-500/10 border-indigo-500/20'}`}>
+                  {ACTION_LABELS[selectedLog.action]?.label || selectedLog.action}
+                </span>
+                <span className="text-xs font-mono text-[var(--text-muted)] bg-[var(--surface)] px-2 py-0.5 rounded-md border border-[var(--border-subtle)]">
+                  {selectedLog.action}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] font-medium">
+                <Calendar className="h-3.5 w-3.5" />
+                <span>{(selectedLog as any).createdAt ? formatDateTime((selectedLog as any).createdAt) : 'الآن'}</span>
+              </div>
+            </div>
+
+            {/* Actor & Target Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Actor Card */}
+              <div className="p-3.5 rounded-2xl bg-[var(--surface-elevated)] border border-[var(--border-subtle)] space-y-2">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--text-muted)]">
+                  <User className="h-3.5 w-3.5 text-[var(--brand-primary)]" />
+                  <span>المسؤول المنفّذ (Actor)</span>
+                </div>
+                <div className="flex items-center gap-2.5 pt-1">
+                  <Avatar src={selectedLog.actorPhoto} name={selectedLog.actorName || selectedLog.actor} size="md" />
+                  <div>
+                    <p className="text-sm font-bold text-[var(--text-primary)]">{selectedLog.actorName || selectedLog.actor}</p>
+                    <p className="text-[11px] text-[var(--text-muted)] font-mono">{(selectedLog as any).actorId || selectedLog.actor}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Target Card */}
+              <div className="p-3.5 rounded-2xl bg-[var(--surface-elevated)] border border-[var(--border-subtle)] space-y-2">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--text-muted)]">
+                  <Tag className="h-3.5 w-3.5 text-[var(--brand-accent)]" />
+                  <span>الهدف / العنصر المتأثر (Target)</span>
+                </div>
+                <div className="pt-1">
+                  <p className="text-sm font-bold text-[var(--text-primary)]">{selectedLog.targetName || 'غير محدد'}</p>
+                  <p className="text-[11px] text-[var(--text-muted)]">
+                    نوع العنصر: <span className="font-bold text-[var(--text-secondary)]">{selectedLog.targetType}</span>
+                    {selectedLog.targetId && (
+                      <span className="font-mono mr-1">({selectedLog.targetId})</span>
+                    )}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Human-Readable Metadata Breakdown */}
+            {selectedLog.metadata && Object.keys(selectedLog.metadata).length > 0 && (
+              <div className="p-4 rounded-2xl bg-[var(--surface-elevated)] border border-[var(--border-subtle)] space-y-2.5">
+                <h4 className="text-xs font-bold text-[var(--text-primary)] flex items-center gap-1.5">
+                  <Info className="h-3.5 w-3.5 text-[var(--brand-primary)]" />
+                  <span>البيانات المرتبطة بالعملية (Operation Metadata)</span>
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                  {Object.entries(selectedLog.metadata).map(([k, v]) => {
+                    const label = METADATA_KEY_LABELS[k] || k;
+                    const val = formatMetaValue(k, v);
+                    if (!val) return null;
+                    return (
+                      <div key={k} className="p-2.5 rounded-xl bg-[var(--surface)] border border-[var(--border-subtle)]">
+                        <p className="text-[11px] font-bold text-[var(--text-muted)]">{label}</p>
+                        <p className="text-xs font-semibold text-[var(--text-primary)] mt-0.5 break-words">{val}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Optional Details */}
+            {(selectedLog as any).details && (
+              <div className="p-3.5 rounded-2xl bg-[var(--surface-elevated)] border border-[var(--border-subtle)] space-y-1">
+                <p className="text-xs font-bold text-[var(--text-muted)]">تفاصيل إضافية:</p>
+                <p className="text-xs text-[var(--text-primary)] leading-relaxed">{(selectedLog as any).details}</p>
+              </div>
+            )}
+
+            {/* Footer Audit Signature */}
+            <div className="flex items-center justify-between text-[10px] text-[var(--text-muted)] font-mono px-1">
+              <span>معرف السجل: {selectedLog.id}</span>
+              <span className="text-emerald-500 font-bold">✓ موثق ومحمى من التعديل</span>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

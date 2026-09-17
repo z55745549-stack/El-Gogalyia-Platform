@@ -228,7 +228,7 @@ export async function clearLatestAnnouncement() {
 
 export async function createTask(
   data: CreateTaskData,
-  creator: { email: string; displayName: string; committeeId?: string | null; committeeName?: string | null },
+  creator: { email: string; displayName: string; committeeId?: string | null; committeeName?: string | null; photoURL?: string },
   assignedNames: string[]
 ): Promise<string> {
   const assignedToNormalized = data.assignedTo.map((e) => e.trim().toLowerCase());
@@ -294,11 +294,16 @@ export async function createTask(
   logActivity({
     actor: creator.email,
     actorName: creator.displayName,
+    actorPhoto: creator.photoURL || '',
     action: 'task.created',
     targetType: 'task',
     targetId: generatedId,
     targetName: data.title,
-    metadata: { assignedTo: assignedToNormalized, priority: data.priority, reward: data.oCoinsReward },
+    metadata: {
+      assignedTo: assignedNames && assignedNames.length > 0 ? assignedNames.join('، ') : assignedToNormalized.join('، '),
+      priority: data.priority,
+      reward: Number(data.oCoinsReward) || 0,
+    },
   }).catch(() => {});
 
   return generatedId;

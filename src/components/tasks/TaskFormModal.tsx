@@ -103,6 +103,7 @@ export function TaskFormModal({ open, onClose }: TaskFormModalProps) {
         return true;
       });
 
+      assignableUsers.sort((a, b) => (a.displayName || '').localeCompare(b.displayName || '', 'ar', { sensitivity: 'base' }));
       setEmployees(assignableUsers);
     };
 
@@ -139,7 +140,7 @@ export function TaskFormModal({ open, onClose }: TaskFormModalProps) {
       const selectedEmployees = employees.filter((e) => selectedUids.includes(e.uid));
       const assignedNames = selectedEmployees.map((e) => e.displayName || e.username || '');
 
-      const taskId = await createTask(
+      await createTask(
         {
           title: data.title,
           description: data.description,
@@ -154,20 +155,10 @@ export function TaskFormModal({ open, onClose }: TaskFormModalProps) {
           displayName: userProfile.displayName,
           committeeId: userProfile.committeeId || null,
           committeeName: userProfile.committeeName || null,
+          photoURL: userProfile.photoURL,
         },
         assignedNames
       );
-
-      await logActivity({
-        actor: userProfile.username,
-        actorName: userProfile.displayName,
-        actorPhoto: userProfile.photoURL || '',
-        action: 'task.created',
-        targetType: 'task',
-        targetId: taskId,
-        targetName: data.title,
-        metadata: { assignedTo: selectedUids, reward: Number(data.oCoinsReward) || 0 },
-      });
 
       toast.success('تم إنشاء المهمة وإسنادها بنجاح!');
       reset();

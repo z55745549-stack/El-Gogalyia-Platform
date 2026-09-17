@@ -19,7 +19,7 @@ import { subscribeBans, createBan, endBan, getActiveBan } from '@/lib/bans';
 // 2-Step admin auth removed — Lead/Co-Lead and Head act directly
 import { generateEmployeeCode } from '@/lib/attendance';
 import { canManageRole, canManageUser, isTopTierRole, getRoleLabel, getRoleColor, isAdminRole } from '@/utils/permissions';
-import { formatFullName, hasArabic, hasUnlimitedCoins, cn } from '@/utils';
+import { formatFullName, hasArabic, hasUnlimitedCoins, cn, sortUsersWithLeadershipPinned } from '@/utils';
 import { logActivity } from '@/lib/database-service';
 
 
@@ -654,11 +654,13 @@ export function EmployeesPage() {
 
   const currentList = viewTab === 'pending' ? pendingMembers : approvedMembers;
 
-  const filteredEmployees = currentList.filter((e) => {
+  const rawFilteredEmployees = currentList.filter((e) => {
     const matchSearch = !search || (e.displayName || '').toLowerCase().includes(search.toLowerCase()) || (e.username || '').toLowerCase().includes(search.toLowerCase()) || (e.committeeName || '').toLowerCase().includes(search.toLowerCase());
     const matchCommittee = !committeeFilter || e.committeeId === committeeFilter;
     return matchSearch && matchCommittee;
   });
+
+  const filteredEmployees = sortUsersWithLeadershipPinned(rawFilteredEmployees, userProfile);
 
   return (
     <div className="space-y-6 font-sans dir-rtl text-right">

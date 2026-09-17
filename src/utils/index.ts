@@ -218,3 +218,76 @@ export function formatTitleCaseLive(input: string): string {
     return first.toUpperCase() + rest.toLowerCase();
   });
 }
+
+// ─── Pinned Leadership & Alphabetical Sorting ─────────────────────────────────
+
+/**
+ * Sorts users with context-aware pinned leadership and alphabetical ordering.
+ * 
+ * Rules:
+ * 1. For Lead:
+ *    - 1st pinned: Current Lead himself
+ *    - 2nd pinned: Co-Lead
+ *    - Remaining: Alphabetical by displayName
+ * 2. For Co-Lead:
+ *    - 1st pinned: Current Co-Lead himself
+ *    - 2nd pinned: Lead
+ *    - Remaining: Alphabetical by displayName
+ * 3. For Head:
+ *    - 1st pinned: Current Head himself
+ *    - 2nd pinned: Vice-Head of his committee
+ *    - Remaining: Alphabetical by displayName
+ * 4. For Vice-Head:
+ *    - 1st pinned: Current Vice-Head himself
+ *    - 2nd pinned: Head of his committee
+ *    - Remaining: Alphabetical by displayName
+ * 5. For Member / other:
+ *    - 1st pinned: Current user himself
+ *    - Remaining: Alphabetical by displayName
+ */
+export function sortUsersWithLeadershipPinned<T extends { uid?: string; id?: string; displayName?: string; role?: string; committeeId?: string | null }>(
+  usersList: T[],
+  currentUser: { uid?: string; id?: string; role?: string; committeeId?: string | null } | null
+): T[] {
+  if (!usersList || usersList.length === 0) return [];
+  if (!currentUser) {
+    return [...usersList].sort((a, b) => (a.displayName || '').localeCompare(b.displayName || '', 'ar', { sensitivity: 'base' }));
+  }
+
+  const myId = currentUser.uid || currentUser.id;
+  const myRole = currentUser.role;
+  const myCommId = currentUser.committeeId;
+
+  const firstPinnedId: string | null = myId || null;
+  let secondPinnedPredicate: ((u: T) => boolean) | null = null;
+
+  if (myRole === 'lead') {
+    secondPinnedPredicate = (u) => u.role === 'co_lead';
+  } else if (myRole === 'co_lead') {
+    secondPinnedPredicate = (u) => u.role === 'lead';
+  } else if (myRole === 'head') {
+    secondPinnedPredicate = (u) => Boolean(myCommId && u.committeeId === myCommId && u.role === 'vice_head');
+  } else if (myRole === 'vice_head') {
+    secondPinnedPredicate = (u) => Boolean(myCommId && u.committeeId === myCommId && u.role === 'head');
+  }
+
+  const firstGroup: T[] = [];
+  const secondGroup: T[] = [];
+  const restGroup: T[] = [];
+
+  for (const u of usersList) {
+    const uId = u.uid || u.id;
+    if (firstPinnedId && uId === firstPinnedId) {
+      firstGroup.push(u);
+    } else if (secondPinnedPredicate && secondPinnedPredicate(u)) {
+      secondGroup.push(u);
+    } else {
+      restGroup.push(u);
+    }
+  }
+
+  secondGroup.sort((a, b) => (a.displayName || '').localeCompare(b.displayName || '', 'ar', { sensitivity: 'base' }));
+  restGroup.sort((a, b) => (a.displayName || '').localeCompare(b.displayName || '', 'ar', { sensitivity: 'base' }));
+
+  return [...firstGroup, ...secondGroup, ...restGroup];
+}
