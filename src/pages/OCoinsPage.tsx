@@ -399,13 +399,13 @@ export function OCoinsPage() {
   return (
     <div className="space-y-6 max-w-5xl mx-auto dir-rtl text-right font-sans pb-12">
       {/* Unified Rewards Hub Segmented Switcher */}
-      <div className="flex items-center justify-between p-2 rounded-2xl bg-[var(--surface-elevated)] border border-[var(--border-subtle)]">
-        <div className="flex items-center gap-1.5 flex-wrap">
+      <div className="flex items-center justify-between p-1.5 sm:p-2 rounded-2xl bg-[var(--surface-elevated)] border border-[var(--border-subtle)] overflow-hidden">
+        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none snap-x w-full">
           <button
             type="button"
             onClick={() => setSearchParams({})}
             className={cn(
-              'px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2',
+              'snap-start shrink-0 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2 active:scale-95',
               currentTab === 'wallet'
                 ? 'bg-amber-500 text-white shadow-md'
                 : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface)]'
@@ -419,7 +419,7 @@ export function OCoinsPage() {
             type="button"
             onClick={() => setSearchParams({ tab: 'store' })}
             className={cn(
-              'px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2',
+              'snap-start shrink-0 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2 active:scale-95',
               currentTab === 'store'
                 ? 'bg-[var(--brand-primary)] text-white shadow-md'
                 : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface)]'
@@ -433,7 +433,7 @@ export function OCoinsPage() {
             type="button"
             onClick={() => setSearchParams({ tab: 'purchases' })}
             className={cn(
-              'px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2',
+              'snap-start shrink-0 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2 active:scale-95',
               currentTab === 'purchases'
                 ? 'bg-emerald-600 text-white shadow-md'
                 : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface)]'
@@ -448,7 +448,7 @@ export function OCoinsPage() {
               type="button"
               onClick={() => setSearchParams({ tab: 'manage_discounts' })}
               className={cn(
-                'px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2',
+                'snap-start shrink-0 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2 active:scale-95',
                 currentTab === 'manage_discounts'
                   ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md'
                   : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface)]'
@@ -461,7 +461,7 @@ export function OCoinsPage() {
         </div>
 
         {canManage && (
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-purple-500/10 text-purple-400 text-[11px] font-black border border-purple-500/20 hidden sm:flex">
+          <div className="items-center gap-1.5 px-3 py-1 rounded-xl bg-purple-500/10 text-purple-400 text-[11px] font-black border border-purple-500/20 hidden lg:flex shrink-0">
             <ShieldCheck className="h-3.5 w-3.5" />
             <span>صلاحيات الإشراف مفعّلة</span>
           </div>
@@ -480,7 +480,7 @@ export function OCoinsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2.5">
-            <h1 className="page-title text-2xl font-black text-slate-900 dark:text-white">
+            <h1 className="page-title text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
               محفظة وسجل معاملات O Coins
             </h1>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-[#FFCF00]/15 text-[#B28900] dark:text-[#FFCF00] border border-[#FFCF00]/30">
@@ -499,7 +499,7 @@ export function OCoinsPage() {
             size="sm"
             onClick={() => setShowAdjustModal(true)}
             variant="primary"
-            className="gap-2 shadow-xs shrink-0 font-black text-xs"
+            className="w-full sm:w-auto justify-center gap-2 shadow-xs shrink-0 font-black text-xs h-10 rounded-xl"
           >
             <Plus className="h-4 w-4" />
             <span>صرف مكافأة / تعديل رصيد يدوي</span>

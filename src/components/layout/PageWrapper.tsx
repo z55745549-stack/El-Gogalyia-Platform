@@ -66,7 +66,7 @@ export function PageWrapper({ children, unreadNotifications = 0 }: PageWrapperPr
             animate="animate"
             exit="exit"
             transition={{ duration: 0.16, ease: 'easeOut' }}
-            className="p-3.5 sm:p-6 lg:p-7 max-w-[1440px] mx-auto w-full pb-24 lg:pb-8"
+            className="p-3 sm:p-6 lg:p-7 max-w-[1440px] mx-auto w-full pb-24 lg:pb-8"
           >
             {children}
           </motion.div>
@@ -74,7 +74,7 @@ export function PageWrapper({ children, unreadNotifications = 0 }: PageWrapperPr
 
         {/* Mobile bottom nav — GDG HITU Design System */}
         <nav
-          className="lg:hidden fixed bottom-0 inset-x-0 z-40 px-2 py-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+          className="lg:hidden fixed bottom-0 inset-x-0 z-40 px-1.5 sm:px-2 py-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
           style={{
             background: 'color-mix(in srgb, var(--surface) 90%, transparent)',
             backdropFilter: 'blur(20px) saturate(190%)',
@@ -83,7 +83,7 @@ export function PageWrapper({ children, unreadNotifications = 0 }: PageWrapperPr
             boxShadow: '0 -8px 30px rgba(0,0,0,0.35)',
           }}
         >
-          <div className="flex items-center justify-around gap-1 max-w-lg mx-auto">
+          <div className="flex items-center justify-around gap-0.5 sm:gap-1 max-w-lg mx-auto">
             {[
               { to: '/dashboard', icon: <LayoutDashboard className="h-[18px] w-[18px]" />, label: 'الرئيسية', type: 'primary' },
               { to: isEmployee ? '/my-tasks' : '/tasks', icon: isEmployee ? <ListTodo className="h-[18px] w-[18px]" /> : <CheckSquare className="h-[18px] w-[18px]" />, label: 'المهام', type: 'primary' },
@@ -95,7 +95,7 @@ export function PageWrapper({ children, unreadNotifications = 0 }: PageWrapperPr
               <NavLink
                 key={item.to}
                 to={item.to}
-                className="relative flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl text-[10px] font-semibold transition-all"
+                className="relative flex flex-col items-center justify-center gap-0.5 px-1 sm:px-2 py-1.5 rounded-xl text-[9.5px] sm:text-[10px] font-semibold transition-all min-w-[44px]"
                 style={({ isActive }) => ({
                   color: isActive
                     ? item.type === 'warm' ? '#F59E0B' : '#A78BFA'

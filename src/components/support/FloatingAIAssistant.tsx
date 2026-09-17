@@ -306,15 +306,15 @@ export function FloatingAIAssistant() {
           onClick={() => setIsOpen(!isOpen)}
           whileHover={{ scale: 1.06 }}
           whileTap={{ scale: 0.94 }}
-          className="relative w-14 h-14 rounded-full bg-gradient-to-tr from-[var(--brand-primary)] via-indigo-600 to-cyan-500 text-white shadow-2xl shadow-[var(--brand-primary)]/40 flex items-center justify-center cursor-pointer border-2 border-white/20"
+          className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-tr from-[var(--brand-primary)] via-indigo-600 to-cyan-500 text-white shadow-2xl shadow-[var(--brand-primary)]/40 flex items-center justify-center cursor-pointer border-2 border-white/20"
           title="مساعد جوجالي الذكي"
         >
           {isOpen ? (
-            <X className="h-6 w-6" />
+            <X className="h-5 w-5 sm:h-6 sm:w-6" />
           ) : (
             <>
-              <Bot className="h-7 w-7" />
-              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-[var(--surface)] flex items-center justify-center">
+              <Bot className="h-6 w-6 sm:h-7 sm:w-7" />
+              <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-emerald-500 border-2 border-[var(--surface)] flex items-center justify-center">
                 <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
               </span>
             </>

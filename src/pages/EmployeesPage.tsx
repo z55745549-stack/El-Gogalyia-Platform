@@ -553,10 +553,10 @@ export function EmployeesPage() {
   return (
     <div className="space-y-6 font-sans dir-rtl text-right">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-[var(--surface)] p-6 rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-[var(--surface)] p-4 sm:p-6 rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-sm">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2.5">
-            <Users className="h-7 w-7 text-indigo-600 dark:text-indigo-400" />
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2.5">
+            <Users className="h-6 w-6 sm:h-7 sm:w-7 text-indigo-600 dark:text-indigo-400" />
             إدارة أعضاء منصة الجوجالية (Team & Members)
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
@@ -566,18 +566,18 @@ export function EmployeesPage() {
 
         <Button
           onClick={() => { resetForm(); setShowAddModal(true); }}
-          className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs py-3 rounded-xl shadow-md shadow-indigo-600/20"
+          className="w-full sm:w-auto justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs py-3 rounded-xl shadow-md shadow-indigo-600/20"
         >
           <UserPlus className="h-4 w-4" /> إضافة عضو جديد
         </Button>
       </div>
 
       {/* View Tabs: Approved Members vs Pending Requests */}
-      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-white/10 pb-2">
+      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-white/10 pb-2 overflow-x-auto scrollbar-none">
         <button
           type="button"
           onClick={() => setViewTab('approved')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+          className={`shrink-0 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
             viewTab === 'approved'
               ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/25'
               : 'bg-white dark:bg-[var(--surface-elevated)] text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 border border-slate-200 dark:border-white/10'
@@ -593,7 +593,7 @@ export function EmployeesPage() {
         <button
           type="button"
           onClick={() => setViewTab('pending')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 relative ${
+          className={`shrink-0 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 relative ${
             viewTab === 'pending'
               ? 'bg-amber-500 text-white shadow-md shadow-amber-500/25'
               : 'bg-white dark:bg-[var(--surface-elevated)] text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 border border-slate-200 dark:border-white/10'
@@ -634,8 +634,8 @@ export function EmployeesPage() {
           </Button>
         </div>
       </div>
-      {/* Committee chips quick filter */}
-      <div className="flex flex-wrap gap-2">
+      {/* Committee chips quick filter — smooth horizontal snap on mobile */}
+      <div className="flex items-center sm:flex-wrap gap-2 overflow-x-auto sm:overflow-visible scrollbar-none snap-x -mx-3 px-3 sm:mx-0 sm:px-0 pb-1">
         {committees.map((c) => {
           const isSelected = committeeFilter === c.id;
           return (
@@ -643,7 +643,7 @@ export function EmployeesPage() {
               key={c.id}
               onClick={() => setCommitteeFilter(isSelected ? '' : c.id)}
               className={cn(
-                "px-3 py-1.5 rounded-full text-xs font-bold border transition-all flex items-center gap-1.5 cursor-pointer",
+                "snap-start shrink-0 sm:shrink px-3 py-1.5 rounded-full text-xs font-bold border transition-all flex items-center gap-1.5 cursor-pointer active:scale-95",
                 isSelected
                   ? "text-white shadow-sm"
                   : "bg-[var(--surface-elevated)] border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-default)]"

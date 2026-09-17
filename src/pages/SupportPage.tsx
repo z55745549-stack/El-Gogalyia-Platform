@@ -185,7 +185,7 @@ export function SupportPage() {
             onClick={() => setShowCreateModal(true)}
             size="lg"
             variant="accent"
-            className="cursor-pointer shrink-0 gap-2 border-0 font-black shadow-md shadow-[var(--brand-accent)]/20"
+            className="w-full md:w-auto justify-center cursor-pointer shrink-0 gap-2 border-0 font-black shadow-md shadow-[var(--brand-accent)]/20"
           >
             <Plus className="h-5 w-5" />
             <span>فتح تذكرة دعم جديدة</span>
@@ -199,13 +199,13 @@ export function SupportPage() {
 
       {/* Admin / Member Switcher for Support Tickets */}
       {canManageTickets && (
-        <div className="flex items-center justify-between p-2 rounded-2xl bg-[var(--surface-elevated)] border border-[var(--border-subtle)] flex-wrap gap-2">
-          <div className="flex items-center gap-1.5 flex-wrap">
+        <div className="flex items-center justify-between p-1.5 sm:p-2 rounded-2xl bg-[var(--surface-elevated)] border border-[var(--border-subtle)] overflow-hidden">
+          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none snap-x w-full">
             <button
               type="button"
               onClick={() => setSearchParams({})}
               className={cn(
-                'px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2',
+                'snap-start shrink-0 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2 active:scale-95',
                 activeTab === 'my_tickets'
                   ? 'bg-[var(--brand-primary)] text-white shadow-md'
                   : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface)]'
@@ -219,7 +219,7 @@ export function SupportPage() {
               type="button"
               onClick={() => setSearchParams({ tab: 'manage' })}
               className={cn(
-                'px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2',
+                'snap-start shrink-0 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2 active:scale-95',
                 activeTab === 'manage'
                   ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md'
                   : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface)]'
@@ -230,7 +230,7 @@ export function SupportPage() {
             </button>
           </div>
 
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-blue-500/10 text-blue-500 text-[11px] font-black border border-blue-500/20 hidden sm:flex">
+          <div className="items-center gap-1.5 px-3 py-1 rounded-xl bg-blue-500/10 text-blue-500 text-[11px] font-black border border-blue-500/20 hidden lg:flex shrink-0">
             <ShieldCheck className="h-3.5 w-3.5" />
             <span>صلاحيات الإشراف مفعّلة</span>
           </div>
@@ -352,7 +352,7 @@ export function SupportPage() {
         </div>
 
         {/* Filter Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none snap-x -mx-3 px-3 sm:mx-0 sm:px-0 pb-1">
           {[
             { id: 'all', label: 'جميع الحالات' },
             { id: 'open', label: 'مفتوحة' },
@@ -365,7 +365,7 @@ export function SupportPage() {
               key={status.id}
               onClick={() => setStatusFilter(status.id)}
               className={cn(
-                'px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer',
+                'snap-start px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer active:scale-95',
                 statusFilter === status.id
                   ? 'bg-[var(--brand-primary)] text-white shadow-xs'
                   : 'bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'

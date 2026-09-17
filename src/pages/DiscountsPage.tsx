@@ -123,7 +123,7 @@ export function DiscountsPage() {
 
         <Link
           to="/ocoins?tab=purchases"
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl btn-primary text-xs shadow-sm transition-all whitespace-nowrap font-bold shrink-0 self-start sm:self-auto"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl btn-primary text-xs shadow-sm transition-all whitespace-nowrap font-bold w-full sm:w-auto shrink-0"
         >
           <ShoppingBag className="h-4 w-4" />
           <span>مشترياتي وقسائمي المفعّلة</span>
@@ -193,12 +193,12 @@ export function DiscountsPage() {
           />
         </div>
 
-        <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 no-scrollbar">
+        <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 scrollbar-none snap-x -mx-2 px-2 sm:mx-0 sm:px-0">
           <button
             type="button"
             onClick={() => setSelectedType('all')}
             className={cn(
-              'px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer',
+              'snap-start shrink-0 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95',
               selectedType === 'all'
                 ? 'btn-primary shadow-xs'
                 : 'bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)]'
@@ -214,7 +214,7 @@ export function DiscountsPage() {
                 key={typeKey}
                 onClick={() => setSelectedType(typeKey)}
                 className={cn(
-                  'px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 flex items-center gap-1.5 cursor-pointer',
+                  'snap-start shrink-0 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95',
                   selectedType === typeKey
                     ? 'btn-primary shadow-xs'
                     : 'bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)]'

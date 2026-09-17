@@ -152,13 +152,13 @@ export function MyTasksPage() {
       {/* Main Container */}
       <div className="card overflow-hidden transition-colors">
         {/* Tabs */}
-        <div className="flex overflow-x-auto border-b border-[var(--border-subtle)] px-4 pt-3 no-scrollbar bg-[var(--bg-elevated)]/20">
+        <div className="flex overflow-x-auto scrollbar-none snap-x border-b border-[var(--border-subtle)] px-2 sm:px-4 pt-2 bg-[var(--bg-elevated)]/20">
           {TABS.map((tab) => (
             <button
               key={tab.value}
               onClick={() => setActiveTab(tab.value)}
               className={cn(
-                'px-4 py-2.5 text-xs sm:text-sm font-bold border-b-2 transition-all whitespace-nowrap -mb-px cursor-pointer',
+                'snap-start shrink-0 px-3.5 sm:px-4 py-2.5 text-xs sm:text-sm font-bold border-b-2 transition-all whitespace-nowrap -mb-px cursor-pointer active:scale-95',
                 activeTab === tab.value
                   ? 'border-[var(--brand-primary)] text-[var(--brand-primary)] font-black'
                   : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]'
@@ -174,7 +174,7 @@ export function MyTasksPage() {
           ))}
         </div>
 
-        <div className="p-4 sm:p-5">
+        <div className="p-3.5 sm:p-5">
           {loading ? (
             <div className="space-y-3">
               {[1, 2, 3].map((i) => (
@@ -231,10 +231,10 @@ export function MyTasksPage() {
                         </div>
                       </div>
 
-                      <Link to={`/my-tasks/${task.id}`} className="flex-shrink-0 self-end sm:self-center">
+                      <Link to={`/my-tasks/${task.id}`} className="w-full sm:w-auto flex-shrink-0">
                         <Button
                           size="sm"
-                          className="font-black text-xs gap-1.5 shadow-sm rounded-xl"
+                          className="w-full sm:w-auto font-black text-xs gap-1.5 shadow-sm rounded-xl py-2.5"
                         >
                           فتح المهمة وتسليمها
                         </Button>

@@ -747,12 +747,12 @@ export function onSnapshot(
     document.addEventListener('visibilitychange', onFocusOrVisible);
   }
 
-  // 3. Periodic micro-sync (2.5s) for instant sync across other devices / users without refresh
+  // 3. Periodic fallback micro-sync (12s) to prevent device battery thrashing on mobile
   const pollTimer = setInterval(() => {
     if (active && typeof document !== 'undefined' && document.visibilityState === 'visible') {
       runFetch();
     }
-  }, 2500);
+  }, 12000);
 
   // 4. Supabase Realtime WebSocket channel (PostgreSQL level)
   const channelName = `realtime_${table}_${Math.random().toString(36).substring(2, 9)}`;

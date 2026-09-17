@@ -331,10 +331,10 @@ export function SupportTicketDetailPage() {
               <div
                 key={msg.id || index}
                 className={cn(
-                  'p-5 rounded-3xl border transition-all text-xs space-y-2.5 shadow-xs',
+                  'p-4 sm:p-5 rounded-2xl sm:rounded-3xl border transition-all text-xs space-y-2.5 shadow-xs',
                   isMsgAdmin
-                    ? 'bg-gradient-to-br from-[var(--brand-primary)]/10 via-[var(--brand-primary)]/5 to-transparent border-[var(--brand-primary)]/30 mr-4 sm:mr-8'
-                    : 'bg-[var(--bg-elevated)]/50 border-[var(--border-subtle)] ml-4 sm:ml-8'
+                    ? 'bg-gradient-to-br from-[var(--brand-primary)]/10 via-[var(--brand-primary)]/5 to-transparent border-[var(--brand-primary)]/30 mr-2 sm:mr-8'
+                    : 'bg-[var(--bg-elevated)]/50 border-[var(--border-subtle)] ml-2 sm:ml-8'
                 )}
               >
                 {/* Message Header */}

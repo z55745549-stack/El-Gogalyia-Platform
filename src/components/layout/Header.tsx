@@ -34,6 +34,14 @@ export function Header({ onMobileMenuClick }: HeaderProps) {
           <Menu className="h-5 w-5" />
         </button>
 
+        {/* Mobile Brand Title */}
+        <div className="flex sm:hidden items-center gap-1.5 text-xs font-black">
+          <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: 'var(--brand-primary)' }} />
+          <span className="text-slate-900 dark:text-white font-black text-[13px]">
+            منصة الجوجالية
+          </span>
+        </div>
+
         <div className="hidden sm:flex items-center gap-2 text-xs font-semibold">
           <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: 'var(--brand-primary)' }} />
           <span className="font-black text-slate-900 dark:text-transparent dark:bg-clip-text dark:bg-gradient-to-r dark:from-violet-400 dark:to-cyan-400">
