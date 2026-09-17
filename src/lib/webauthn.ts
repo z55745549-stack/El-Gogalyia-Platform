@@ -105,28 +105,12 @@ export async function registerDeviceCredential(
   ];
 
   // 5. Tiered strategies for device authenticator selection:
-  // Strategy 1 (This Device / Platform Authenticator - DIRECT):
-  //   Explicitly setting authenticatorAttachment: 'platform' targets the phone's built-in
-  //   fingerprint sensor / screen lock directly without presenting any intermediate selection sheet ("This device" vs "Another device").
-  // Strategy 2 (Platform with residentKey required):
-  //   For strict FIDO2 implementations on Android 14 / Realme UI / iOS.
-  // Strategy 3 (Standard Modern Passkey preferred):
-  //   Flexible fallback.
-  // Strategy 4 (Permissive Screen Lock Fallback):
-  //   Minimum requirements for custom Android ROMs.
+  // Strictly targets the platform authenticator ("This Device" / Built-in Biometrics) across ALL strategies.
+  // We NEVER omit authenticatorAttachment: 'platform' because omitting it causes Android to present
+  // external roaming authenticators (USB security keys, NFC, and "Use a different device").
   const strategies: AuthenticatorSelectionCriteria[] = [
     {
-      authenticatorAttachment: 'platform', // Targets "This Device" DIRECTLY on first attempt
-      residentKey: 'preferred',
-      userVerification: 'preferred',
-    },
-    {
       authenticatorAttachment: 'platform',
-      residentKey: 'required',
-      userVerification: 'preferred',
-    },
-    {
-      residentKey: 'preferred',
       userVerification: 'preferred',
     },
     {
@@ -134,7 +118,11 @@ export async function registerDeviceCredential(
       userVerification: 'discouraged',
     },
     {
-      userVerification: 'discouraged',
+      authenticatorAttachment: 'platform',
+      userVerification: 'required',
+    },
+    {
+      authenticatorAttachment: 'platform',
     },
   ];
 
@@ -148,35 +136,38 @@ export async function registerDeviceCredential(
     try {
       const challenge = crypto.getRandomValues(new Uint8Array(32));
 
-      credential = await navigator.credentials.create({
-        publicKey: {
-          challenge,
-          rp: {
-            name: 'El-Gogalyia Platform',
-            id: rpId,
-          },
-          user: {
-            id: new Uint8Array(userIdHash),
-            name: cleanAsciiName,
-            displayName: userDisplayName,
-          },
-          pubKeyCredParams,
-          authenticatorSelection: config,
-          timeout: 60000,
-          attestation: 'none',
+      const createOptions: any = {
+        challenge,
+        rp: {
+          name: 'El-Gogalyia Platform',
+          id: rpId,
         },
+        user: {
+          id: new Uint8Array(userIdHash),
+          name: cleanAsciiName,
+          displayName: userDisplayName,
+        },
+        pubKeyCredParams,
+        authenticatorSelection: config,
+        timeout: 60000,
+        attestation: 'none',
+        hints: ['client-device'],
+      };
+
+      credential = await navigator.credentials.create({
+        publicKey: createOptions,
       }) as PublicKeyCredential | null;
 
       if (credential) {
-        break; // Successfully registered!
+        break; // Successfully registered on this platform device!
       }
     } catch (err: any) {
       lastError = err;
       const elapsed = Date.now() - attemptStart;
-      console.warn(`[WebAuthn] Passkey creation strategy #${i + 1} failed after ${elapsed}ms:`, err);
+      console.warn(`[WebAuthn] Platform passkey creation strategy #${i + 1} failed after ${elapsed}ms:`, err);
 
       // Distinguish explicit user dismissal from fast pre-flight OS rejection:
-      // If the prompt was visible and the user actively tapped Cancel, elapsed is >= 1000ms.
+      // If the prompt was visible and the user actively tapped Cancel/X, elapsed is >= 1000ms.
       // If elapsed < 1000ms, the OS / browser rejected the options before showing UI.
       if (err?.name === 'NotAllowedError' && elapsed >= 1000) {
         return {
@@ -285,7 +276,7 @@ export async function registerDeviceCredential(
  * Authenticates user via fingerprint / face / screen-lock Passkey.
  * Seamlessly handles discoverable passkeys and falls back to local credential IDs.
  */
-export async function authenticateWithDevice(): Promise<{
+export async function authenticateWithDevice(username?: string): Promise<{
   userId: string | null;
   error?: string;
 }> {
@@ -297,53 +288,119 @@ export async function authenticateWithDevice(): Promise<{
     ? 'localhost'
     : window.location.hostname;
 
-  // Target ONLY the credential registered on THIS physical device (stored in local device cache).
-  // CRITICAL: We do NOT include credentials from other devices (like PC credentials from Supabase),
-  // because asking an Android phone for a Windows PC credential causes Android to prompt for USB / NFC / external devices.
-  const localList = getLocalDevices();
+  // 1. Sync credentials from Supabase if username is provided or if local cache is empty
+  let localList = getLocalDevices();
 
-  if (localList.length === 0) {
-    return {
-      userId: null,
-      error: 'هذا الجهاز غير مربوط بالبصمة بعد — يرجى تسجيل الدخول أولاً باسم المستخدم وتفعيل هوية الجهاز من صفحة الإعدادات.',
-    };
-  }
+  if (username && username.trim()) {
+    try {
+      const cleanUname = username.trim().toLowerCase();
+      const { data: uRow } = await supabase
+        .from('users')
+        .select('id')
+        .eq('username', cleanUname)
+        .maybeSingle();
 
-  const allowedDescriptors: PublicKeyCredentialDescriptor[] = localList.map((dev) => {
-    const binaryStr = atob(dev.credentialId);
-    const bytes = new Uint8Array(binaryStr.length);
-    for (let i = 0; i < binaryStr.length; i++) {
-      bytes[i] = binaryStr.charCodeAt(i);
+      if (uRow?.id) {
+        const { data: credRows } = await supabase
+          .from('webauthn_credentials')
+          .select('id, user_id, credential_id, device_name, created_at')
+          .eq('user_id', uRow.id);
+
+        if (credRows && credRows.length > 0) {
+          for (const r of credRows) {
+            saveLocalDevice({
+              id: r.id,
+              userId: r.user_id,
+              credentialId: r.credential_id,
+              deviceName: r.device_name || 'هاتف',
+              createdAt: r.created_at || new Date().toISOString(),
+            });
+          }
+          localList = getLocalDevices();
+        }
+      }
+    } catch (e) {
+      console.warn('Supabase device sync notice:', e);
     }
-    return {
-      id: bytes.buffer,
-      type: 'public-key' as const,
-      transports: ['internal' as AuthenticatorTransport],
-    };
-  });
+  }
 
   let assertion: PublicKeyCredential | null = null;
   let lastErr: any = null;
 
-  // Sole, direct method: Strictly platform internal biometric authenticator ("This Device")
-  // Using transports: ['internal'] and hints: ['client-device'] suppresses external roaming options (USB / NFC / Hybrid).
-  try {
-    const challenge = crypto.getRandomValues(new Uint8Array(32));
-    const publicKeyReq: any = {
-      challenge,
-      timeout: 60000,
-      userVerification: 'preferred',
-      rpId,
-      allowCredentials: allowedDescriptors,
-      hints: ['client-device'],
-    };
+  if (localList.length > 0) {
+    const allowedDescriptors: PublicKeyCredentialDescriptor[] = localList.map((dev) => {
+      const binaryStr = atob(dev.credentialId);
+      const bytes = new Uint8Array(binaryStr.length);
+      for (let i = 0; i < binaryStr.length; i++) {
+        bytes[i] = binaryStr.charCodeAt(i);
+      }
+      return {
+        id: bytes.buffer,
+        type: 'public-key' as const,
+        transports: ['internal', 'hybrid'] as AuthenticatorTransport[],
+      };
+    });
 
-    assertion = await navigator.credentials.get({
-      publicKey: publicKeyReq,
-    }) as PublicKeyCredential | null;
-  } catch (err: any) {
-    lastErr = err;
-    console.warn('[WebAuthn] Device biometric assertion notice:', err);
+    // Attempt 1: Direct platform biometric authenticator ("This Device")
+    try {
+      const challenge = crypto.getRandomValues(new Uint8Array(32));
+      const publicKeyReq: any = {
+        challenge,
+        timeout: 60000,
+        userVerification: 'preferred',
+        rpId,
+        allowCredentials: allowedDescriptors,
+        hints: ['client-device'],
+      };
+
+      assertion = await navigator.credentials.get({
+        publicKey: publicKeyReq,
+      }) as PublicKeyCredential | null;
+    } catch (err: any) {
+      lastErr = err;
+      console.warn('[WebAuthn] Device biometric assertion (Attempt 1) notice:', err);
+
+      // Attempt 2: Without transport restrictions for OEM ROM compatibility (Realme UI / MIUI)
+      if (err?.name !== 'NotAllowedError') {
+        try {
+          const challenge2 = crypto.getRandomValues(new Uint8Array(32));
+          const fallbackReq: any = {
+            challenge: challenge2,
+            timeout: 60000,
+            userVerification: 'preferred',
+            rpId,
+            allowCredentials: allowedDescriptors.map((d) => ({ id: d.id, type: d.type })),
+            hints: ['client-device'],
+          };
+
+          assertion = await navigator.credentials.get({
+            publicKey: fallbackReq,
+          }) as PublicKeyCredential | null;
+        } catch (err2: any) {
+          lastErr = err2;
+          console.warn('[WebAuthn] Device biometric assertion (Attempt 2) notice:', err2);
+        }
+      }
+    }
+  } else {
+    // Local list is empty: attempt discoverable passkey directly from client device
+    try {
+      const challenge = crypto.getRandomValues(new Uint8Array(32));
+      const discoverableReq: any = {
+        challenge,
+        timeout: 60000,
+        userVerification: 'preferred',
+        rpId,
+        hints: ['client-device'],
+      };
+
+      assertion = await navigator.credentials.get({
+        publicKey: discoverableReq,
+      }) as PublicKeyCredential | null;
+    } catch (err: any) {
+      lastErr = err;
+      console.warn('[WebAuthn] Discoverable passkey assertion notice:', err);
+    }
   }
 
   if (!assertion) {

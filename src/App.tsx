@@ -99,10 +99,12 @@ export default function App() {
                 <Route path="/admin/discounts" element={<Navigate to="/ocoins?tab=manage_discounts" replace />} />
                 <Route path="/admin/courses" element={<Navigate to="/courses?tab=manage" replace />} />
                 <Route path="/admin/support" element={<Navigate to="/support?tab=manage" replace />} />
-                <Route path="/activity-logs" element={<ActivityLogsPage />} />
                 <Route path="/reports" element={<ReportsPage />} />
                 <Route path="/access-management" element={<Navigate to="/dashboard" replace />} />
               </Route>
+
+              {/* Activity Logs (Audit Logs) — Accessible to all roles with scoped views */}
+              <Route path="/activity-logs" element={<ActivityLogsPage />} />
             </Route>
           </Route>
 

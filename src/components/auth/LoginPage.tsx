@@ -440,7 +440,7 @@ export function LoginPage() {
     setLoading(true);
     setErrorMsg(null);
     try {
-      const res = await signInWithDevice();
+      const res = await signInWithDevice(username.trim());
       if (res.success) {
         toast.success('تم التحقق من هوية جهازك بنجاح. مرحباً بك!');
         navigate('/dashboard');

@@ -417,13 +417,16 @@ export function AdminDashboard() {
 
       {/* Semantic KPI Cards Grid — Tailored for Committee or Top Leaders */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-3.5">
-        <StatCard
-          title={!isTopLeader ? "أعضاء لجنتي" : "فريق العمل"}
-          value={!isTopLeader ? myCommitteeUsers.length : totalEmployees}
-          variant="primary"
-          icon={<Users className="h-4 w-4" />}
-          subtext={!isTopLeader ? `أعضاء ${userProfile?.committeeName || 'اللجنة'}` : "الأعضاء النشطين"}
-        />
+        <Link to="/employees" className="block focus:outline-none group cursor-pointer" title={!isTopLeader ? "انتقل إلى صفحة أعضاء لجنتي" : "انتقل إلى إدارة الأعضاء"}>
+          <StatCard
+            title={!isTopLeader ? "أعضاء لجنتي" : "فريق العمل"}
+            value={!isTopLeader ? myCommitteeUsers.length : totalEmployees}
+            variant="primary"
+            icon={<Users className="h-4 w-4 transition-transform duration-200 group-hover:scale-110" />}
+            subtext={!isTopLeader ? `أعضاء ${userProfile?.committeeName || 'اللجنة'} • عرض القائمة ←` : "الأعضاء النشطين • إدارة الأعضاء ←"}
+            className="group-hover:border-[var(--brand-primary)] group-hover:shadow-md transition-all cursor-pointer"
+          />
+        </Link>
         <StatCard
           title={!isTopLeader ? "تسليمات لجنتي" : "تسليمات معلقة"}
           value={!isTopLeader ? myCommitteeSubmitted.length : stats.submitted}

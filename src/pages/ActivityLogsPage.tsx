@@ -186,35 +186,114 @@ export function ActivityLogsPage() {
     return tIds;
   }, [isHighLeadership, userProfile, tasks]);
 
-  // Scoped logs: Lead & Co-Lead see everything.
-  // Head, Vice-Head, Member see only activities belonging to their committee or themselves.
+  // 1. Committee Head IDs and Names (used to strictly exclude Head logs from Vice-Head view)
+  const committeeHeadIds = useMemo(() => {
+    if (!userProfile?.committeeId) return new Set<string>();
+    const ids = new Set<string>();
+    users.forEach((u) => {
+      if (u.committeeId === userProfile.committeeId && u.role === 'head') {
+        ids.add(u.uid);
+      }
+    });
+    return ids;
+  }, [userProfile, users]);
+
+  const committeeHeadNames = useMemo(() => {
+    if (!userProfile?.committeeId) return new Set<string>();
+    const names = new Set<string>();
+    users.forEach((u) => {
+      if (u.committeeId === userProfile.committeeId && u.role === 'head') {
+        if (u.displayName) names.add(u.displayName.toLowerCase().trim());
+        if (u.username) names.add(u.username.toLowerCase().trim());
+      }
+    });
+    return names;
+  }, [userProfile, users]);
+
+  // Scoped logs:
+  // - Lead & Co-Lead: see everything across the platform.
+  // - Head: sees all activities of his committee members + himself.
+  // - Vice-Head: sees himself + committee members, BUT CANNOT see the committee Head's logs.
+  // - Member: sees ONLY his own personal activities.
   const scopedLogs = useMemo(() => {
     if (isHighLeadership) return logs;
 
+    const myRole = userProfile?.role;
+    const myUid = userProfile?.uid;
+    const myName = (userProfile?.displayName || '').toLowerCase().trim();
+    const myUsername = (userProfile?.username || '').toLowerCase().trim();
+
+    const isPersonalLog = (l: any) => {
+      if (l.actorId === myUid || l.actor === myUid || l.targetId === myUid) return true;
+      const actName = (l.actorName || '').toLowerCase().trim();
+      const tgtName = (l.targetName || '').toLowerCase().trim();
+      if (myName && (actName === myName || tgtName === myName)) return true;
+      if (myUsername && (actName === myUsername || tgtName === myUsername)) return true;
+      return false;
+    };
+
+    const isHeadLog = (l: any) => {
+      if (l.actorId && committeeHeadIds.has(l.actorId)) return true;
+      if (l.targetId && committeeHeadIds.has(l.targetId)) return true;
+      const actName = (l.actorName || '').toLowerCase().trim();
+      const tgtName = (l.targetName || '').toLowerCase().trim();
+      if (actName && committeeHeadNames.has(actName)) return true;
+      if (tgtName && committeeHeadNames.has(tgtName)) return true;
+      return false;
+    };
+
+    // ── Member (العضو): يشوف سجله فقط وليس الباقي ──
+    if (myRole === 'member' || (!['lead', 'co_lead', 'head', 'vice_head'].includes(myRole || ''))) {
+      return logs.filter((l: any) => isPersonalLog(l));
+    }
+
+    // ── Vice-Head (نائب رئيس اللجنة): يشوف نفسه وأفراد التيم ولكن لا يشوف سجل الهيد ──
+    if (myRole === 'vice_head') {
+      return logs.filter((l: any) => {
+        // If personal to the vice-head (e.g. action done by/on vice-head), show it
+        if (isPersonalLog(l)) return true;
+
+        // If it involves the committee Head, strictly EXCLUDE it
+        if (isHeadLog(l)) return false;
+
+        // Otherwise show team/committee members activity
+        if ((l.actorId && committeeMemberIds.has(l.actorId)) || (l.actor && committeeMemberIds.has(l.actor))) {
+          return true;
+        }
+        if (l.targetId && committeeMemberIds.has(l.targetId)) {
+          return true;
+        }
+        const actName = (l.actorName || '').toLowerCase().trim();
+        if (actName && committeeMemberNames.has(actName)) {
+          return true;
+        }
+        const tgtName = (l.targetName || '').toLowerCase().trim();
+        if (tgtName && committeeMemberNames.has(tgtName)) {
+          return true;
+        }
+        if (l.targetId && committeeTaskIds.has(l.targetId)) {
+          return true;
+        }
+        if (l.targetType === 'committee' && l.targetId === userProfile?.committeeId) {
+          return true;
+        }
+        if (l.metadata?.committeeId && l.metadata.committeeId === userProfile?.committeeId) {
+          return true;
+        }
+
+        return false;
+      });
+    }
+
+    // ── Head (رئيس اللجنة): يشوف كل شيء خاص بأفراد لجنته وبه هو شخصياً ──
     return logs.filter((l: any) => {
-      // 1. Personal match: Actor or Target is the current user
-      if (
-        l.actorId === userProfile?.uid ||
-        l.actor === userProfile?.uid ||
-        l.targetId === userProfile?.uid
-      ) {
+      if (isPersonalLog(l)) return true;
+      if ((l.actorId && committeeMemberIds.has(l.actorId)) || (l.actor && committeeMemberIds.has(l.actor))) {
         return true;
       }
-
-      // 2. Committee member is the Actor
-      if (
-        (l.actorId && committeeMemberIds.has(l.actorId)) ||
-        (l.actor && committeeMemberIds.has(l.actor))
-      ) {
-        return true;
-      }
-
-      // 3. Committee member is the Target
       if (l.targetId && committeeMemberIds.has(l.targetId)) {
         return true;
       }
-
-      // 4. Name match (legacy/display name logging)
       const actName = (l.actorName || '').toLowerCase().trim();
       if (actName && committeeMemberNames.has(actName)) {
         return true;
@@ -223,13 +302,9 @@ export function ActivityLogsPage() {
       if (tgtName && committeeMemberNames.has(tgtName)) {
         return true;
       }
-
-      // 5. Target is a task belonging to the committee
       if (l.targetId && committeeTaskIds.has(l.targetId)) {
         return true;
       }
-
-      // 6. Committee match via metadata or target committee ID
       if (l.targetType === 'committee' && l.targetId === userProfile?.committeeId) {
         return true;
       }
@@ -239,7 +314,16 @@ export function ActivityLogsPage() {
 
       return false;
     });
-  }, [logs, isHighLeadership, userProfile, committeeMemberIds, committeeMemberNames, committeeTaskIds]);
+  }, [
+    logs,
+    isHighLeadership,
+    userProfile,
+    committeeHeadIds,
+    committeeHeadNames,
+    committeeMemberIds,
+    committeeMemberNames,
+    committeeTaskIds,
+  ]);
 
   const filtered = scopedLogs.filter((l) => {
     const matchesSearch =
@@ -299,16 +383,26 @@ export function ActivityLogsPage() {
         </button>
       </div>
 
-      {/* Leadership / Committee Scope Badge */}
+      {/* Role-Specific Scope Badge */}
       {isHighLeadership ? (
         <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-purple-500/10 to-indigo-500/10 border border-purple-500/20 text-purple-800 dark:text-purple-200 text-xs font-bold">
           <Crown className="h-4 w-4 text-purple-500 shrink-0" />
           <span>صلاحيات القيادة العليا (Lead / Co-Lead): عرض شامل لجميع سجلات وعمليات المنصة بالكامل لكافة الأفراد واللجان.</span>
         </div>
+      ) : userProfile?.role === 'head' ? (
+        <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-blue-500/10 to-indigo-500/10 border border-blue-500/20 text-blue-800 dark:text-blue-200 text-xs font-bold">
+          <Shield className="h-4 w-4 text-blue-500 shrink-0" />
+          <span>صلاحيات رئيس اللجنة (Head): يقتصر العرض على أعضاء لجنتك ({userProfile?.committeeName || 'اللجنة'}) وعملياتك الإدارية والشخصية.</span>
+        </div>
+      ) : userProfile?.role === 'vice_head' ? (
+        <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-teal-500/10 to-emerald-500/10 border border-teal-500/20 text-teal-800 dark:text-teal-200 text-xs font-bold">
+          <Users className="h-4 w-4 text-teal-500 shrink-0" />
+          <span>صلاحيات نائب رئيس اللجنة (Vice-Head): يقتصر العرض على أفراد الفريق وعملياتك الشخصية (مستثنى منها سجلات رئيس اللجنة).</span>
+        </div>
       ) : (
-        <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/20 text-blue-800 dark:text-blue-200 text-xs font-bold">
-          <Users className="h-4 w-4 text-blue-500 shrink-0" />
-          <span>نطاق العرض المخصص: يقتصر على العمليات الخاصة بلجنتك ({userProfile?.committeeName || userProfile?.committeeId || 'لجنتك'}) وعملياتك الشخصية فقط.</span>
+        <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-slate-500/10 to-sky-500/10 border border-slate-500/20 text-slate-700 dark:text-slate-200 text-xs font-bold">
+          <Users className="h-4 w-4 text-sky-500 shrink-0" />
+          <span>سجل العمليات الشخصي: يقتصر العرض على العمليات والأنشطة الخاصة بك شخصياً فقط.</span>
         </div>
       )}
 

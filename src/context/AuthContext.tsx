@@ -192,7 +192,7 @@ interface AuthContextValue {
   loading: boolean;
   unauthorized: boolean;
   signInWithUsername: (username: string, password: string) => Promise<boolean | { requires2FA: true; linkedEmail: string; profile: UserProfile }>;
-  signInWithDevice: () => Promise<{ success: boolean; error?: string }>;
+  signInWithDevice: (username?: string) => Promise<{ success: boolean; error?: string }>;
   complete2FALogin: (profile: UserProfile) => Promise<boolean>;
   signInWithGoogleAdmin: () => Promise<boolean>;
   registerMember: (data: {
@@ -530,8 +530,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // -------------------------------------------------------------------
   // signInWithDevice — WebAuthn / Passkey login
   // -------------------------------------------------------------------
-  const signInWithDevice = useCallback(async (): Promise<{ success: boolean; error?: string }> => {
-    const result = await authenticateWithDevice();
+  const signInWithDevice = useCallback(async (username?: string): Promise<{ success: boolean; error?: string }> => {
+    const result = await authenticateWithDevice(username);
     if (!result.userId) {
       return { success: false, error: result.error };
     }
