@@ -105,22 +105,33 @@ export async function registerDeviceCredential(
   ];
 
   // 5. Tiered strategies for device authenticator selection:
-  // Strategy 1 (Standard Modern Passkey - Recommended for Android 14, Realme UI, OneUI, iOS):
-  //   Omitting authenticatorAttachment allows Android Credential Manager to smoothly present
-  //   the native fingerprint / screen lock sheet without pre-flight attachment rejections.
-  // Strategy 2 (Explicit Platform Authenticator):
-  //   For systems that explicitly require 'platform' attachment declaration.
-  // Strategy 3 (Permissive Screen Lock Fallback):
+  // Strategy 1 (This Device / Platform Authenticator - DIRECT):
+  //   Explicitly setting authenticatorAttachment: 'platform' targets the phone's built-in
+  //   fingerprint sensor / screen lock directly without presenting any intermediate selection sheet ("This device" vs "Another device").
+  // Strategy 2 (Platform with residentKey required):
+  //   For strict FIDO2 implementations on Android 14 / Realme UI / iOS.
+  // Strategy 3 (Standard Modern Passkey preferred):
+  //   Flexible fallback.
+  // Strategy 4 (Permissive Screen Lock Fallback):
   //   Minimum requirements for custom Android ROMs.
   const strategies: AuthenticatorSelectionCriteria[] = [
+    {
+      authenticatorAttachment: 'platform', // Targets "This Device" DIRECTLY on first attempt
+      residentKey: 'preferred',
+      userVerification: 'preferred',
+    },
+    {
+      authenticatorAttachment: 'platform',
+      residentKey: 'required',
+      userVerification: 'preferred',
+    },
     {
       residentKey: 'preferred',
       userVerification: 'preferred',
     },
     {
       authenticatorAttachment: 'platform',
-      residentKey: 'preferred',
-      userVerification: 'preferred',
+      userVerification: 'discouraged',
     },
     {
       userVerification: 'discouraged',
@@ -288,58 +299,55 @@ export async function authenticateWithDevice(): Promise<{
 
   let assertion: PublicKeyCredential | null = null;
   let lastErr: any = null;
+  const localList = getLocalDevices();
 
-  // Attempt 1: Discoverable passkey (Resident Key)
-  // CRITICAL: Do NOT set allowCredentials: []! Leaving it undefined is the official W3C standard
-  // for discoverable passkeys and allows Android Credential Manager to pop up smoothly.
-  try {
-    const challenge = crypto.getRandomValues(new Uint8Array(32));
-    assertion = await navigator.credentials.get({
-      publicKey: {
-        challenge,
-        timeout: 60000,
-        userVerification: 'preferred',
-        rpId,
-      },
-    }) as PublicKeyCredential | null;
-  } catch (err1: any) {
-    lastErr = err1;
-    console.warn('[WebAuthn] Discoverable passkey assertion failed, trying local credential list...', err1);
+  // Attempt 1: Target "This Device" (Internal Biometric Authenticator) directly using registered local credentials
+  if (localList.length > 0) {
+    try {
+      const allowedDescriptors: PublicKeyCredentialDescriptor[] = localList.map((dev) => {
+        const binaryStr = atob(dev.credentialId);
+        const bytes = new Uint8Array(binaryStr.length);
+        for (let i = 0; i < binaryStr.length; i++) {
+          bytes[i] = binaryStr.charCodeAt(i);
+        }
+        return {
+          id: bytes.buffer,
+          type: 'public-key' as const,
+          transports: ['internal' as AuthenticatorTransport],
+        };
+      });
+
+      const challenge = crypto.getRandomValues(new Uint8Array(32));
+      assertion = await navigator.credentials.get({
+        publicKey: {
+          challenge,
+          timeout: 60000,
+          userVerification: 'preferred',
+          rpId,
+          allowCredentials: allowedDescriptors,
+        },
+      }) as PublicKeyCredential | null;
+    } catch (err1: any) {
+      lastErr = err1;
+      console.warn('[WebAuthn] Direct internal passkey assertion failed, trying discoverable...', err1);
+    }
   }
 
-  // Attempt 2: If discoverable passkey was not found and we have local device credentials,
-  // provide explicit allowCredentials list
+  // Attempt 2: Discoverable passkey (Resident Key across all devices)
   if (!assertion) {
-    const localList = getLocalDevices();
-    if (localList.length > 0) {
-      try {
-        const allowedDescriptors: PublicKeyCredentialDescriptor[] = localList.map((dev) => {
-          const binaryStr = atob(dev.credentialId);
-          const bytes = new Uint8Array(binaryStr.length);
-          for (let i = 0; i < binaryStr.length; i++) {
-            bytes[i] = binaryStr.charCodeAt(i);
-          }
-          return {
-            id: bytes.buffer,
-            type: 'public-key' as const,
-            transports: ['internal' as AuthenticatorTransport, 'hybrid' as AuthenticatorTransport],
-          };
-        });
-
-        const challenge2 = crypto.getRandomValues(new Uint8Array(32));
-        assertion = await navigator.credentials.get({
-          publicKey: {
-            challenge: challenge2,
-            timeout: 60000,
-            userVerification: 'preferred',
-            rpId,
-            allowCredentials: allowedDescriptors,
-          },
-        }) as PublicKeyCredential | null;
-      } catch (err2: any) {
-        lastErr = err2;
-        console.warn('[WebAuthn] Targeted credential assertion failed:', err2);
-      }
+    try {
+      const challenge2 = crypto.getRandomValues(new Uint8Array(32));
+      assertion = await navigator.credentials.get({
+        publicKey: {
+          challenge: challenge2,
+          timeout: 60000,
+          userVerification: 'preferred',
+          rpId,
+        },
+      }) as PublicKeyCredential | null;
+    } catch (err2: any) {
+      lastErr = err2;
+      console.warn('[WebAuthn] Discoverable passkey assertion failed:', err2);
     }
   }
 
