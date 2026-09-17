@@ -1,91 +1,116 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
-  <defs>
-    <!-- Deep Obsidian Ceramic Base -->
-    <linearGradient id="obsidianBg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#090B11" />
-      <stop offset="50%" stop-color="#0E121C" />
-      <stop offset="100%" stop-color="#05070A" />
-    </linearGradient>
+  <style>
+    /* ─── Dynamic Adaptive Theme Engine ─── */
+    /* Light Mode Default (Executive Platinum & Midnight Obsidian) */
+    :root {
+      --bg-fill: #FFFFFF;
+      --bg-stroke: #E2E8F0;
+      --monogram-primary: #0F172A;
+      --monogram-secondary: #2563EB;
+      --monogram-accent: #4F46E5;
+      --center-node: #3B82F6;
+    }
 
-    <!-- Executive Precision Bevel Rim -->
-    <linearGradient id="precisionRim" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#6366F1" stop-opacity="0.7" />
-      <stop offset="50%" stop-color="#38BDF8" stop-opacity="0.35" />
-      <stop offset="100%" stop-color="#4F46E5" stop-opacity="0.6" />
-    </linearGradient>
+    /* Dark Mode (Deep Cyber Stealth & Pure Luminous Platinum) */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-fill: #090B10;
+        --bg-stroke: #1E2330;
+        --monogram-primary: #FFFFFF;
+        --monogram-secondary: #818CF8;
+        --monogram-accent: #38BDF8;
+        --center-node: #60A5FA;
+      }
+    }
 
-    <!-- Left Bracket < (Balanced Royal Electric Blue & Sapphire) -->
-    <linearGradient id="bracketLeftGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#60A5FA" />
-      <stop offset="45%" stop-color="#3B82F6" />
-      <stop offset="100%" stop-color="#6366F1" />
-    </linearGradient>
+    .tile-bg {
+      fill: var(--bg-fill);
+      stroke: var(--bg-stroke);
+      transition: all 0.3s ease;
+    }
+    .glyph-primary {
+      fill: var(--monogram-primary);
+      transition: fill 0.3s ease;
+    }
+    .glyph-secondary {
+      fill: var(--monogram-secondary);
+      transition: fill 0.3s ease;
+    }
+    .glyph-accent {
+      fill: var(--monogram-accent);
+      transition: fill 0.3s ease;
+    }
+    .glyph-stroke {
+      stroke: var(--monogram-primary);
+      transition: stroke 0.3s ease;
+    }
+    .glyph-node {
+      fill: var(--center-node);
+      transition: fill 0.3s ease;
+    }
+  </style>
 
-    <!-- Right Bracket > (Balanced Electric Violet & Cyber Cyan) -->
-    <linearGradient id="bracketRightGrad" x1="100%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#38BDF8" />
-      <stop offset="50%" stop-color="#6366F1" />
-      <stop offset="100%" stop-color="#4F46E5" />
-    </linearGradient>
-
-    <!-- Dynamic Center Code Slash / (Platinum Chrome with Crisp Contrast) -->
-    <linearGradient id="slashGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#FFFFFF" />
-      <stop offset="50%" stop-color="#F8FAFC" />
-      <stop offset="100%" stop-color="#CBD5E1" />
-    </linearGradient>
-
-    <!-- Specular Blade Highlight -->
-    <linearGradient id="laserReflection" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.95" />
-      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0.15" />
-    </linearGradient>
-
-    <!-- Refined Architectural Shadow -->
-    <filter id="crispShadow" x="-15%" y="-15%" width="130%" height="130%">
-      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.8" />
-    </filter>
-  </defs>
-
-  <!-- 1. Obsidian Tile Container with Precision Chamfered Corners -->
+  <!-- 1. Adaptive Squircle Tile Container -->
   <rect
     x="24"
     y="24"
     width="464"
     height="464"
-    rx="120"
-    ry="120"
-    fill="url(#obsidianBg)"
-    stroke="url(#precisionRim)"
+    rx="124"
+    ry="124"
+    class="tile-bg"
     stroke-width="3"
   />
 
-  <!-- 2. GDG Executive Code Emblem < / > -->
-  <g filter="url(#crispShadow)">
-    <!-- Left Bracket < -->
-    <polygon
-      points="186,126 78,256 186,386 226,346 148,256 226,166"
-      fill="url(#bracketLeftGrad)"
+  <!-- 2. The Minimalist Executive "G" Nexus Monogram -->
+  <!-- Mathematical Continuous Hex-Prism 'G' Form -->
+  <g transform="translate(256, 256)">
+    <!-- Outer Sweep: Main Structural Body of G -->
+    <path
+      d="M 64 -148 
+         C 14 -148 -44 -148 -96 -118 
+         C -152 -84 -180 -24 -180 40 
+         C -180 110 -144 168 -88 196 
+         C -36 222 36 224 94 196 
+         C 152 168 184 116 184 48 
+         L 184 12 
+         L 0 12 
+         L 0 56 
+         L 132 56 
+         C 128 92 104 126 66 148 
+         C 28 168 -24 168 -62 148 
+         C -102 126 -126 84 -126 38 
+         C -126 -10 -106 -52 -70 -74 
+         C -36 -96 6 -96 46 -76 
+         L 76 -120 
+         C 46 -138 6 -148 64 -148 
+         Z"
+      class="glyph-primary"
     />
 
-    <!-- Dynamic Angled Center Slash / -->
-    <polygon
-      points="272,118 314,118 240,394 198,394"
-      fill="url(#slashGrad)"
+    <!-- Dynamic Aerodynamic Blade (Upper-Right Crown Accent) -->
+    <path
+      d="M 80 -148 
+         L 174 -148 
+         L 134 -88 
+         L 44 -88 
+         Z"
+      class="glyph-secondary"
     />
 
-    <!-- Right Bracket > -->
+    <!-- Forward-Leaning Center Core Vector (The Energy Gateway) -->
     <polygon
-      points="326,126 434,256 326,386 286,346 364,256 286,166"
-      fill="url(#bracketRightGrad)"
+      points="0,12 52,-56 184,-56 132,12"
+      class="glyph-accent"
+      opacity="0.9"
     />
 
-    <!-- 3. Laser Specular Precision Edges -->
-    <!-- Left Bracket Top Lead Edge -->
-    <line x1="78" y1="256" x2="186" y2="126" stroke="url(#laserReflection)" stroke-width="2.5" stroke-linecap="round" />
-    <!-- Right Bracket Top Lead Edge -->
-    <line x1="326" y1="126" x2="434" y2="256" stroke="url(#laserReflection)" stroke-width="2.5" stroke-linecap="round" />
-    <!-- Slash Top Bevel Head -->
-    <line x1="272" y1="118" x2="314" y2="118" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" />
+    <!-- Precision Core Node (The Nexus Dot) -->
+    <circle
+      cx="64"
+      cy="-22"
+      r="16"
+      class="glyph-node"
+    />
   </g>
 </svg>

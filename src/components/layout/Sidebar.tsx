@@ -9,6 +9,7 @@ import {
   Inbox
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { useTheme } from '@/context/ThemeContext';
 import { useNotificationCount } from '@/hooks/useNotifications';
 import { Avatar } from '@/components/ui/avatar';
 import { cn } from '@/utils';
@@ -73,31 +74,48 @@ interface SidebarProps {
 }
 
 function GogalyiaLogoMark() {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   return (
-    <div className="relative inline-flex items-center justify-center shrink-0 shadow-[0_2px_8px_rgba(0,0,0,0.12)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.5)] rounded-xl">
-      <svg width="34" height="34" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" className="rounded-xl">
-        <defs>
-          <linearGradient id="sbLeftGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#60A5FA" />
-            <stop offset="50%" stopColor="#3B82F6" />
-            <stop offset="100%" stopColor="#6366F1" />
-          </linearGradient>
-          <linearGradient id="sbRightGrad" x1="100%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#38BDF8" />
-            <stop offset="50%" stopColor="#6366F1" />
-            <stop offset="100%" stopColor="#4F46E5" />
-          </linearGradient>
-          <linearGradient id="sbRim" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#6366F1" stopOpacity="0.8" />
-            <stop offset="100%" stopColor="#38BDF8" stopOpacity="0.4" />
-          </linearGradient>
-        </defs>
-        <rect x="16" y="16" width="480" height="480" rx="120" fill="#0A0C14" stroke="url(#sbRim)" strokeWidth="6" />
-        <polygon points="186,126 78,256 186,386 226,346 148,256 226,166" fill="url(#sbLeftGrad)" />
-        <polygon points="272,118 314,118 240,394 198,394" fill="#FFFFFF" />
-        <polygon points="326,126 434,256 326,386 286,346 364,256 286,166" fill="url(#sbRightGrad)" />
-        <line x1="78" y1="256" x2="186" y2="126" stroke="#FFFFFF" strokeWidth="4" strokeLinecap="round" strokeOpacity="0.85" />
-        <line x1="326" y1="126" x2="434" y2="256" stroke="#FFFFFF" strokeWidth="4" strokeLinecap="round" strokeOpacity="0.85" />
+    <div className="relative inline-flex items-center justify-center shrink-0 shadow-sm rounded-xl transition-all duration-300">
+      <svg width="34" height="34" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" className="rounded-xl transition-all duration-300">
+        <rect
+          x="16"
+          y="16"
+          width="480"
+          height="480"
+          rx="124"
+          fill={isDark ? '#090B10' : '#FFFFFF'}
+          stroke={isDark ? '#1E2330' : '#E2E8F0'}
+          strokeWidth="6"
+          className="transition-colors duration-300"
+        />
+        <g transform="translate(256, 256)">
+          <path
+            d="M 64 -148 C 14 -148 -44 -148 -96 -118 C -152 -84 -180 -24 -180 40 C -180 110 -144 168 -88 196 C -36 222 36 224 94 196 C 152 168 184 116 184 48 L 184 12 L 0 12 L 0 56 L 132 56 C 128 92 104 126 66 148 C 28 168 -24 168 -62 148 C -102 126 -126 84 -126 38 C -126 -10 -106 -52 -70 -74 C -36 -96 6 -96 46 -76 L 76 -120 C 46 -138 6 -148 64 -148 Z"
+            fill={isDark ? '#FFFFFF' : '#0F172A'}
+            className="transition-colors duration-300"
+          />
+          <path
+            d="M 80 -148 L 174 -148 L 134 -88 L 44 -88 Z"
+            fill={isDark ? '#818CF8' : '#2563EB'}
+            className="transition-colors duration-300"
+          />
+          <polygon
+            points="0,12 52,-56 184,-56 132,12"
+            fill={isDark ? '#38BDF8' : '#4F46E5'}
+            opacity="0.9"
+            className="transition-colors duration-300"
+          />
+          <circle
+            cx="64"
+            cy="-22"
+            r="16"
+            fill={isDark ? '#60A5FA' : '#3B82F6'}
+            className="transition-colors duration-300"
+          />
+        </g>
       </svg>
     </div>
   );
