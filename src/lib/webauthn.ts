@@ -299,56 +299,23 @@ export async function authenticateWithDevice(): Promise<{
 
   let assertion: PublicKeyCredential | null = null;
   let lastErr: any = null;
-  const localList = getLocalDevices();
 
-  // Attempt 1: Target "This Device" (Internal Biometric Authenticator) directly using registered local credentials
-  if (localList.length > 0) {
-    try {
-      const allowedDescriptors: PublicKeyCredentialDescriptor[] = localList.map((dev) => {
-        const binaryStr = atob(dev.credentialId);
-        const bytes = new Uint8Array(binaryStr.length);
-        for (let i = 0; i < binaryStr.length; i++) {
-          bytes[i] = binaryStr.charCodeAt(i);
-        }
-        return {
-          id: bytes.buffer,
-          type: 'public-key' as const,
-          transports: ['internal' as AuthenticatorTransport],
-        };
-      });
-
-      const challenge = crypto.getRandomValues(new Uint8Array(32));
-      assertion = await navigator.credentials.get({
-        publicKey: {
-          challenge,
-          timeout: 60000,
-          userVerification: 'preferred',
-          rpId,
-          allowCredentials: allowedDescriptors,
-        },
-      }) as PublicKeyCredential | null;
-    } catch (err1: any) {
-      lastErr = err1;
-      console.warn('[WebAuthn] Direct internal passkey assertion failed, trying discoverable...', err1);
-    }
-  }
-
-  // Attempt 2: Discoverable passkey (Resident Key across all devices)
-  if (!assertion) {
-    try {
-      const challenge2 = crypto.getRandomValues(new Uint8Array(32));
-      assertion = await navigator.credentials.get({
-        publicKey: {
-          challenge: challenge2,
-          timeout: 60000,
-          userVerification: 'preferred',
-          rpId,
-        },
-      }) as PublicKeyCredential | null;
-    } catch (err2: any) {
-      lastErr = err2;
-      console.warn('[WebAuthn] Discoverable passkey assertion failed:', err2);
-    }
+  // Sole, unified method: Pure Discoverable Passkey ("This Device" directly)
+  // By omitting allowCredentials completely, the OS/browser NEVER prompts for USB/NFC/another device.
+  // It directly invokes "This device" biometric sensor (fingerprint / face / PIN) on the first touch!
+  try {
+    const challenge = crypto.getRandomValues(new Uint8Array(32));
+    assertion = await navigator.credentials.get({
+      publicKey: {
+        challenge,
+        timeout: 60000,
+        userVerification: 'preferred',
+        rpId,
+      },
+    }) as PublicKeyCredential | null;
+  } catch (err: any) {
+    lastErr = err;
+    console.warn('[WebAuthn] Passkey assertion notice:', err);
   }
 
   if (!assertion) {
