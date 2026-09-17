@@ -89,8 +89,12 @@ export function canAccessPage(role: UserRole, page: string): boolean {
   if (page === '/submitted-tasks' || page === '/operations' || page.startsWith('/operations')) {
     return isAdminRole(role) || role === 'vice_head';
   }
+  // Activity logs: accessible to all roles (scoped: Lead/Co-Lead see all, Head/Vice-Head/Member see committee & self)
+  if (page === '/activity-logs') {
+    return true;
+  }
   const adminPages = [
-    '/employees', '/reports', '/access-management', '/activity-logs',
+    '/employees', '/reports', '/access-management',
     '/tasks', '/attendance', '/bans',
   ];
   if (adminPages.includes(page)) return isAdminRole(role);

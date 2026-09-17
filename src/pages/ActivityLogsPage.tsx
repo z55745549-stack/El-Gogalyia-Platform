@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { collection, query, orderBy, onSnapshot, limit, db } from '@/lib/supabase';
-import { Search, ClipboardList, Shield, Filter, Download } from 'lucide-react';
+import { Search, ClipboardList, Shield, Filter, Download, Users, Crown } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 import { Avatar } from '@/components/ui/avatar';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SkeletonTable } from '@/components/ui/skeleton';
 import { formatDateTime } from '@/utils';
-import type { ActivityLog } from '@/types';
+import type { ActivityLog, UserProfile, Task } from '@/types';
 
 const ACTION_LABELS: Record<string, { label: string; color: string }> = {
   // Authentication & Join Requests
@@ -60,10 +61,35 @@ const FILTER_GROUPS = [
 ];
 
 export function ActivityLogsPage() {
+  const { userProfile } = useAuth();
+  const isHighLeadership = userProfile?.role === 'lead' || userProfile?.role === 'co_lead';
+
   const [logs, setLogs] = useState<ActivityLog[]>([]);
+  const [users, setUsers] = useState<UserProfile[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
+
+  // If not high leadership, subscribe to users and tasks to accurately isolate committee members and tasks
+  useEffect(() => {
+    if (isHighLeadership) return;
+
+    const unsubUsers = onSnapshot(collection(db, 'users'), (snap) => {
+      const uList = snap.docs.map((d) => ({ uid: d.id, ...d.data() } as UserProfile));
+      setUsers(uList);
+    });
+
+    const unsubTasks = onSnapshot(collection(db, 'tasks'), (snap) => {
+      const tList = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Task));
+      setTasks(tList);
+    });
+
+    return () => {
+      unsubUsers();
+      unsubTasks();
+    };
+  }, [isHighLeadership]);
 
   useEffect(() => {
     // 1. Instant paint from local cache
@@ -122,7 +148,100 @@ export function ActivityLogsPage() {
     };
   }, []);
 
-  const filtered = logs.filter((l) => {
+  // Map of committee members and tasks for isolation
+  const committeeMemberIds = useMemo(() => {
+    if (isHighLeadership || !userProfile?.committeeId) return new Set<string>();
+    const ids = new Set<string>();
+    ids.add(userProfile.uid);
+    users.forEach((u) => {
+      if (u.committeeId === userProfile.committeeId) {
+        ids.add(u.uid);
+      }
+    });
+    return ids;
+  }, [isHighLeadership, userProfile, users]);
+
+  const committeeMemberNames = useMemo(() => {
+    if (isHighLeadership || !userProfile?.committeeId) return new Set<string>();
+    const names = new Set<string>();
+    if (userProfile.displayName) names.add(userProfile.displayName.toLowerCase().trim());
+    if (userProfile.username) names.add(userProfile.username.toLowerCase().trim());
+    users.forEach((u) => {
+      if (u.committeeId === userProfile.committeeId) {
+        if (u.displayName) names.add(u.displayName.toLowerCase().trim());
+        if (u.username) names.add(u.username.toLowerCase().trim());
+      }
+    });
+    return names;
+  }, [isHighLeadership, userProfile, users]);
+
+  const committeeTaskIds = useMemo(() => {
+    if (isHighLeadership || !userProfile?.committeeId) return new Set<string>();
+    const tIds = new Set<string>();
+    tasks.forEach((t) => {
+      if (t.committeeId === userProfile.committeeId) {
+        tIds.add(t.id);
+      }
+    });
+    return tIds;
+  }, [isHighLeadership, userProfile, tasks]);
+
+  // Scoped logs: Lead & Co-Lead see everything.
+  // Head, Vice-Head, Member see only activities belonging to their committee or themselves.
+  const scopedLogs = useMemo(() => {
+    if (isHighLeadership) return logs;
+
+    return logs.filter((l: any) => {
+      // 1. Personal match: Actor or Target is the current user
+      if (
+        l.actorId === userProfile?.uid ||
+        l.actor === userProfile?.uid ||
+        l.targetId === userProfile?.uid
+      ) {
+        return true;
+      }
+
+      // 2. Committee member is the Actor
+      if (
+        (l.actorId && committeeMemberIds.has(l.actorId)) ||
+        (l.actor && committeeMemberIds.has(l.actor))
+      ) {
+        return true;
+      }
+
+      // 3. Committee member is the Target
+      if (l.targetId && committeeMemberIds.has(l.targetId)) {
+        return true;
+      }
+
+      // 4. Name match (legacy/display name logging)
+      const actName = (l.actorName || '').toLowerCase().trim();
+      if (actName && committeeMemberNames.has(actName)) {
+        return true;
+      }
+      const tgtName = (l.targetName || '').toLowerCase().trim();
+      if (tgtName && committeeMemberNames.has(tgtName)) {
+        return true;
+      }
+
+      // 5. Target is a task belonging to the committee
+      if (l.targetId && committeeTaskIds.has(l.targetId)) {
+        return true;
+      }
+
+      // 6. Committee match via metadata or target committee ID
+      if (l.targetType === 'committee' && l.targetId === userProfile?.committeeId) {
+        return true;
+      }
+      if (l.metadata?.committeeId && l.metadata.committeeId === userProfile?.committeeId) {
+        return true;
+      }
+
+      return false;
+    });
+  }, [logs, isHighLeadership, userProfile, committeeMemberIds, committeeMemberNames, committeeTaskIds]);
+
+  const filtered = scopedLogs.filter((l) => {
     const matchesSearch =
       !search ||
       (l.actorName || '').toLowerCase().includes(search.toLowerCase()) ||
@@ -179,6 +298,19 @@ export function ActivityLogsPage() {
           <span>تصدير CSV ({filtered.length})</span>
         </button>
       </div>
+
+      {/* Leadership / Committee Scope Badge */}
+      {isHighLeadership ? (
+        <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-purple-500/10 to-indigo-500/10 border border-purple-500/20 text-purple-800 dark:text-purple-200 text-xs font-bold">
+          <Crown className="h-4 w-4 text-purple-500 shrink-0" />
+          <span>صلاحيات القيادة العليا (Lead / Co-Lead): عرض شامل لجميع سجلات وعمليات المنصة بالكامل لكافة الأفراد واللجان.</span>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/20 text-blue-800 dark:text-blue-200 text-xs font-bold">
+          <Users className="h-4 w-4 text-blue-500 shrink-0" />
+          <span>نطاق العرض المخصص: يقتصر على العمليات الخاصة بلجنتك ({userProfile?.committeeName || userProfile?.committeeId || 'لجنتك'}) وعملياتك الشخصية فقط.</span>
+        </div>
+      )}
 
       {/* Filter and Search Bar */}
       <div className="card p-4 rounded-2xl flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">

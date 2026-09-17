@@ -56,7 +56,7 @@ const navItems: NavItem[] = [
 
   // System & Security
   { key: 'support', label: 'تذاكر الدعم الفني', path: '/support', icon: <HeadphonesIcon className="h-4 w-4" />, roles: ALL_ROLES, category: 'system' },
-  { key: 'activity_logs', label: 'سجل العمليات', path: '/activity-logs', icon: <ClipboardList className="h-4 w-4" />, roles: ALL_ADMIN_ROLES, category: 'system' },
+  { key: 'activity_logs', label: 'سجل العمليات', path: '/activity-logs', icon: <ClipboardList className="h-4 w-4" />, roles: ALL_ROLES, category: 'system' },
   { key: 'notifications', label: 'مركز التنبيهات', path: '/notifications', icon: <Bell className="h-4 w-4" />, roles: ALL_ROLES, category: 'system' },
 ];
 
