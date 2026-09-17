@@ -74,20 +74,30 @@ interface SidebarProps {
 
 function GogalyiaLogoMark() {
   return (
-    <div className="relative inline-flex items-center justify-center shrink-0">
-      <div
-        className="absolute -inset-1 rounded-xl blur-sm opacity-60 pointer-events-none"
-        style={{
-          background: 'linear-gradient(135deg, #4F46E5 0%, #06B6D4 100%)',
-        }}
-      />
-      <svg width="34" height="34" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" className="relative z-10">
-        <rect x="24" y="24" width="464" height="464" rx="116" ry="116" fill="#080A10" stroke="#312E81" strokeWidth="6" />
-        <polygon points="198,124 78,256 198,388 238,348 152,256 238,164" fill="#6366F1" />
-        <polygon points="314,124 434,256 314,388 274,348 360,256 274,164" fill="#06B6D4" />
-        <polygon points="278,124 246,124 234,388 266,388" fill="#FFFFFF" />
-        <line x1="78" y1="256" x2="198" y2="124" stroke="#FFFFFF" strokeWidth="4" strokeLinecap="round" strokeOpacity="0.8" />
-        <line x1="434" y1="256" x2="314" y2="388" stroke="#FFFFFF" strokeWidth="4" strokeLinecap="round" strokeOpacity="0.8" />
+    <div className="relative inline-flex items-center justify-center shrink-0 shadow-[0_2px_8px_rgba(0,0,0,0.12)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.5)] rounded-xl">
+      <svg width="34" height="34" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" className="rounded-xl">
+        <defs>
+          <linearGradient id="sbLeftGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#60A5FA" />
+            <stop offset="50%" stopColor="#3B82F6" />
+            <stop offset="100%" stopColor="#6366F1" />
+          </linearGradient>
+          <linearGradient id="sbRightGrad" x1="100%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#38BDF8" />
+            <stop offset="50%" stopColor="#6366F1" />
+            <stop offset="100%" stopColor="#4F46E5" />
+          </linearGradient>
+          <linearGradient id="sbRim" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#6366F1" stopOpacity="0.8" />
+            <stop offset="100%" stopColor="#38BDF8" stopOpacity="0.4" />
+          </linearGradient>
+        </defs>
+        <rect x="16" y="16" width="480" height="480" rx="120" fill="#0A0C14" stroke="url(#sbRim)" strokeWidth="6" />
+        <polygon points="186,126 78,256 186,386 226,346 148,256 226,166" fill="url(#sbLeftGrad)" />
+        <polygon points="272,118 314,118 240,394 198,394" fill="#FFFFFF" />
+        <polygon points="326,126 434,256 326,386 286,346 364,256 286,166" fill="url(#sbRightGrad)" />
+        <line x1="78" y1="256" x2="186" y2="126" stroke="#FFFFFF" strokeWidth="4" strokeLinecap="round" strokeOpacity="0.85" />
+        <line x1="326" y1="126" x2="434" y2="256" stroke="#FFFFFF" strokeWidth="4" strokeLinecap="round" strokeOpacity="0.85" />
       </svg>
     </div>
   );

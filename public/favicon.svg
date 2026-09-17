@@ -1,100 +1,91 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
   <defs>
-    <!-- Deep Obsidian Titanium Canvas -->
-    <linearGradient id="canvasBg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#07090E" />
-      <stop offset="50%" stop-color="#0B0D14" />
-      <stop offset="100%" stop-color="#040508" />
+    <!-- Deep Obsidian Ceramic Base -->
+    <linearGradient id="obsidianBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#090B11" />
+      <stop offset="50%" stop-color="#0E121C" />
+      <stop offset="100%" stop-color="#05070A" />
     </linearGradient>
 
-    <!-- Executive Metallic Rim -->
-    <linearGradient id="rimStroke" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#4F46E5" stop-opacity="0.8" />
-      <stop offset="50%" stop-color="#22D3EE" stop-opacity="0.3" />
-      <stop offset="100%" stop-color="#3B82F6" stop-opacity="0.6" />
+    <!-- Executive Precision Bevel Rim -->
+    <linearGradient id="precisionRim" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366F1" stop-opacity="0.7" />
+      <stop offset="50%" stop-color="#38BDF8" stop-opacity="0.35" />
+      <stop offset="100%" stop-color="#4F46E5" stop-opacity="0.6" />
     </linearGradient>
 
-    <!-- GDG Left Bracket < (Sapphire & Electric Indigo) -->
-    <linearGradient id="gdgLeft" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#818CF8" />
-      <stop offset="40%" stop-color="#4F46E5" />
-      <stop offset="100%" stop-color="#2563EB" />
+    <!-- Left Bracket < (Balanced Royal Electric Blue & Sapphire) -->
+    <linearGradient id="bracketLeftGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#60A5FA" />
+      <stop offset="45%" stop-color="#3B82F6" />
+      <stop offset="100%" stop-color="#6366F1" />
     </linearGradient>
 
-    <!-- GDG Right Bracket > (Vivid Cyan & Electric Cobalt) -->
-    <linearGradient id="gdgRight" x1="0%" y1="0%" x2="100%" y2="100%">
+    <!-- Right Bracket > (Balanced Electric Violet & Cyber Cyan) -->
+    <linearGradient id="bracketRightGrad" x1="100%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" stop-color="#38BDF8" />
-      <stop offset="60%" stop-color="#06B6D4" />
-      <stop offset="100%" stop-color="#0284C7" />
+      <stop offset="50%" stop-color="#6366F1" />
+      <stop offset="100%" stop-color="#4F46E5" />
     </linearGradient>
 
-    <!-- Center Slash / Core Laser (Platinum Chrome & Pure Light) -->
-    <linearGradient id="gdgCenter" x1="0%" y1="0%" x2="0%" y2="100%">
+    <!-- Dynamic Center Code Slash / (Platinum Chrome with Crisp Contrast) -->
+    <linearGradient id="slashGrad" x1="0%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" stop-color="#FFFFFF" />
-      <stop offset="45%" stop-color="#F1F5F9" />
-      <stop offset="100%" stop-color="#94A3B8" />
+      <stop offset="50%" stop-color="#F8FAFC" />
+      <stop offset="100%" stop-color="#CBD5E1" />
     </linearGradient>
 
-    <!-- Laser Specular Edge Highlight -->
-    <linearGradient id="laserSheen" x1="0%" y1="0%" x2="100%" y2="100%">
+    <!-- Specular Blade Highlight -->
+    <linearGradient id="laserReflection" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.95" />
-      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0.1" />
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0.15" />
     </linearGradient>
 
-    <!-- 3D Shadow Depth -->
-    <filter id="bracketShadow" x="-15%" y="-15%" width="130%" height="130%">
-      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#000000" flood-opacity="0.85" />
-    </filter>
-
-    <!-- Ambient Core Glow -->
-    <filter id="ambientLight" x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur stdDeviation="30" result="blur" />
+    <!-- Refined Architectural Shadow -->
+    <filter id="crispShadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.8" />
     </filter>
   </defs>
 
-  <!-- 1. Executive Squircle Base -->
+  <!-- 1. Obsidian Tile Container with Precision Chamfered Corners -->
   <rect
     x="24"
     y="24"
     width="464"
     height="464"
-    rx="116"
-    ry="116"
-    fill="url(#canvasBg)"
-    stroke="url(#rimStroke)"
+    rx="120"
+    ry="120"
+    fill="url(#obsidianBg)"
+    stroke="url(#precisionRim)"
     stroke-width="3"
   />
 
-  <!-- 2. Subtle Ethereal Cyber Atmosphere in Background -->
-  <circle cx="160" cy="256" r="100" fill="#4F46E5" opacity="0.18" filter="url(#ambientLight)" />
-  <circle cx="350" cy="256" r="100" fill="#06B6D4" opacity="0.18" filter="url(#ambientLight)" />
-
-  <!-- 3. GDG Enterprise Insignia < / > -->
-  <g filter="url(#bracketShadow)">
+  <!-- 2. GDG Executive Code Emblem < / > -->
+  <g filter="url(#crispShadow)">
     <!-- Left Bracket < -->
     <polygon
-      points="198,124 78,256 198,388 238,348 152,256 238,164"
-      fill="url(#gdgLeft)"
+      points="186,126 78,256 186,386 226,346 148,256 226,166"
+      fill="url(#bracketLeftGrad)"
+    />
+
+    <!-- Dynamic Angled Center Slash / -->
+    <polygon
+      points="272,118 314,118 240,394 198,394"
+      fill="url(#slashGrad)"
     />
 
     <!-- Right Bracket > -->
     <polygon
-      points="314,124 434,256 314,388 274,348 360,256 274,164"
-      fill="url(#gdgRight)"
+      points="326,126 434,256 326,386 286,346 364,256 286,166"
+      fill="url(#bracketRightGrad)"
     />
 
-    <!-- Center Executive Slash / -->
-    <polygon
-      points="278,124 246,124 234,388 266,388"
-      fill="url(#gdgCenter)"
-    />
-
-    <!-- 4. Precision Laser-Etched Chamfer Accents -->
-    <!-- Left bracket top edge specular shine -->
-    <line x1="78" y1="256" x2="198" y2="124" stroke="url(#laserSheen)" stroke-width="2.5" stroke-linecap="round" />
-    <!-- Right bracket bottom edge specular shine -->
-    <line x1="434" y1="256" x2="314" y2="388" stroke="url(#laserSheen)" stroke-width="2.5" stroke-linecap="round" />
-    <!-- Slash top bevel shine -->
-    <line x1="246" y1="124" x2="278" y2="124" stroke="#FFFFFF" stroke-width="2" />
+    <!-- 3. Laser Specular Precision Edges -->
+    <!-- Left Bracket Top Lead Edge -->
+    <line x1="78" y1="256" x2="186" y2="126" stroke="url(#laserReflection)" stroke-width="2.5" stroke-linecap="round" />
+    <!-- Right Bracket Top Lead Edge -->
+    <line x1="326" y1="126" x2="434" y2="256" stroke="url(#laserReflection)" stroke-width="2.5" stroke-linecap="round" />
+    <!-- Slash Top Bevel Head -->
+    <line x1="272" y1="118" x2="314" y2="118" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" />
   </g>
 </svg>
