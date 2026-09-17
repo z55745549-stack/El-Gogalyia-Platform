@@ -314,6 +314,13 @@ function mapRow(row: any): any {
     }
   }
 
+  // Explicit aliases for oCoinsBalance <-> ocoins_balance
+  if (row.ocoins_balance !== undefined || raw.ocoins_balance !== undefined || row.o_coins_balance !== undefined || raw.oCoinsBalance !== undefined) {
+    const bal = row.ocoins_balance ?? raw.oCoinsBalance ?? raw.ocoins_balance ?? row.o_coins_balance;
+    res.oCoinsBalance = bal;
+    res.ocoinsBalance = bal;
+  }
+
   // Ensure id is defined
   res.id = row.id ?? row.key ?? raw.id;
 
@@ -519,7 +526,10 @@ export async function setDoc(docRef: DocRef, data: any, options?: { merge?: bool
 
   const allowedCols = KNOWN_COLUMNS[table];
   for (const [k, v] of Object.entries(finalData)) {
-    const snake = toSnakeCase(k);
+    let snake = toSnakeCase(k);
+    if (k === 'oCoinsBalance' || k === 'ocoinsBalance') {
+      snake = 'ocoins_balance';
+    }
     if (allowedCols?.has(snake)) {
       payload[snake] = normalizeValueForDb(v);
     }
@@ -667,7 +677,10 @@ export async function updateDoc(docRef: DocRef, data: any): Promise<void> {
 
   const allowedCols = KNOWN_COLUMNS[table];
   for (const [k, v] of Object.entries(resolvedData)) {
-    const snake = toSnakeCase(k);
+    let snake = toSnakeCase(k);
+    if (k === 'oCoinsBalance' || k === 'ocoinsBalance') {
+      snake = 'ocoins_balance';
+    }
     if (allowedCols?.has(snake)) {
       payload[snake] = normalizeValueForDb(v);
     }

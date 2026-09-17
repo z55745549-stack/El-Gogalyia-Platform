@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { collection, query, orderBy, onSnapshot, getDocs, db } from '@/lib/supabase';
+import { collection, doc, query, orderBy, onSnapshot, getDocs, db } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DiscountsPage } from '@/pages/DiscountsPage';
 import { MyDiscountsPage } from '@/pages/MyDiscountsPage';
@@ -161,10 +161,25 @@ export function OCoinsPage() {
   const [deletingTx, setDeletingTx] = useState(false);
   const [showClearAllModal, setShowClearAllModal] = useState(false);
   const [clearingAll, setClearingAll] = useState(false);
+  const [liveBalanceFromDb, setLiveBalanceFromDb] = useState<number | null>(null);
 
   // 1. Realtime Subscriptions
   useEffect(() => {
     if (!userProfile) return;
+
+    // Listen to user profile document in realtime to keep balance always 100% synchronized
+    let unsubUser: (() => void) | undefined;
+    if (userProfile.uid) {
+      unsubUser = onSnapshot(doc(db, 'users', userProfile.uid), (snap) => {
+        if (snap.exists()) {
+          const data = snap.data();
+          const freshBal = data.oCoinsBalance ?? data.ocoins_balance ?? data.ocoinsBalance;
+          if (typeof freshBal === 'number') {
+            setLiveBalanceFromDb(freshBal);
+          }
+        }
+      });
+    }
 
     // Listen to all transactions in realtime
     const q = query(collection(db, 'oCoins'), orderBy('createdAt', 'desc'));
@@ -205,7 +220,10 @@ export function OCoinsPage() {
         .catch((err) => console.warn('Failed to load users:', err));
     }
 
-    return unsub;
+    return () => {
+      unsub();
+      if (unsubUser) unsubUser();
+    };
   }, [userProfile, canManage, isTopLeader]);
 
   // 2. Filter Transactions by User and Search Criteria
@@ -263,6 +281,27 @@ export function OCoinsPage() {
     : userTransactions
         .filter((t) => t.amount < 0)
         .reduce((sum, t) => sum + Math.abs(Number(t.amount || 0)), 0);
+
+  // Realtime balance resolution: if transactions exist, available balance must equal earned minus spent
+  const ledgerBalance = Math.max(0, (totalEarned || 0) - (totalSpent || 0));
+  const effectiveUserBalance = liveBalanceFromDb !== null
+    ? Math.max(liveBalanceFromDb, ledgerBalance)
+    : (typeof userProfile?.oCoinsBalance === 'number' && userProfile.oCoinsBalance > 0)
+    ? Math.max(userProfile.oCoinsBalance, ledgerBalance)
+    : ledgerBalance;
+
+  const selectedUserEarned = selectedUser
+    ? userTransactions.filter((t) => t.amount > 0).reduce((sum, t) => sum + (Number(t.amount) || 0), 0)
+    : 0;
+  const selectedUserSpent = selectedUser
+    ? userTransactions.filter((t) => t.amount < 0).reduce((sum, t) => sum + Math.abs(Number(t.amount) || 0), 0)
+    : 0;
+  const selectedUserLedgerBalance = Math.max(0, selectedUserEarned - selectedUserSpent);
+  const effectiveSelectedUserBalance = selectedUser
+    ? (typeof selectedUser.oCoinsBalance === 'number' && selectedUser.oCoinsBalance > 0
+        ? Math.max(selectedUser.oCoinsBalance, selectedUserLedgerBalance)
+        : selectedUserLedgerBalance)
+    : 0;
 
   // Apply tab and text search filters
   const filteredTransactions = userTransactions.filter((t) => {
@@ -541,7 +580,7 @@ export function OCoinsPage() {
                   </div>
                 ) : (
                   <p className="text-3xl font-black text-[var(--text-primary)]">
-                    {formatOCoins(selectedUser.oCoinsBalance ?? 0)}
+                    {formatOCoins(effectiveSelectedUserBalance)}
                     <span className="text-sm font-bold text-[var(--brand-warm)] mr-1.5">OC</span>
                   </p>
                 )
@@ -554,7 +593,7 @@ export function OCoinsPage() {
                 </div>
               ) : (
                 <p className="text-3xl font-black text-[var(--text-primary)]">
-                  {formatOCoins(userProfile?.oCoinsBalance ?? 0)}
+                  {formatOCoins(effectiveUserBalance)}
                   <span className="text-sm font-bold text-[var(--brand-warm)] mr-1.5">OC</span>
                 </p>
               )}

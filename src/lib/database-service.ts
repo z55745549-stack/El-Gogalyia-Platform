@@ -847,6 +847,7 @@ export async function approveTask(
           // FIX: Use atomic increment() to prevent race conditions with concurrent approvals
           batch.update(userRef, {
             oCoinsBalance: increment(finalCoinsToAward),
+            ocoins_balance: increment(finalCoinsToAward),
           });
         }
       } catch {}
@@ -1154,6 +1155,7 @@ export async function manualOCoinAdjustment(params: {
   if (targetUser.uid) {
     batch.update(doc(db, 'users', targetUser.uid), {
       oCoinsBalance: newBalance,
+      ocoins_balance: newBalance,
       updatedAt: serverTimestamp(),
     });
   }
