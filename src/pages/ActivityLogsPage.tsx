@@ -117,7 +117,7 @@ export function ActivityLogsPage() {
 
       {/* Filter and Search Bar */}
       <div className="card p-4 rounded-2xl flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
+        <div className="flex flex-wrap items-center gap-2 pb-1 sm:pb-0">
           <Filter className="h-4 w-4 text-[var(--text-muted)] shrink-0" />
           {FILTER_GROUPS.map((grp) => (
             <button

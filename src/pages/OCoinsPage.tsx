@@ -400,47 +400,47 @@ export function OCoinsPage() {
     <div className="space-y-6 max-w-5xl mx-auto dir-rtl text-right font-sans pb-12">
       {/* Unified Rewards Hub Segmented Switcher */}
       <div className="flex items-center justify-between p-1.5 sm:p-2 rounded-2xl bg-[var(--surface-elevated)] border border-[var(--border-subtle)] overflow-hidden">
-        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none snap-x w-full">
+        <div className="flex flex-wrap items-center gap-1.5 w-full">
           <button
             type="button"
             onClick={() => setSearchParams({})}
             className={cn(
-              'snap-start shrink-0 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2 active:scale-95',
+              'flex-1 sm:flex-initial px-3 sm:px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-95',
               currentTab === 'wallet'
                 ? 'bg-amber-500 text-white shadow-md'
                 : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface)]'
             )}
           >
-            <Coins className="h-4 w-4" />
-            <span>محفظة O Coins والمعاملات</span>
+            <Coins className="h-4 w-4 shrink-0" />
+            <span className="truncate">محفظة O Coins والمعاملات</span>
           </button>
 
           <button
             type="button"
             onClick={() => setSearchParams({ tab: 'store' })}
             className={cn(
-              'snap-start shrink-0 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2 active:scale-95',
+              'flex-1 sm:flex-initial px-3 sm:px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-95',
               currentTab === 'store'
                 ? 'bg-[var(--brand-primary)] text-white shadow-md'
                 : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface)]'
             )}
           >
-            <ShoppingBag className="h-4 w-4" />
-            <span>متجر الخصومات والمكافآت</span>
+            <ShoppingBag className="h-4 w-4 shrink-0" />
+            <span className="truncate">متجر الخصومات والمكافآت</span>
           </button>
 
           <button
             type="button"
             onClick={() => setSearchParams({ tab: 'purchases' })}
             className={cn(
-              'snap-start shrink-0 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2 active:scale-95',
+              'flex-1 sm:flex-initial px-3 sm:px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-95',
               currentTab === 'purchases'
                 ? 'bg-emerald-600 text-white shadow-md'
                 : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface)]'
             )}
           >
-            <Gift className="h-4 w-4" />
-            <span>مشترياتي وقسائمي المفعّلة</span>
+            <Gift className="h-4 w-4 shrink-0" />
+            <span className="truncate">مشترياتي وقسائمي</span>
           </button>
 
           {canManage && (
@@ -448,14 +448,14 @@ export function OCoinsPage() {
               type="button"
               onClick={() => setSearchParams({ tab: 'manage_discounts' })}
               className={cn(
-                'snap-start shrink-0 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2 active:scale-95',
+                'flex-1 sm:flex-initial px-3 sm:px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-95',
                 currentTab === 'manage_discounts'
                   ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md'
                   : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface)]'
               )}
             >
-              <Tag className="h-4 w-4" />
-              <span>إدارة العروض والخصومات (مشرف)</span>
+              <Tag className="h-4 w-4 shrink-0" />
+              <span className="truncate">إدارة العروض (مشرف)</span>
             </button>
           )}
         </div>
@@ -660,7 +660,7 @@ export function OCoinsPage() {
         {/* Search & Tabs Toolbar */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           {/* Tabs */}
-          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+          <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
             {[
               { id: 'all', label: 'كافة المعاملات' },
               { id: 'rewards', label: 'المكافآت والإيداعات (+)' },

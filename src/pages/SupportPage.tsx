@@ -352,7 +352,7 @@ export function SupportPage() {
         </div>
 
         {/* Filter Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none snap-x -mx-3 px-3 sm:mx-0 sm:px-0 pb-1">
+        <div className="flex flex-wrap items-center gap-1.5 pt-0.5 pb-1">
           {[
             { id: 'all', label: 'جميع الحالات' },
             { id: 'open', label: 'مفتوحة' },
@@ -365,7 +365,7 @@ export function SupportPage() {
               key={status.id}
               onClick={() => setStatusFilter(status.id)}
               className={cn(
-                'snap-start px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer active:scale-95',
+                'px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95',
                 statusFilter === status.id
                   ? 'bg-[var(--brand-primary)] text-white shadow-xs'
                   : 'bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'

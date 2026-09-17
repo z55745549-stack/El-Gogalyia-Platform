@@ -101,7 +101,7 @@ export function MyDiscountsPage() {
           />
         </div>
 
-        <div className="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
+        <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto pt-0.5">
           {[
             { id: 'all', label: 'الكل', count: purchases.length },
             { id: 'active', label: 'سارية', count: purchases.filter((p) => p.status === 'active').length },

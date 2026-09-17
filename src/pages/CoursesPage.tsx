@@ -207,7 +207,7 @@ export function CoursesPage() {
       {/* Dynamic Category Chips Bar */}
       <div className="card p-4 rounded-2xl shadow-xs space-y-3">
         <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 overflow-x-auto pb-1.5 w-full no-scrollbar">
+          <div className="flex flex-wrap items-center gap-2 w-full pt-0.5">
             <button
               onClick={() => setSelectedCategory('all')}
               className={cn(

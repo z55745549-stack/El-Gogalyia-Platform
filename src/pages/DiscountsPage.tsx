@@ -193,12 +193,12 @@ export function DiscountsPage() {
           />
         </div>
 
-        <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 scrollbar-none snap-x -mx-2 px-2 sm:mx-0 sm:px-0">
+        <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto pt-0.5">
           <button
             type="button"
             onClick={() => setSelectedType('all')}
             className={cn(
-              'snap-start shrink-0 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95',
+              'px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95',
               selectedType === 'all'
                 ? 'btn-primary shadow-xs'
                 : 'bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)]'

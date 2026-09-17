@@ -151,20 +151,20 @@ export function MyTasksPage() {
 
       {/* Main Container */}
       <div className="card overflow-hidden transition-colors">
-        {/* Tabs */}
-        <div className="flex overflow-x-auto scrollbar-none snap-x border-b border-[var(--border-subtle)] px-2 sm:px-4 pt-2 bg-[var(--bg-elevated)]/20">
+        {/* Tabs - Responsive Grid on Mobile */}
+        <div className="grid grid-cols-2 sm:flex border-b border-[var(--border-subtle)] px-2 sm:px-4 pt-2 bg-[var(--bg-elevated)]/20 gap-1">
           {TABS.map((tab) => (
             <button
               key={tab.value}
               onClick={() => setActiveTab(tab.value)}
               className={cn(
-                'snap-start shrink-0 px-3.5 sm:px-4 py-2.5 text-xs sm:text-sm font-bold border-b-2 transition-all whitespace-nowrap -mb-px cursor-pointer active:scale-95',
+                'flex-1 px-2.5 sm:px-4 py-2.5 text-xs sm:text-sm font-bold border-b-2 transition-all flex items-center justify-center -mb-px cursor-pointer active:scale-95 text-center',
                 activeTab === tab.value
-                  ? 'border-[var(--brand-primary)] text-[var(--brand-primary)] font-black'
+                  ? 'border-[var(--brand-primary)] text-[var(--brand-primary)] font-black bg-[var(--brand-primary)]/5 rounded-t-lg'
                   : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]'
               )}
             >
-              {tab.label}
+              <span className="truncate">{tab.label}</span>
               {tab.value === 'overdue' && overdueCount > 0 && (
                 <span className="mr-1.5 px-1.5 py-0.5 bg-[var(--brand-danger)]/15 text-[var(--brand-danger)] text-[10px] font-black rounded-full">
                   {overdueCount}

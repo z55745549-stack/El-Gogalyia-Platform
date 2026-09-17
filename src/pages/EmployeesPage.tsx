@@ -572,20 +572,20 @@ export function EmployeesPage() {
         </Button>
       </div>
 
-      {/* View Tabs: Approved Members vs Pending Requests */}
-      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-white/10 pb-2 overflow-x-auto scrollbar-none">
+      {/* View Tabs: Approved Members vs Pending Requests - Responsive Grid on Mobile */}
+      <div className="grid grid-cols-2 gap-2 border-b border-slate-200 dark:border-white/10 pb-3 w-full sm:flex sm:w-auto">
         <button
           type="button"
           onClick={() => setViewTab('approved')}
-          className={`shrink-0 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+          className={`px-2 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer flex items-center justify-center gap-1.5 sm:gap-2 ${
             viewTab === 'approved'
               ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/25'
               : 'bg-white dark:bg-[var(--surface-elevated)] text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 border border-slate-200 dark:border-white/10'
           }`}
         >
-          <Users className="h-4 w-4" />
-          <span>الأعضاء المعتمدون</span>
-          <span className="px-2 py-0.5 rounded-full text-[10px] bg-black/20 text-white font-mono">
+          <Users className="h-4 w-4 shrink-0" />
+          <span className="truncate">الأعضاء المعتمدون</span>
+          <span className="shrink-0 px-2 py-0.5 rounded-full text-[10px] bg-black/20 text-white font-mono font-bold">
             {approvedMembers.length}
           </span>
         </button>
@@ -593,16 +593,16 @@ export function EmployeesPage() {
         <button
           type="button"
           onClick={() => setViewTab('pending')}
-          className={`shrink-0 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 relative ${
+          className={`px-2 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer flex items-center justify-center gap-1.5 sm:gap-2 relative ${
             viewTab === 'pending'
               ? 'bg-amber-500 text-white shadow-md shadow-amber-500/25'
               : 'bg-white dark:bg-[var(--surface-elevated)] text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 border border-slate-200 dark:border-white/10'
           }`}
         >
-          <UserPlus className="h-4 w-4" />
-          <span>طلبات الانضمام المعلقة</span>
+          <UserPlus className="h-4 w-4 shrink-0" />
+          <span className="truncate">طلبات الانضمام</span>
           {pendingMembers.length > 0 && (
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-500 text-white animate-pulse font-mono">
+            <span className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-500 text-white animate-pulse font-mono">
               {pendingMembers.length}
             </span>
           )}
@@ -634,16 +634,36 @@ export function EmployeesPage() {
           </Button>
         </div>
       </div>
-      {/* Committee chips quick filter — smooth horizontal snap on mobile */}
-      <div className="flex items-center sm:flex-wrap gap-2 overflow-x-auto sm:overflow-visible scrollbar-none snap-x -mx-3 px-3 sm:mx-0 sm:px-0 pb-1">
+      {/* Committee chips quick filter — wrapped naturally so all committees are visible without horizontal scrolling */}
+      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 pt-1 pb-1">
+        <button
+          type="button"
+          onClick={() => setCommitteeFilter('')}
+          className={cn(
+            "px-3 py-1.5 rounded-full text-xs font-bold border transition-all flex items-center gap-1.5 cursor-pointer active:scale-95",
+            committeeFilter === ''
+              ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
+              : "bg-[var(--surface-elevated)] border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-default)]"
+          )}
+        >
+          <span>كل اللجان</span>
+          <span className={cn(
+            "text-[10px] font-mono px-1.5 py-0.2 rounded-full",
+            committeeFilter === '' ? "bg-black/20 text-white" : "bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-slate-300"
+          )}>
+            {employees.length}
+          </span>
+        </button>
         {committees.map((c) => {
           const isSelected = committeeFilter === c.id;
+          const count = employees.filter((e) => e.committeeId === c.id).length;
           return (
             <button
               key={c.id}
+              type="button"
               onClick={() => setCommitteeFilter(isSelected ? '' : c.id)}
               className={cn(
-                "snap-start shrink-0 sm:shrink px-3 py-1.5 rounded-full text-xs font-bold border transition-all flex items-center gap-1.5 cursor-pointer active:scale-95",
+                "px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-bold border transition-all flex items-center gap-1.5 cursor-pointer active:scale-95",
                 isSelected
                   ? "text-white shadow-sm"
                   : "bg-[var(--surface-elevated)] border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-default)]"
@@ -651,10 +671,16 @@ export function EmployeesPage() {
               style={isSelected ? { backgroundColor: c.color, borderColor: c.color } : {}}
             >
               <span
-                className="w-2 h-2 rounded-full"
+                className="w-2 h-2 rounded-full shrink-0"
                 style={{ backgroundColor: isSelected ? '#FFFFFF' : c.color }}
               />
               <span>{c.name}</span>
+              <span className={cn(
+                "text-[10px] font-mono px-1.5 py-0.2 rounded-full",
+                isSelected ? "bg-black/20 text-white" : "bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-slate-300"
+              )}>
+                {count}
+              </span>
             </button>
           );
         })}

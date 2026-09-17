@@ -156,8 +156,8 @@ export function NotificationsPage() {
         )}
       </div>
 
-      {/* ─── Filter Tabs (Smooth Horizontal Snap Scroll on Mobile) ─── */}
-      <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none snap-x -mx-3 px-3 sm:mx-0 sm:px-0 pb-1 pt-0.5">
+      {/* ─── Filter Tabs (Wrapped Cleanly for Instant Mobile Access) ─── */}
+      <div className="flex flex-wrap items-center gap-1.5 pb-1 pt-0.5">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
@@ -165,7 +165,7 @@ export function NotificationsPage() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                'snap-start px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5 active:scale-95',
+                'px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5 active:scale-95',
                 isActive
                   ? 'bg-[var(--brand-primary)] text-white shadow-md shadow-[var(--brand-primary)]/25'
                   : 'bg-[var(--surface-elevated)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'

@@ -280,8 +280,8 @@ export function TasksPage() {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar border-b border-[var(--border-subtle)]">
+      {/* Tabs - Wrapped cleanly for instant mobile access */}
+      <div className="flex flex-wrap items-center gap-1.5 pb-2 border-b border-[var(--border-subtle)]">
         {[
           { id: 'all', label: 'جميع المهام', count: tasks.length },
           { id: 'active', label: 'المهام النشطة', count: activeCount },
@@ -294,7 +294,7 @@ export function TasksPage() {
             key={tab.id}
             onClick={() => setStatusTab(tab.id)}
             className={cn(
-              'px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-2 cursor-pointer',
+              'px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 sm:gap-2 cursor-pointer',
               statusTab === tab.id
                 ? 'bg-[var(--brand-primary)] text-white shadow-md shadow-[var(--brand-primary)]/25 font-black'
                 : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-elevated)]'
