@@ -160,9 +160,9 @@ export function AdminDashboard() {
     : stats.approved;
   const overallCompletionRate = scopedTasks.length > 0 ? (scopedApprovedCount / scopedTasks.length) * 100 : 0;
 
-  // Employee Performance breakdown — EXCLUDES Lead and Co-Lead strictly as requested
+  // Employee Performance breakdown — EXCLUDES Lead, Co-Lead, and Committee Heads (unlimited coins)
   const employeeReports = allUsers
-    .filter((u) => u.role !== 'lead' && u.role !== 'co_lead')
+    .filter((u) => !hasUnlimitedCoins(u.role))
     .filter((u) => !effectiveCommitteeFilter || u.committeeId === effectiveCommitteeFilter || (u.committeeName && u.committeeName.trim().toLowerCase() === effectiveCommitteeFilter.toLowerCase()))
     .map((u) => {
       const ids = [u.uid, u.username || '', u.email || ''].filter(Boolean).map((v) => v.toLowerCase());
@@ -201,7 +201,7 @@ export function AdminDashboard() {
         r.completed,
         r.overdue,
         `"${r.rate.toFixed(1)}%"`,
-        r.coins
+        hasUnlimitedCoins(r.user.role) ? '"∞"' : r.coins
       ])
     ];
     const csvContent = '\uFEFF' + rows.map((r) => r.join(',')).join('\n');
@@ -327,7 +327,11 @@ export function AdminDashboard() {
                 title="محفظة O-Coins"
               >
                 <span>🪙</span>
-                <span>{isTopLeader ? 'خزينة المنظومة: ∞ OC' : `رصيدك: ${formatOCoins(userProfile?.oCoinsBalance ?? 0)} OC`}</span>
+                <span>
+                  {hasUnlimitedCoins(userProfile?.role)
+                    ? (isHead ? 'رصيد رئيس اللجنة: ∞ OC' : 'خزينة المنظومة: ∞ OC')
+                    : `رصيدك: ${formatOCoins(userProfile?.oCoinsBalance ?? 0)} OC`}
+                </span>
               </Link>
             </div>
 
@@ -436,10 +440,10 @@ export function AdminDashboard() {
         />
         <StatCard
           title="مكافآت O Coins"
-          value={isTopLeader ? "∞" : formatOCoins(isHead ? (userProfile?.oCoinsBalance ?? 0) : totalCoinsDistributed)}
+          value={hasUnlimitedCoins(userProfile?.role) ? "∞" : formatOCoins(totalCoinsDistributed)}
           variant="warm"
           icon={<Coins className="h-4 w-4" />}
-          subtext={isTopLeader ? "خزينة لا نهائية" : isHead ? "رصيد محفظتك الشخصية" : "إجمالي المكافآت"}
+          subtext={hasUnlimitedCoins(userProfile?.role) ? (isHead ? "خزينة رئيس اللجنة: غير محدودة" : "خزينة لا نهائية") : "إجمالي المكافآت المصروفة"}
         />
       </div>
 
@@ -986,7 +990,9 @@ export function AdminDashboard() {
                     </div>
                     <div>
                       <span className="text-[9px] uppercase font-bold text-[var(--text-muted)] block">O Coins</span>
-                      <strong className="text-xs font-extrabold text-amber-500">{formatOCoins(coins)}</strong>
+                      <strong className="text-xs font-extrabold text-amber-500">
+                        {hasUnlimitedCoins(user.role) ? '∞' : formatOCoins(coins)}
+                      </strong>
                     </div>
                   </div>
 

@@ -19,7 +19,7 @@ import { toast } from 'sonner';
 import { StatCard } from '@/components/ui/stat-card';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { formatOCoins, formatPercent, isOverdue, cn, formatFullName } from '@/utils';
+import { formatOCoins, formatPercent, isOverdue, cn, formatFullName, hasUnlimitedCoins } from '@/utils';
 import { subscribeCommittees } from '@/lib/committees';
 import type { Task, UserProfile, OCoinTransaction, Committee } from '@/types';
 
@@ -104,8 +104,9 @@ export function ReportsPage() {
     };
   }).filter((c) => c.totalTasks > 0);
 
-  // Employee Performance breakdown
+  // Employee Performance breakdown — EXCLUDES Lead, Co-Lead, and Committee Heads (unlimited coins)
   const employeeReports = users
+    .filter((u) => !hasUnlimitedCoins(u.role))
     .filter((u) => !committeeFilter || u.committeeId === committeeFilter)
     .map((u) => {
       const ids = [u.uid, u.username || '', u.email || ''].filter(Boolean).map((v) => v.toLowerCase());
@@ -137,7 +138,7 @@ export function ReportsPage() {
         r.completed,
         r.overdue,
         `"${r.rate.toFixed(1)}%"`,
-        r.coins
+        hasUnlimitedCoins(r.user.role) ? '"∞"' : r.coins
       ])
     ];
     const csvContent = '\uFEFF' + rows.map((r) => r.join(',')).join('\n');
@@ -412,7 +413,9 @@ export function ReportsPage() {
                   </div>
                   <div>
                     <span className="text-[10px] uppercase font-bold text-[var(--text-muted)] block">O Coins</span>
-                    <strong className="text-sm font-extrabold text-amber-500">{formatOCoins(coins)}</strong>
+                    <strong className="text-sm font-extrabold text-amber-500">
+                      {hasUnlimitedCoins(user.role) ? '∞' : formatOCoins(coins)}
+                    </strong>
                   </div>
                 </div>
 
