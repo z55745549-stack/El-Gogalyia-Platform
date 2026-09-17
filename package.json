@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "npm run check:translations && tsc -b && vite build",
+    "check:translations": "node scripts/check-translations.mjs",
     "lint": "oxlint",
     "preview": "vite preview"
   },
@@ -41,7 +42,6 @@
     "sonner": "^2.0.8",
     "tailwind-merge": "^3.6.0",
     "tailwindcss": "^4.3.3",
-    "xlsx": "^0.18.5",
     "zod": "^4.4.3"
   },
   "devDependencies": {

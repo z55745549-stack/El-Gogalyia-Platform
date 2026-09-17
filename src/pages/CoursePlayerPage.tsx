@@ -30,6 +30,7 @@ function YoutubeIcon({ className = 'h-4 w-4' }: { className?: string }) {
   );
 }
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
 import {
   subscribeCourse,
   subscribeCourseLessons,
@@ -59,6 +60,7 @@ declare global {
 export function CoursePlayerPage() {
   const { courseId } = useParams<{ courseId: string }>();
   const { userProfile } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
 
   const [course, setCourse] = useState<Course | null>(null);
@@ -414,13 +416,13 @@ export function CoursePlayerPage() {
         <div className="w-16 h-16 rounded-2xl bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] flex items-center justify-center mb-4">
           <BookOpen className="h-8 w-8" />
         </div>
-        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">الدورة غير موجودة أو تم حذفها</h2>
+        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">{t('courseplayer.course_not_found', 'الدورة غير موجودة أو تم حذفها')}</h2>
         <p className="text-xs text-slate-500 mt-1 max-w-sm">
           تأكد من صحة الرابط أو تصفح الدورات التدريبية المجانية المتاحة للموظفين.
         </p>
-        <Button onClick={() => navigate('/courses')} className="mt-4 btn-primary text-white">
-          العودة لقائمة الدورات
-        </Button>
+          <Button onClick={() => navigate('/courses')} className="mt-4 btn-primary text-white">
+              {t('courseplayer.back_to_courses', 'العودة لقائمة الدورات')}
+            </Button>
       </div>
     );
   }
@@ -530,12 +532,12 @@ export function CoursePlayerPage() {
                         <ExternalLink className="h-4 w-4" />
                         <span>فتح على يوتيوب</span>
                       </a>
-                      <Button
-                        onClick={handleLessonFinished}
-                        className="btn-accent text-xs font-bold"
-                      >
-                        تخطي واحتساب كـ مكتمل
-                      </Button>
+              <Button
+                  onClick={handleLessonFinished}
+                  className="btn-accent text-xs font-bold"
+                >
+                  {t('courseplayer.skip_complete', 'تخطي واحتساب كـ مكتمل')}
+                </Button>
                     </div>
                   </div>
                 )}
@@ -543,7 +545,7 @@ export function CoursePlayerPage() {
             ) : (
               <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 p-6 text-center">
                 <BookOpen className="h-10 w-10 mb-2 opacity-50" />
-                <p className="text-sm font-bold">لا توجد دروس متوفرة في هذه الدورة حالياً</p>
+                <p className="text-sm font-bold">{t('courseplayer.no_lessons', 'لا توجد دروس متوفرة في هذه الدورة حالياً')}</p>
               </div>
             )}
           </div>
@@ -554,9 +556,9 @@ export function CoursePlayerPage() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-black text-[var(--brand-primary)] dark:text-[var(--brand-accent)]">
-                      الدرس {activeLesson.position} من {totalLessonsCount}
-                    </span>
+                    <span className="text-11px font-black text-[var(--brand-primary)] dark:text-[var(--brand-accent)]">
+                        {t('courseplayer.lesson_of_total', 'الدرس {current} من {total}').replace('{current}', String(activeLesson.position)).replace('{total}', String(totalLessonsCount))}
+                      </span>
                     {isLessonCompleted(activeLesson.id) && (
                       <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400">
                         <CheckCircle2 className="h-3.5 w-3.5" />
@@ -625,13 +627,13 @@ export function CoursePlayerPage() {
                   </Button>
                 ) : (
                   <Button
-                    onClick={() => setShowCourseCompletedModal(true)}
-                    disabled={!isFinalCourseCompleted}
-                    className="gap-1.5 text-xs rounded-xl font-bold bg-emerald-600 hover:bg-emerald-700 text-white"
-                  >
-                    <Award className="h-4 w-4" />
-                    <span>إكمال الدورة 🎉</span>
-                  </Button>
+                      onClick={() => setShowCourseCompletedModal(true)}
+                      disabled={!isFinalCourseCompleted}
+                      className="gap-1.5 text-xs rounded-xl font-bold bg-emerald-600 hover:bg-emerald-700 text-white"
+                    >
+                      <Award className="h-4 w-4" />
+                      <span>إكمال الدورة 🎉</span>
+                    </Button>
                 )}
               </div>
             </div>
@@ -651,19 +653,19 @@ export function CoursePlayerPage() {
                     <Sparkles className="h-5 w-5 text-amber-300" />
                   </div>
                   <div>
-                    <h4 className="font-extrabold text-sm">ممتاز! تم فتح الدرس التالي</h4>
+                    <h4 className="font-extrabold text-sm">{t('courseplayer.lesson_opened', 'ممتاز! تم فتح الدرس التالي')}</h4>
                     <p className="text-xs text-white/90">
-                      تم تسجيل إنجازك لهذا الدرس وحفظه في سجل تدريبك.
+                      {t('courseplayer.progress_saved', 'تم تسجيل إنجازك لهذا الدرس وحفظه في سجل تدريبك.')}
                     </p>
                   </div>
                 </div>
 
-                <Button
-                  onClick={handleNextLesson}
-                  className="bg-white text-emerald-800 hover:bg-white/90 font-black text-xs px-4 py-2 rounded-xl shrink-0"
-                >
-                  الانتقال للدرس التالي ←
-                </Button>
+                  <Button
+                      onClick={handleNextLesson}
+                      className="bg-white text-emerald-800 hover:bg-white/90 font-black text-xs px-4 py-2 rounded-xl shrink-0"
+                    >
+                      {t('courseplayer.next_lesson', 'الانتقال للدرس التالي ←')}
+                    </Button>
               </motion.div>
             )}
           </AnimatePresence>
@@ -679,9 +681,9 @@ export function CoursePlayerPage() {
                   <ListVideo className="h-4 w-4 text-[var(--brand-primary)] dark:text-[var(--brand-accent)]" />
                   <span>محتوى الدورة التدريبية</span>
                 </h3>
-                <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] dark:text-[var(--brand-accent)]">
-                  {completedCount} / {totalLessonsCount} مكتمل
-                </span>
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] dark:text-[var(--brand-accent)]">
+                        {t('courseplayer.completed', '{completed} / {total} مكتمل').replace('{completed}', String(completedCount)).replace('{total}', String(totalLessonsCount))}
+                      </span>
               </div>
 
               {/* Mini progress line */}
@@ -883,19 +885,19 @@ export function CoursePlayerPage() {
           </div>
 
           <div className="flex gap-2 pt-2">
-            <Button
-              onClick={() => navigate('/courses')}
-              className="flex-1 btn-primary font-bold text-xs py-2.5 rounded-xl"
-            >
-              استكشاف دورات أخرى
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setShowCourseCompletedModal(false)}
-              className="rounded-xl text-xs"
-            >
-              البقاء ومراجعة الدروس
-            </Button>
+                    <Button
+                        onClick={() => navigate('/courses')}
+                        className="flex-1 btn-primary font-bold text-xs py-2.5 rounded-xl"
+                      >
+                        {t('courseplayer.explore', 'استكشاف دورات أخرى')}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowCourseCompletedModal(false)}
+                        className="rounded-xl text-xs"
+                      >
+                        {t('courseplayer.stay_review', 'البقاء ومراجعة الدروس')}
+                      </Button>
           </div>
         </div>
       </Modal>

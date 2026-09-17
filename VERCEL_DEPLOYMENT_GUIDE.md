@@ -2,6 +2,8 @@
 
 المشروع جاهز ومؤهل 100% للرفع على استضافة **Vercel** مجاناً مع إعدادات حظر أخطاء الـ SPA (404 Page Not Found) تلقائياً.
 
+> قبل الرفع: نفّذ ملف `supabase/migrations/202609180001_align_courses_schema.sql` داخل **Supabase SQL Editor**. الترحيل آمن للتشغيل المتكرر ويضيف أعمدة الدورات التي يستخدمها التطبيق، ومنها `created_by`.
+
 ---
 
 ## 📋 الإعدادات المجهزة تلقائياً للمشروع:
@@ -25,6 +27,10 @@
    - أضف متغيرات بيئة Supabase التالية (من ملف `.env.local`):
      - `VITE_SUPABASE_URL`
      - `VITE_SUPABASE_ANON_KEY`
+     - `SUPABASE_SERVICE_ROLE_KEY` (سري سيرفر فقط، مطلوب لتسجيل الدخول الآمن وتفعيل مالك المنصة)
+   - **مهم لبوابة مالك المنصة:**
+     - `OWNER_CLAIM_USERNAME`
+     - `OWNER_CLAIM_PASSWORD`
    - **مهم للتأكيدات الإدارية (Environmental Variables for the serverless API):**
      أضف نفس قيم التفويض الموجودة في `.env.local` (بدون بادئة `VITE_` لأنها أسرار تُقرأ فقط سيرفراً):
      - `ADD_EMPLOYEE_CONFIRM_USERNAME` و `ADD_EMPLOYEE_CONFIRM_PASSWORD`

@@ -11,7 +11,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import { verifyPassword, generateSalt, hashPassword } from '@/lib/auth-security';
+import { generateSalt, hashPassword } from '@/lib/auth-security';
 import { parseErrorMessage, logError } from '@/lib/errors';
 import type { UserProfile, Permission } from '@/types';
 import { isAdminRole } from '@/utils/permissions';
@@ -49,6 +49,25 @@ function clearLoginAttempts(key: string) {
 // -------------------------------------------------------------------
 const SESSION_KEY = 'elgogalyia_session_v1';
 const LEGACY_SESSION_KEY = 'elgogalyia_user_session';
+const SAFE_USER_COLUMNS = [
+  'id',
+  'username',
+  'display_name',
+  'email',
+  'photo_url',
+  'role',
+  'permissions',
+  'status',
+  'committee_id',
+  'committee_name',
+  'specialty_tag',
+  'employee_code',
+  'ocoins_balance',
+  'google_linked_email',
+  'is_two_factor_enabled',
+  'created_at',
+  'updated_at',
+].join(',');
 
 function sanitizeProfileForSession(profile: UserProfile): UserProfile {
   const { passwordHash: _ph, salt: _s, ...safe } = profile as any;
@@ -100,7 +119,7 @@ async function fetchProfileFromSupabase(uid: string): Promise<UserProfile | null
   try {
     const { data, error } = await supabase
       .from('users')
-      .select('*')
+      .select(SAFE_USER_COLUMNS)
       .eq('id', uid)
       .maybeSingle();
 
@@ -143,43 +162,8 @@ function mapRowToProfile(row: any): UserProfile {
     isTwoFactorEnabled: row.is_two_factor_enabled ?? false,
     googleLinkedEmail: row.google_linked_email ?? undefined,
     createdAt: row.created_at,
-    passwordHash: row.password_hash ?? undefined,
-    salt: row.salt ?? undefined,
+    updatedAt: row.updated_at,
   };
-}
-
-// -------------------------------------------------------------------
-// Upsert user profile into Supabase
-// -------------------------------------------------------------------
-async function upsertProfileToSupabase(profile: UserProfile & { passwordHash?: string; salt?: string }) {
-  try {
-    // FIX #4: Unlimited-coin roles must never have ocoins_balance overwritten with 0
-    const ocoins_balance = hasUnlimitedCoins(profile.role)
-      ? null
-      : (profile.oCoinsBalance ?? 0);
-    await supabase.from('users').upsert({
-      id: profile.uid,
-      username: profile.username,
-      display_name: profile.displayName,
-      email: profile.email || null,
-      photo_url: profile.photoURL || null,
-      role: profile.role,
-      status: profile.status,
-      committee_id: profile.committeeId || null,
-      committee_name: profile.committeeName || null,
-      specialty_tag: profile.specialtyTag || null,
-      employee_code: profile.employeeCode || null,
-      ocoins_balance,
-      permissions: profile.permissions ?? [],
-      is_two_factor_enabled: profile.isTwoFactorEnabled ?? false,
-      google_linked_email: profile.googleLinkedEmail || null,
-      password_hash: profile.passwordHash || null,
-      salt: profile.salt || null,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: 'id' });
-  } catch (err) {
-    logError('upsertProfileToSupabase', err);
-  }
 }
 
 // -------------------------------------------------------------------
@@ -328,175 +312,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error('تم تجاوز الحد الأقصى لمحاولات تسجيل الدخول. يرجى المحاولة بعد 10 دقائق.');
     }
 
-    let matchedProfile: (UserProfile & { passwordHash?: string; salt?: string }) | null = null;
-    let isMasterVerified = false;
-
-    // ── Tier 1: Direct ID Lookup ('user_username') ─────────────────────
-    if (!matchedProfile) {
-      const cleanId = unameLower.replace(/[^a-z0-9_-]/g, '_');
-      const genUid = 'user_' + cleanId;
-      try {
-        const { data } = await supabase.from('users').select('*').eq('id', genUid).maybeSingle();
-        if (data) matchedProfile = mapRowToProfile(data) as any;
-      } catch (e) {
-        logError('Supabase direct id lookup notice', e);
+    let safeUserProfile: UserProfile;
+    try {
+      const response = await fetch('/api/auth-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: userClean, password: passClean }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || !payload?.success || !payload?.profile) {
+        throw new Error(payload?.error || GENERIC_ERROR);
       }
-    }
-
-    // ── Tier 2: Query by username / variations ─────────────────────────
-    if (!matchedProfile) {
-      try {
-        const unameVariants = [
-          unameLower,
-          unameLower.replace(/\s+/g, '-'),
-          unameLower.replace(/\s+/g, '_'),
-          unameLower.replace(/-/g, '_'),
-          unameLower.replace(/_/g, '-'),
-          unameLower.replace(/[^a-z0-9]/g, ''),
-        ];
-        const { data } = await supabase
-          .from('users')
-          .select('*')
-          .in('username', unameVariants)
-          .limit(1)
-          .maybeSingle();
-        if (data) matchedProfile = mapRowToProfile(data) as any;
-      } catch (e) {
-        logError('Supabase username query notice', e);
-      }
-    }
-
-    // ── Tier 2.5: Query by display_name (case-insensitive) ────────────
-    if (!matchedProfile) {
-      try {
-        const { data } = await supabase
-          .from('users')
-          .select('*')
-          .ilike('display_name', unameLower)
-          .limit(1)
-          .maybeSingle();
-        if (data) matchedProfile = mapRowToProfile(data) as any;
-      } catch (e) {
-        logError('Supabase display_name query notice', e);
-      }
-    }
-
-    // ── Tier 3: Query by email ─────────────────────────────────────────
-    if (!matchedProfile) {
-      try {
-        const { data } = await supabase
-          .from('users')
-          .select('*')
-          .eq('email', unameLower)
-          .limit(1)
-          .maybeSingle();
-        if (data) matchedProfile = mapRowToProfile(data) as any;
-      } catch (e) {
-        logError('Supabase email query notice', e);
-      }
-    }
-
-    // ── Tier 4: Direct Supabase Auth (for accounts created in Supabase Auth) ──
-    if (!isMasterVerified) {
-      try {
-        let authEmail = unameLower;
-        if (!authEmail.includes('@') && matchedProfile?.email) {
-          authEmail = matchedProfile.email.toLowerCase();
-        } else if (!authEmail.includes('@')) {
-          const { data: uRow } = await supabase.from('users').select('email').eq('username', unameLower).maybeSingle();
-          if (uRow?.email) authEmail = uRow.email.toLowerCase();
-        }
-
-        if (authEmail.includes('@')) {
-          const { data: authData, error: authErr } = await supabase.auth.signInWithPassword({
-            email: authEmail,
-            password: passClean,
-          });
-
-          if (!authErr && authData?.user) {
-            const { data: uData } = await supabase.from('users').select('*').eq('id', authData.user.id).maybeSingle();
-            if (uData) {
-              matchedProfile = mapRowToProfile(uData) as any;
-              isMasterVerified = true;
-            } else {
-              // Build profile directly from auth user if not yet in public.users
-              // FIX #9: Lead/Co-Lead must never have numeric oCoinsBalance
-              matchedProfile = {
-                uid: authData.user.id,
-                username: authData.user.email?.split('@')[0] || 'lead',
-                displayName: 'قائد المنصة (LEAD)',
-                email: authData.user.email || '',
-                photoURL: '',
-                role: 'lead',
-                status: 'active',
-                permissions: [
-                  'tasks.create', 'tasks.edit', 'tasks.delete', 'tasks.assign',
-                  'tasks.review', 'tasks.view_all',
-                  'employees.view', 'employees.manage',
-                  'ocoins.manage', 'ocoins.view_all',
-                  'reports.view', 'reports.export',
-                  'access.manage', 'activity.view', 'notifications.send',
-                ],
-                oCoinsBalance: null as any,
-                createdAt: new Date().toISOString(),
-              } as any;
-              upsertProfileToSupabase(matchedProfile!);
-              isMasterVerified = true;
-            }
-          }
-        }
-      } catch (authE) {
-        logError('Supabase Auth signInWithPassword verification notice', authE);
-      }
-    }
-
-    if (!matchedProfile) {
+      safeUserProfile = sanitizeProfileForSession(payload.profile as UserProfile);
+    } catch (err) {
+      if (err instanceof Error) throw err;
       throw new Error(GENERIC_ERROR);
-    }
-
-    // Account status check
-    if (matchedProfile.status === 'pending') {
-      throw new Error('حسابك قيد المراجعة والاعتماد من قِبل قيادة الجوجالية. ستتمكن من تسجيل الدخول فور الموافقة وتفعيل الحساب.');
-    }
-    if (matchedProfile.status === 'suspended' || matchedProfile.status === 'inactive') {
-      throw new Error('حسابك معطّل حالياً. يرجى مراجعة إدارة المنصة.');
-    }
-
-    // ── Cryptographic Verification (PBKDF2) ──────────────────────────
-    let isValid = isMasterVerified;
-    let needsRehash = false;
-
-    if (!isMasterVerified && matchedProfile.salt && matchedProfile.passwordHash) {
-      const result = await verifyPassword(passClean, matchedProfile.salt, matchedProfile.passwordHash);
-      isValid = result.valid;
-      needsRehash = result.needsRehash;
-    } else if (!isMasterVerified) {
-      // No hash stored yet and not verified by auth — reject
-      throw new Error(GENERIC_ERROR);
-    }
-
-    if (!isValid) {
-      throw new Error(GENERIC_ERROR);
-    }
-
-    // Auto-upgrade legacy hash to PBKDF2
-    if (needsRehash && matchedProfile.uid) {
-      try {
-        const newSalt = generateSalt();
-        const newPbkdf2Hash = await hashPassword(passClean, newSalt);
-        await supabase
-          .from('users')
-          .update({ password_hash: newPbkdf2Hash, salt: newSalt, updated_at: new Date().toISOString() })
-          .eq('id', matchedProfile.uid);
-      } catch (e) {
-        logError('Password auto-upgrade notice', e);
-      }
     }
 
     // Clear rate limit on success
     clearLoginAttempts(rateLimitKey);
-
-    const safeUserProfile = sanitizeProfileForSession(matchedProfile);
 
     // ── 2FA Check ────────────────────────────────────────────────────
     if (safeUserProfile.isTwoFactorEnabled && safeUserProfile.googleLinkedEmail) {

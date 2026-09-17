@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Megaphone, X, Check, ShieldAlert, Sparkles } from 'lucide-react';
 import { subscribeLatestAnnouncement, clearLatestAnnouncement } from '@/lib/database-service';
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { toast } from 'sonner';
 
 export function BroadcastBanner() {
   const { userProfile } = useAuth();
+  const { t } = useLanguage();
   const isLeader = userProfile?.role === 'lead' || userProfile?.role === 'co_lead';
   const [announcement, setAnnouncement] = useState<{
     title: string;
@@ -37,12 +39,12 @@ export function BroadcastBanner() {
   };
 
   const handleEndBroadcastForAll = async () => {
-    if (!window.confirm('هل أنت متأكد من إنهاء هذه الإذاعة لجميع أعضاء المنصة؟')) return;
+    if (!window.confirm(t('broadcast.confirm_end', 'هل أنت متأكد من إنهاء هذه الإذاعة لجميع أعضاء المنصة؟'))) return;
     try {
       await clearLatestAnnouncement();
-      toast.success('تم إنهاء الإذاعة بنجاح.');
+      toast.success(t('broadcast.ended_success', 'تم إنهاء الإذاعة بنجاح.'));
     } catch {
-      toast.error('حدث خطأ أثناء إنهاء الإذاعة.');
+      toast.error(t('broadcast.ended_error', 'حدث خطأ أثناء إنهاء الإذاعة.'));
     }
   };
 
@@ -61,10 +63,10 @@ export function BroadcastBanner() {
             <div className="flex items-center gap-2 flex-wrap">
               <span className="badge px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-500 text-slate-950 flex items-center gap-1">
                 <Sparkles className="h-3 w-3" />
-                إذاعة رسمية عامة
+                {t('broadcast.official_broadcast', 'إذاعة رسمية عامة')}
               </span>
               <span className="text-[11px] text-[var(--text-muted)] font-semibold">
-                بواسطة: {announcement.createdByName}
+                {t('broadcast.by', 'بواسطة')}: {announcement.createdByName}
               </span>
             </div>
             <h4 className="text-sm sm:text-base font-black text-[var(--text-primary)] leading-tight">
@@ -82,9 +84,9 @@ export function BroadcastBanner() {
               type="button"
               onClick={handleEndBroadcastForAll}
               className="px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white border border-rose-500/30 transition-all cursor-pointer"
-              title="إنهاء الإذاعة لجميع مستخدمي المنصة"
+              title={t('broadcast.end_for_all', 'إنهاء الإذاعة لجميع مستخدمي المنصة')}
             >
-              إنهاء الإذاعة للجميع
+              {t('broadcast.end_button', 'إنهاء الإذاعة للجميع')}
             </button>
           )}
 
@@ -94,7 +96,7 @@ export function BroadcastBanner() {
             className="px-3.5 py-1.5 rounded-xl text-xs font-black bg-[var(--surface-elevated)] hover:bg-[var(--surface)] text-[var(--text-primary)] border border-[var(--border-subtle)] shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
           >
             <Check className="h-3.5 w-3.5 text-emerald-500" />
-            <span>تمت القراءة</span>
+            <span>{t('broadcast.mark_read', 'تمت القراءة')}</span>
           </button>
         </div>
       </div>

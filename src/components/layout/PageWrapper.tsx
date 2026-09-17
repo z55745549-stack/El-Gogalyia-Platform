@@ -14,6 +14,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { isAdminRole } from '@/utils/permissions';
+import { useLanguage } from '@/context/LanguageContext';
 
 const pageVariants = {
   initial: { opacity: 0, y: 6 },
@@ -29,6 +30,7 @@ interface PageWrapperProps {
 export function PageWrapper({ children, unreadNotifications = 0 }: PageWrapperProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { userProfile } = useAuth();
+  const { isRTL, t } = useLanguage();
   const role = userProfile?.role ?? 'member';
   const isEmployee = !isAdminRole(role);
 
@@ -85,12 +87,12 @@ export function PageWrapper({ children, unreadNotifications = 0 }: PageWrapperPr
         >
           <div className="flex items-center justify-around gap-0.5 sm:gap-1 max-w-lg mx-auto">
             {[
-              { to: '/dashboard', icon: <LayoutDashboard className="h-[18px] w-[18px]" />, label: 'الرئيسية', type: 'primary' },
-              { to: isEmployee ? '/my-tasks' : '/tasks', icon: isEmployee ? <ListTodo className="h-[18px] w-[18px]" /> : <CheckSquare className="h-[18px] w-[18px]" />, label: 'المهام', type: 'primary' },
-              { to: '/opportunities', icon: <GraduationCap className="h-[18px] w-[18px]" />, label: 'الفرص', type: 'primary' },
-              { to: '/meetings', icon: <CalendarDays className="h-[18px] w-[18px]" />, label: 'اللقاءات', type: 'primary' },
-              { to: '/ocoins', icon: <Coins className="h-[18px] w-[18px]" />, label: 'O Coins', type: 'warm' },
-              { to: '/notifications', icon: <Bell className="h-[18px] w-[18px]" />, label: 'التنبيهات', type: 'primary', badge: unreadNotifications },
+              { to: '/dashboard', icon: <LayoutDashboard className="h-[18px] w-[18px]" />, label: t('nav.bottom.home'), type: 'primary' },
+              { to: isEmployee ? '/my-tasks' : '/tasks', icon: isEmployee ? <ListTodo className="h-[18px] w-[18px]" /> : <CheckSquare className="h-[18px] w-[18px]" />, label: t('nav.bottom.tasks'), type: 'primary' },
+              { to: '/opportunities', icon: <GraduationCap className="h-[18px] w-[18px]" />, label: t('nav.bottom.opportunities'), type: 'primary' },
+              { to: '/meetings', icon: <CalendarDays className="h-[18px] w-[18px]" />, label: t('nav.bottom.meetings'), type: 'primary' },
+              { to: '/ocoins', icon: <Coins className="h-[18px] w-[18px]" />, label: t('nav.bottom.ocoins'), type: 'warm' },
+              { to: '/notifications', icon: <Bell className="h-[18px] w-[18px]" />, label: t('nav.bottom.notifications'), type: 'primary', badge: unreadNotifications },
             ].map((item) => (
               <NavLink
                 key={item.to}
@@ -110,7 +112,7 @@ export function PageWrapper({ children, unreadNotifications = 0 }: PageWrapperPr
                 <span>{item.label}</span>
                 {(item.badge ?? 0) > 0 && (
                   <span
-                    className="absolute -top-0.5 -right-0.5 min-w-[15px] h-3.5 px-0.5 text-white text-[9px] font-black rounded-full flex items-center justify-center"
+                    className={`absolute -top-0.5 ${isRTL ? '-left-0.5' : '-right-0.5'} min-w-[15px] h-3.5 px-0.5 text-white text-[9px] font-black rounded-full flex items-center justify-center`}
                     style={{ background: 'var(--brand-danger)', boxShadow: '0 0 0 2px var(--surface)' }}
                   >
                     {(item.badge ?? 0) > 9 ? '9+' : item.badge}

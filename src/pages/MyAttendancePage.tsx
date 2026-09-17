@@ -14,6 +14,7 @@ import {
   UserCheck
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { subscribeEmployeeAttendance, ensureUserEmployeeCode } from '@/lib/attendance';
 import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
@@ -23,6 +24,7 @@ import type { AttendanceRecord } from '@/types/attendance';
 
 export function MyAttendancePage() {
   const { userProfile } = useAuth();
+  const { t } = useLanguage();
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [employeeCode, setEmployeeCode] = useState<string>('');
@@ -147,13 +149,15 @@ export function MyAttendancePage() {
 
         {loading ? (
           <div className="p-8 text-center text-slate-400 text-xs">
-            جاري جلب سجل حضورك...
+            {t('my_attendance.loading', 'جاري جلب سجل حضورك...')}
           </div>
         ) : records.length === 0 ? (
           <EmptyState
             icon={<CalendarCheck className="h-10 w-10 text-[var(--brand-accent)]" />}
-            title="لا توجد تسجيلات حضور سابقة"
-            description="عندما تبدأ جلسة حضور تفاعلية في الاجتماعات، امسح الباركود بهاتفك وسيظهر تأكيد حضورك هنا فوراً."
+            title={t('my_attendance.no_records', 'لا توجد تسجيلات حضور سابقة')}
+            description={
+              t('my_attendance.no_records_desc', 'عندما تبدأ جلسة حضور تفاعلية في الاجتماعات، امسح الباركود بهاتفك وسيظهر تأكيد حضورك هنا فورا.')
+            }
           />
         ) : (
           <div className="divide-y divide-slate-100 dark:divide-white/5 -mx-5 -mb-5">
@@ -175,7 +179,7 @@ export function MyAttendancePage() {
                           : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
                       )}
                     >
-                      {r.status === 'present' ? '✓ حاضر' : '⏱ متأخر'}
+                      {r.status === 'present' ? t('my_attendance.present', '✓ حاضر') : t('my_attendance.late', '⏱ متأخر')}
                     </span>
                   </div>
 
@@ -186,9 +190,9 @@ export function MyAttendancePage() {
                     </span>
                     <span>·</span>
                     <span className="flex items-center gap-1">
-                      <Clock className="h-3.5 w-3.5 text-amber-400" />
-                      سُجل في: {r.checkInTime}
-                    </span>
+                        <Clock className="h-3.5 w-3.5 text-amber-400" />
+                        {t('my_attendance.recorded_at', 'سُجل في')}: {r.checkInTime}
+                      </span>
                   </div>
                 </div>
 

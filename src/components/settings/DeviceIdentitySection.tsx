@@ -12,6 +12,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { useTheme } from '@/context/ThemeContext';
 import { supabase } from '@/lib/supabase';
 import {
@@ -43,6 +44,7 @@ function DeviceIcon({ name }: { name: string }) {
 
 export function DeviceIdentitySection() {
   const { userProfile } = useAuth();
+  const { t } = useLanguage();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
@@ -112,11 +114,11 @@ export function DeviceIdentitySection() {
     setRegistering(false);
 
     if (result.success) {
-      toast.success('تم ربط هوية الجهاز بحسابك بنجاح');
+      toast.success(t('device.identity_linked'));
       setShowNameInput(false);
       reload();
     } else {
-      toast.error(result.error ?? 'تعذّر تسجيل هوية الجهاز');
+      toast.error(result.error ?? t('device.identity_link_failed'));
     }
   }
 
@@ -128,10 +130,10 @@ export function DeviceIdentitySection() {
     setRemovingId(null);
 
     if (result.success) {
-      toast.success('تم إزالة هوية الجهاز');
+      toast.success(t('device.identity_removed'));
       reload();
     } else {
-      toast.error(result.error ?? 'تعذّر حذف هوية الجهاز');
+      toast.error(result.error ?? t('device.identity_remove_failed'));
     }
   }
 
@@ -154,10 +156,10 @@ export function DeviceIdentitySection() {
           </div>
           <div>
             <h3 className="text-sm font-black text-slate-900 dark:text-white">
-              هوية الجهاز
+              {t('device.title')}
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              الدخول ببصمة الإصبع أو مستشعر الوجه أو قفل الشاشة
+              {t('device.subtitle')}
             </p>
           </div>
         </div>
@@ -175,11 +177,11 @@ export function DeviceIdentitySection() {
             }
           >
             {devices.length > 0 ? (
-              <><ShieldCheck className="h-3 w-3" /> مفعّل</>
+              <><ShieldCheck className="h-3 w-3" /> {t('device.status_active')}</>
             ) : supported ? (
-              <><ShieldOff className="h-3 w-3" /> غير مفعّل</>
+              <><ShieldOff className="h-3 w-3" /> {t('device.status_inactive')}</>
             ) : (
-              <><AlertTriangle className="h-3 w-3" /> غير مدعوم</>
+              <><AlertTriangle className="h-3 w-3" /> {t('device.status_unsupported')}</>
             )}
           </div>
         )}
@@ -193,7 +195,7 @@ export function DeviceIdentitySection() {
         >
           <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
           <div>
-            <p className="font-bold text-amber-700 dark:text-amber-400">جهازك لا يدعم هذه الميزة</p>
+            <p className="font-bold text-amber-700 dark:text-amber-400">{t('device.unsupported_title')}</p>
             <p className="text-xs text-amber-600 dark:text-amber-400/80 mt-1 leading-relaxed">
               تتطلب هذه الميزة جهازاً يحتوي على مستشعر بصمة أو وجه، كما يجب استخدام متصفح حديث.
             </p>
@@ -257,7 +259,7 @@ export function DeviceIdentitySection() {
                     ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     : <Trash2 className="h-3.5 w-3.5" />
                   }
-                  إزالة
+                  {t('device.remove_button')}
                 </button>
               </motion.div>
             ))}
@@ -271,10 +273,10 @@ export function DeviceIdentitySection() {
             >
               <Fingerprint className="h-8 w-8 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
               <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
-                لم يتم ربط أي جهاز بعد
+                {t('device.empty_title')}
               </p>
               <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-                أضف هذا الجهاز لتتمكن من الدخول ببصمتك أو قفل الشاشة
+                {t('device.empty_desc')}
               </p>
             </div>
           )}
@@ -296,7 +298,7 @@ export function DeviceIdentitySection() {
                 }}
               >
                 <Plus className="h-4 w-4" />
-                إضافة هذا الجهاز
+                {t('device.add_button')}
               </motion.button>
             ) : (
               <motion.div
@@ -309,13 +311,13 @@ export function DeviceIdentitySection() {
               >
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">
-                    اسم الجهاز (للتعرف عليه لاحقاً)
+                     {t('device.name_label')}
                   </label>
                   <input
                     type="text"
                     value={deviceName}
                     onChange={(e) => setDeviceName(e.target.value)}
-                    placeholder="مثال: iPhone الخاص بي"
+                    placeholder={t('device.name_placeholder')}
                     maxLength={40}
                     className={[
                       'w-full px-3 py-2.5 rounded-xl text-sm outline-none transition-all',
@@ -330,7 +332,7 @@ export function DeviceIdentitySection() {
                 </div>
 
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                  سيطلب منك جهازك التحقق من هويتك عبر بصمة الإصبع أو مستشعر الوجه أو قفل الشاشة.
+                  {t('device.verify_desc')}
                 </p>
 
                 <div className="flex gap-2">
@@ -345,8 +347,8 @@ export function DeviceIdentitySection() {
                     }}
                   >
                     {registering
-                      ? <><Loader2 className="h-4 w-4 animate-spin" /> جارٍ الربط...</>
-                      : <><Fingerprint className="h-4 w-4" /> ربط الجهاز</>
+                      ? <><Loader2 className="h-4 w-4 animate-spin" /> {t('device.linking')}</>
+                      : <><Fingerprint className="h-4 w-4" /> {t('device.link_button')}</>
                     }
                   </button>
                   <button
@@ -358,7 +360,7 @@ export function DeviceIdentitySection() {
                       color: isDark ? '#94A3B8' : '#64748B',
                     }}
                   >
-                    إلغاء
+                    {t('device.cancel')}
                   </button>
                 </div>
               </motion.div>
@@ -378,7 +380,7 @@ export function DeviceIdentitySection() {
         >
           <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0 mt-0.5" />
           <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
-            هوية جهازك مرتبطة بحسابك. يمكنك الآن الدخول مباشرةً دون الحاجة لكتابة كلمة المرور.
+            {t('device.security_note')}
           </p>
         </div>
       )}

@@ -17,6 +17,7 @@ import {
   LogIn
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { recordAttendance, ensureUserEmployeeCode } from '@/lib/attendance';
 import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
@@ -26,6 +27,7 @@ import type { AttendanceSession, AttendanceRecord } from '@/types/attendance';
 
 export function AttendanceCheckInPage() {
   const [searchParams] = useSearchParams();
+  const { t } = useLanguage();
   const sessionId = searchParams.get('sessionId');
   const token = searchParams.get('token');
   const tb = searchParams.get('tb');
@@ -45,7 +47,7 @@ export function AttendanceCheckInPage() {
   // 1. Fetch Session Details
   useEffect(() => {
     if (!sessionId) {
-      setSessionError('الرابط غير صحيح، لم يتم العثور على معرّف الجلسة.');
+        setSessionError(t('attendance.invalid_link', 'الرابط غير صحيح، لم يتم العثور على معرّف الجلسة.'));
       setLoadingSession(false);
       return;
     }
@@ -54,7 +56,7 @@ export function AttendanceCheckInPage() {
       try {
         const snap = await getDoc(doc(db, 'attendance_sessions', sessionId));
         if (!snap.exists()) {
-          setSessionError('جلسة تسجيل الحضور غير موجودة أو تم حذفها.');
+          setSessionError(t('attendance.session_not_found', 'جلسة تسجيل الحضور غير موجودة أو تم حذفها.'));
           setLoadingSession(false);
           return;
         }
@@ -62,14 +64,14 @@ export function AttendanceCheckInPage() {
         const sData = { id: snap.id, ...snap.data() } as AttendanceSession;
 
         if (token && sData.secureToken !== token) {
-          setSessionError('رمز التحقق للجلسة غير صالح أو منتهي الصلاحية.');
+          setSessionError(t('attendance.invalid_token', 'رمز التحقق للجلسة غير صالح أو منتهي الصلاحية.'));
           setLoadingSession(false);
           return;
         }
 
         setSession(sData);
       } catch (err: any) {
-        setSessionError('تعذر جلب بيانات الجلسة.');
+        setSessionError(t('attendance.fetch_error', 'تعذر جلب بيانات الجلسة.'));
       } finally {
         setLoadingSession(false);
       }
@@ -101,7 +103,7 @@ export function AttendanceCheckInPage() {
     if (!sessionId || !token || !userProfile) return;
 
     if (userProfile.status === 'suspended' || userProfile.status === 'inactive') {
-      toast.error('حسابك معطل أو موقوف حالياً، لا يمكنك تسجيل الحضور.');
+      toast.error(t('attendance.account_suspended', 'حسابك معطل أو موقوف حالياً، لا يمكنك تسجيل الحضور.'));
       return;
     }
 
@@ -132,9 +134,9 @@ export function AttendanceCheckInPage() {
 
   if (authLoading || loadingSession) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50 dark:bg-[#0d081f] text-slate-400 text-xs">
-        جاري التحقق من بيانات الجلسة والحساب...
-      </div>
+        <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50 dark:bg-[#0d081f] text-slate-400 text-xs">
+            {t('attendance.loading', 'جاري التحقق من بيانات الجلسة والحساب...')}
+          </div>
     );
   }
 
@@ -152,7 +154,7 @@ export function AttendanceCheckInPage() {
           </div>
           <div>
             <h1 className="text-xl font-black text-slate-900 dark:text-white">
-              تسجيل الدخول لتأكيد الحضور
+                {t('attendance.signin_title', 'تسجيل الدخول لتأكيد الحضور')}
             </h1>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
               يرجى تسجيل الدخول بحسابك في منصة WorkHub ليتم تسجيل حضورك تلقائياً برقمك التعريفي الفريد.
@@ -182,16 +184,16 @@ export function AttendanceCheckInPage() {
           </div>
           <div>
             <h1 className="text-lg font-black text-slate-900 dark:text-white">
-              تعذر تسجيل الحضور
-            </h1>
+                {t('attendance.checkin_error', 'تعذر تسجيل الحضور')}
+              </h1>
             <p className="text-xs text-rose-600 dark:text-rose-400 mt-1.5 leading-relaxed">
-              {sessionError || 'الجلسة غير متاحة حالياً.'}
+              {sessionError || t('attendance.session_unavailable', 'الجلسة غير متاحة حالياً.')}
             </p>
           </div>
           <Link to="/dashboard">
-            <Button variant="outline" size="sm" className="w-full text-xs">
-              الرجوع للوحة التحكم
-            </Button>
+              <Button variant="outline" size="sm" className="w-full text-xs">
+                {t('attendance.back_dashboard', 'الرجوع للوحة التحكم')}
+              </Button>
           </Link>
         </motion.div>
       </div>
@@ -215,7 +217,7 @@ export function AttendanceCheckInPage() {
             </div>
             <div>
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-                نظام الحضور الذكي QR
+                {t('attendance.smart_qr', 'نظام الحضور الذكي QR')}
               </span>
               <span className="text-xs font-black text-slate-800 dark:text-white">
                 SAAS WorkHub
@@ -231,7 +233,7 @@ export function AttendanceCheckInPage() {
                 : 'bg-rose-500/10 text-rose-600 border-rose-500/20'
             )}
           >
-            {session.status === 'active' ? '● الجلسة نشطة' : 'الجلسة مغلقة'}
+            {session.status === 'active' ? t('attendance.session_active', '● الجلسة نشطة') : t('attendance.session_closed', 'الجلسة مغلقة')}
           </span>
         </div>
 
@@ -247,10 +249,10 @@ export function AttendanceCheckInPage() {
             </div>
             <div>
               <h2 className="text-base font-black text-emerald-800 dark:text-emerald-300">
-                {alreadyRecorded ? 'تم تأكيد حضورك مسبقاً' : 'تم تسجيل حضورك بنجاح!'}
+                {alreadyRecorded ? t('attendance.already_checked_in', 'تم تأكيد حضورك مسبقاً') : t('attendance.checked_in_success', 'تم تسجيل حضورك بنجاح!')}
               </h2>
               <p className="text-xs text-emerald-700/80 dark:text-emerald-400 mt-0.5">
-                أنت مسجل كـ ({recordedRecord.status === 'late' ? 'حاضر متأخر' : 'حاضر'})
+                {t('attendance.status_label', 'أنت مسجل كـ')} ({recordedRecord.status === 'late' ? t('attendance.late_short', 'حاضر متأخر') : t('attendance.present_short', 'حاضر')})
               </p>
             </div>
 
@@ -277,7 +279,7 @@ export function AttendanceCheckInPage() {
 
             <Link to="/my-attendance" className="block pt-2">
               <Button size="sm" className="w-full btn-primary text-xs font-bold">
-                <span>عرض سجل حضوري بالكامل</span>
+                <span>{t('attendance.view_records', 'عرض سجل حضوري بالكامل')}</span>
               </Button>
             </Link>
           </motion.div>
@@ -287,7 +289,7 @@ export function AttendanceCheckInPage() {
             {/* Session Card */}
             <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 space-y-2">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                بيانات جلسة الحضور
+                {t('attendance.session_info', 'بيانات جلسة الحضور')}
               </span>
               <h2 className="text-base font-black text-slate-900 dark:text-white">
                 {session.title}
@@ -313,12 +315,12 @@ export function AttendanceCheckInPage() {
             {/* Authenticated Employee Locked Card */}
             <div className="p-4 rounded-2xl bg-[var(--brand-primary)]/5 border border-[var(--brand-primary)]/20 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold text-[var(--brand-primary)] dark:text-[var(--brand-accent)] uppercase tracking-wider">
-                  بيانات حسابك المعتمد
-                </span>
-                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-md flex items-center gap-1">
-                  <ShieldCheck className="h-3 w-3" /> تم التحقق
-                </span>
+                  <span className="text-[10px] font-bold text-[var(--brand-primary)] dark:text-[var(--brand-accent)] uppercase tracking-wider">
+                    {t('attendance.account_info', 'بيانات حسابك المعتمد')}
+                  </span>
+                  <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-md flex items-center gap-1">
+                    <ShieldCheck className="h-3 w-3" /> {t('attendance.verified', 'تم التحقق')}
+                  </span>
               </div>
 
               <div className="flex items-center gap-3">
@@ -333,7 +335,7 @@ export function AttendanceCheckInPage() {
                 </div>
 
                 <div className="text-left shrink-0 bg-white dark:bg-black/20 px-2.5 py-1 rounded-xl border border-slate-200 dark:border-white/10">
-                  <span className="text-[9px] text-slate-400 block font-bold">كود الموظف:</span>
+                  <span className="text-[9px] text-slate-400 block font-bold">{t('attendance.employee_code', 'كود الموظف')}:</span>
                   <span className="font-mono text-xs font-black text-[var(--brand-primary)] dark:text-[var(--brand-accent)]">
                     {employeeCode || 'GOGA-33001'}
                   </span>
@@ -344,12 +346,12 @@ export function AttendanceCheckInPage() {
             {/* Action Button */}
             {userProfile.status === 'suspended' || userProfile.status === 'inactive' ? (
               <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-center text-xs text-rose-700 dark:text-rose-400 font-bold space-y-1">
-                <p>⚠️ حسابك معطل أو موقوف تأديبياً حالياً.</p>
-                <p className="text-[11px] font-normal text-rose-600 dark:text-rose-300">لا يمكنك تسجيل الحضور حتى يتم رفع الحظر أو تنشيط الحساب من قبل الإدارة.</p>
+                <p>{t('attendance.suspended', '⚠️ حسابك معطل أو موقوف تأديبياً حالياً.')}</p>
+                <p className="text-[11px] font-normal text-rose-600 dark:text-rose-300">{t('attendance.suspended_desc', 'لا يمكنك تسجيل الحضور حتى يتم رفع الحظر أو تنشيط الحساب من قبل الإدارة.')}</p>
               </div>
             ) : isClosed ? (
               <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-center text-xs text-rose-700 dark:text-rose-400 font-bold">
-                عذراً، جلسة تسجيل الحضور هذه مغلقة حالياً أو انتهى وقت التسجيل.
+                {t('attendance.session_closed', 'عذراً، جلسة تسجيل الحضور هذه مغلقة حالياً أو انتهى وقت التسجيل.')}
               </div>
             ) : (
               <Button
@@ -359,7 +361,7 @@ export function AttendanceCheckInPage() {
                 className="w-full btn-primary text-sm py-3 font-black cursor-pointer gap-2 border-0"
               >
                 <CheckCircle2 className="h-5 w-5" />
-                <span>تأكيد وتسجيل الحضور الآن 🎯</span>
+                <span>{t('attendance.checkin_action', 'تأكيد وتسجيل الحضور الآن 🎯')}</span>
               </Button>
             )}
           </div>

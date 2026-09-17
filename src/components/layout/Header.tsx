@@ -10,7 +10,7 @@ interface HeaderProps {
 
 export function Header({ onMobileMenuClick }: HeaderProps) {
   const { theme, toggleTheme } = useTheme();
-  const { language, toggleLanguage, t } = useLanguage();
+  const { language, isRTL, toggleLanguage, t } = useLanguage();
   const unreadCount = useNotificationCount();
 
   const formattedDate = new Date().toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US', {
@@ -37,7 +37,7 @@ export function Header({ onMobileMenuClick }: HeaderProps) {
           style={{ color: 'var(--text-secondary)' }}
           onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.background = 'var(--surface-elevated)')}
           onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.background = 'transparent')}
-          aria-label="Open Navigation Menu"
+          aria-label={t('header.aria_open_nav', 'Open Navigation Menu')}
         >
           <Menu className="h-5 w-5" />
         </button>
@@ -74,7 +74,7 @@ export function Header({ onMobileMenuClick }: HeaderProps) {
             background: 'var(--surface-elevated)',
             border: '1px solid var(--border-subtle)',
           }}
-          aria-label="Toggle Language"
+          aria-label={t('header.lang.switch', language === 'ar' ? 'Switch to English' : 'Switch to Arabic')}
         >
           <Languages className="h-4 w-4 text-indigo-500" />
           <span className="uppercase font-mono text-[11px] font-black tracking-wider text-[var(--text-primary)]">
@@ -92,12 +92,12 @@ export function Header({ onMobileMenuClick }: HeaderProps) {
             background: 'var(--surface-elevated)',
             border: '1px solid var(--border-subtle)',
           }}
-          aria-label="مركز الإشعارات"
+          aria-label={t('header.aria_notifications', 'مركز الإشعارات')}
         >
           <Bell className="h-4 w-4" />
           {unreadCount > 0 && (
             <span
-              className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-rose-500 text-white text-[10px] font-black rounded-full flex items-center justify-center shadow-xs animate-pulse ring-2 ring-[var(--surface)]"
+              className={`absolute -top-1 ${isRTL ? '-left-1' : '-right-1'} min-w-[18px] h-[18px] px-1 bg-rose-500 text-white text-[10px] font-black rounded-full flex items-center justify-center shadow-xs animate-pulse ring-2 ring-[var(--surface)]`}
             >
               {unreadCount > 99 ? '99+' : unreadCount}
             </span>
@@ -114,7 +114,7 @@ export function Header({ onMobileMenuClick }: HeaderProps) {
             background: 'var(--surface-elevated)',
             border: '1px solid var(--border-subtle)',
           }}
-          aria-label="Toggle Theme"
+          aria-label={t('header.aria_toggle_theme', 'Toggle Theme')}
         >
           {theme === 'dark' ? (
             <Sun className="h-4 w-4 text-amber-400 animate-in spin-in-90 duration-300" />

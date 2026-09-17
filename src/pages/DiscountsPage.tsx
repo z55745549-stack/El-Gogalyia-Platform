@@ -16,6 +16,7 @@ import {
   Flame,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { subscribeDiscounts, purchaseDiscount } from '@/lib/discounts';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
@@ -35,6 +36,7 @@ const DISCOUNT_TYPE_CONFIG: Record<DiscountType, { label: string; icon: any; col
 
 export function DiscountsPage() {
   const { userProfile } = useAuth();
+  const { t } = useLanguage();
   const [discounts, setDiscounts] = useState<Discount[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -89,7 +91,7 @@ export function DiscountsPage() {
         discountId: selectedDiscount.id,
         employee: userProfile,
       });
-      toast.success('تمت عملية الشراء بنجاح وخصم النقاط من رصيدك!');
+      toast.success(t('discounts.purchased', 'تمت عملية الشراء بنجاح وخصم النقاط من رصيدك!'));
       setPurchaseSuccess({
         discount: selectedDiscount,
         newBalance: result.newBalance,
@@ -97,7 +99,7 @@ export function DiscountsPage() {
       });
     } catch (err: any) {
       console.error('Purchase error:', err);
-      toast.error(err.message || 'فشلت عملية الشراء. يرجى المحاولة لاحقاً.');
+      toast.error(t('discounts.purchase_failed', 'فشلت عملية الشراء. يرجى المحاولة لاحقاً.'));
     } finally {
       setPurchasing(false);
     }
@@ -110,8 +112,8 @@ export function DiscountsPage() {
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className="page-title text-2xl font-black text-slate-900 dark:text-white">
-              متجر الخصومات والعروض الحصرية
-            </h1>
+                {t('discounts.store_title', 'متجر الخصومات والعروض الحصرية')}
+              </h1>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-[var(--brand-primary)]/15 text-[var(--brand-primary)] border border-[var(--brand-primary)]/30">
               🎁 Exclusive Store
             </span>

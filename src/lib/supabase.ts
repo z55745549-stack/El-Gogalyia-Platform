@@ -378,6 +378,30 @@ function mapSnapshotDoc<T = DocumentData>(row: any): QueryDocumentSnapshot<T> {
   };
 }
 
+function missingColumnFromError(error: { message?: string } | null): string | null {
+  const message = error?.message || '';
+  const match = message.match(/['"]([a-z_]+)['"]\s+column/i)
+    || message.match(/column\s+['"]?([a-z_]+)['"]?\s+does not exist/i);
+  return match?.[1] || null;
+}
+
+async function upsertCourseWithSchemaFallback(payload: Record<string, any>): Promise<{ error: any }> {
+  const compatiblePayload = { ...payload };
+
+  // PostgREST refreshes its schema cache asynchronously after a migration.
+  // raw_data preserves metadata while an unavailable physical column is retried.
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const result = await supabase.from('courses').upsert(compatiblePayload);
+    if (!result.error) return result;
+
+    const missingColumn = missingColumnFromError(result.error);
+    if (!missingColumn || !(missingColumn in compatiblePayload)) return result;
+    delete compatiblePayload[missingColumn];
+  }
+
+  return supabase.from('courses').upsert(compatiblePayload);
+}
+
 // ─── Document Operations ─────────────────────────────────────────────────────
 
 export async function getDoc<T = DocumentData>(docRef: DocRef): Promise<DocumentSnapshot<T>> {
@@ -644,7 +668,9 @@ export async function setDoc(docRef: DocRef, data: any, options?: { merge?: bool
     }
   }
 
-  const { error } = await supabase.from(table).upsert(payload);
+  const { error } = table === 'courses'
+    ? await upsertCourseWithSchemaFallback(payload)
+    : await supabase.from(table).upsert(payload);
   if (error) {
     console.error(`Supabase setDoc error on ${table}:`, error.message);
     throw new Error(error.message);
@@ -893,4 +919,3 @@ export async function runTransaction<T>(
   };
   return updateFunction(tx);
 }
-

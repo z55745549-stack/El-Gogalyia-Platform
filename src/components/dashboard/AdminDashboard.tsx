@@ -11,6 +11,7 @@ import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useLanguage } from '@/context/LanguageContext';
 import { StatCard } from '@/components/ui/stat-card';
 import { SkeletonCard } from '@/components/ui/loading-spinner';
 import { StatusBadge, PriorityBadge } from '@/components/ui/status-badge';
@@ -25,6 +26,7 @@ import type { Task, OCoinTransaction, ActivityLog, UserProfile } from '@/types';
 
 export function AdminDashboard() {
   const { userProfile } = useAuth();
+  const { t } = useLanguage();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [recentActivity, setRecentActivity] = useState<ActivityLog[]>([]);
   const [recentTransactions, setRecentTransactions] = useState<OCoinTransaction[]>([]);
@@ -219,7 +221,7 @@ export function AdminDashboard() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    toast.success('تم تصدير تقرير أداء فريق منصة الجوجالية بنجاح!');
+    toast.success(t('adminDashboard.export_success'));
   };
 
   // Handlers
@@ -233,12 +235,12 @@ export function AdminDashboard() {
         message: broadcastMessage.trim(),
         createdByName: userProfile.displayName || userProfile.username,
       });
-      toast.success('تمت إذاعة التنبيه بنجاح لجميع أعضاء المنظومة! 📢');
+      toast.success(t('adminDashboard.broadcast_success'));
       setShowBroadcastModal(false);
       setBroadcastTitle('');
       setBroadcastMessage('');
     } catch (err: any) {
-      toast.error(err?.message || 'فشلت إذاعة التنبيه.');
+      toast.error(err?.message || t('adminDashboard.broadcast_failed'));
     } finally {
       setBroadcasting(false);
     }
@@ -252,17 +254,17 @@ export function AdminDashboard() {
       Boolean(rewardTargetUser.username && userProfile.username && rewardTargetUser.username.toLowerCase() === userProfile.username.toLowerCase()) ||
       Boolean(rewardTargetUser.email && userProfile.email && rewardTargetUser.email.toLowerCase() === userProfile.email.toLowerCase());
     if (isSelf) {
-      toast.error('❌ محظور: لا يمكنك منح كوينز لنفسك.');
+      toast.error(t('adminDashboard.cannot_reward_self'));
       return;
     }
     // FIX: Unlimited-coin roles must never receive a numeric reward
     if (hasUnlimitedCoins(rewardTargetUser.role)) {
-      toast.error('❌ لا يمكن منح كوينز لشخص رصيده لا نهائي (Head / Lead / Co-Lead).');
+      toast.error(t('adminDashboard.cannot_reward_unlimited'));
       return;
     }
     const amt = parseInt(rewardAmount, 10);
     if (isNaN(amt) || amt <= 0) {
-      toast.error('يرجى إدخال عدد كوينز صحيح موجب.');
+      toast.error(t('adminDashboard.invalid_coin_amount'));
       return;
     }
     setRewarding(true);
@@ -279,13 +281,13 @@ export function AdminDashboard() {
           photoURL: userProfile.photoURL,
         },
       });
-      toast.success(`تم صرف +${amt} OC للمحفظة (${rewardTargetUser.displayName}) بنجاح! 🌟`);
+      toast.success(t('adminDashboard.reward_success').replace('{amount}', String(amt)).replace('{name}', rewardTargetUser.displayName));
       setShowRewardModal(false);
       setRewardTargetUser(null);
       setRewardAmount('');
       setRewardReason('');
     } catch (err: any) {
-      toast.error(err?.message || 'فشل صرف المكافأة.');
+      toast.error(err?.message || t('adminDashboard.reward_failed'));
     } finally {
       setRewarding(false);
     }
@@ -293,20 +295,20 @@ export function AdminDashboard() {
 
   // Role-specific badge and subtitle
   const roleBadgeText = isLead
-    ? '🏆 LEAD · القائد العام للمنظومة'
+    ? t('adminDashboard.lead_subtitle')
     : isCoLead
-    ? '🌟 CO-LEAD · نائب القائد العام'
+    ? t('adminDashboard.lead_subtitle') // Co-lead gets same as lead
     : isHead
-    ? `👑 HEAD · رئيس لجنة ${userProfile?.committeeName || 'اللجنة'}`
-    : 'لوحة الإشراف والقيادة المركزية · منصة الجوجالية';
+    ? `👑 HEAD · ${t('role.head')} ${userProfile?.committeeName || t('common.committee')}`
+    : t('adminDashboard.lead_subtitle'); // Default for others
 
   const roleSubtitle = isTopLeader
-    ? 'لوحة القيادة المركزية العليا · إشراف شامل وتنسيق كامل لكافة اللجان والفرق والمهام دون قيود.'
+    ? t('adminDashboard.lead_subtitle')
     : isHead
-    ? `لوحة قيادة لجنة ${userProfile?.committeeName || ''} · إدارة مهام وتسليمات وأعضاء اللجنة واعتماد التكليفات.`
+    ? t('adminDashboard.head_subtitle').replace('{name}', userProfile?.committeeName || '')
     : stats.submitted > 0
-    ? `لديك ${stats.submitted} تسليم جديد بانتظار المراجعة والاعتماد.`
-    : 'جميع تسليمات المهام مستقرة ومحدثة.';
+    ? t('adminDashboard.pending_submissions_count').replace('{count}', String(stats.submitted))
+    : t('adminDashboard.all_submissions_stable');
 
   const { notifications } = useNotifications(5);
   const unreadCount = notifications.filter((n) => !n.read).length;
@@ -339,23 +341,23 @@ export function AdminDashboard() {
               <Link
                 to="/ocoins"
                 className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-[var(--brand-warm)]/15 text-[var(--brand-warm)] border border-[var(--brand-warm)]/30 hover:bg-[var(--brand-warm)]/25 transition-colors"
-                title="محفظة O-Coins"
+                title={t('common.ocoins_wallet')}
               >
                 <span>🪙</span>
                 <span>
                   {hasUnlimitedCoins(userProfile?.role)
-                    ? (isHead ? 'رصيد رئيس اللجنة: ∞ OC' : 'خزينة المنظومة: ∞ OC')
-                    : `رصيدك: ${formatOCoins(userProfile?.oCoinsBalance ?? 0)} OC`}
+                    ? (isHead ? t('adminDashboard.committee_head_vault_unlimited_label') : t('adminDashboard.system_vault_unlimited'))
+                    : t('adminDashboard.your_balance').replace('{amount}', formatOCoins(userProfile?.oCoinsBalance ?? 0))}
                 </span>
               </Link>
             </div>
 
             <h1 className="page-title text-xl sm:text-2xl font-extrabold text-[var(--text-primary)]">
-              مرحباً، {userProfile?.displayName || 'المشرف'} 👋
+              {t('adminDashboard.welcome_user').replace('{name}', userProfile?.displayName || 'المشرف')}
             </h1>
             <p className="text-xs sm:text-sm text-[var(--text-secondary)] max-w-2xl leading-relaxed">
               {roleSubtitle}
-              {stats.overdue > 0 && ` تنبيه: هناك ${stats.overdue} مهمة تجاوزت موعد التسليم.`}
+              {stats.overdue > 0 && t('adminDashboard.overdue_alert').replace('{count}', String(stats.overdue))}
             </p>
           </div>
 
@@ -369,7 +371,7 @@ export function AdminDashboard() {
                 className="font-bold text-xs gap-1.5 shadow-sm cursor-pointer"
               >
                 <Radio className="h-3.5 w-3.5 animate-pulse text-white" />
-                <span>إذاعة تنبيه للمنظومة</span>
+                <span>{t('adminDashboard.broadcast_alert')}</span>
               </Button>
             )}
 
@@ -380,35 +382,35 @@ export function AdminDashboard() {
                 className="font-bold text-xs gap-1.5 shadow-sm cursor-pointer text-white bg-amber-600 hover:bg-amber-700"
               >
                 <Gift className="h-3.5 w-3.5" />
-                <span>مكافأة سريعة لعضو بلجنتي</span>
+                <span>{t('adminDashboard.quick_reward')}</span>
               </Button>
             )}
 
             {(isHead ? myCommitteeSubmitted.length > 0 : stats.submitted > 0) && (
               <Link to="/submitted-tasks">
                 <Button variant="reward" size="sm" className="font-bold text-xs gap-1.5 shadow-sm">
-                  <Inbox className="h-3.5 w-3.5" /> مراجعة التسليمات ({isHead ? myCommitteeSubmitted.length : stats.submitted})
+                  <Inbox className="h-3.5 w-3.5" /> {t('adminDashboard.review_submissions')} ({isHead ? myCommitteeSubmitted.length : stats.submitted})
                 </Button>
               </Link>
             )}
 
             <Link to="/tasks">
               <Button variant="primary" size="sm" className="font-bold text-xs gap-1.5 shadow-sm">
-                <Plus className="h-3.5 w-3.5" /> إنشاء مهمة جديدة
+                <Plus className="h-3.5 w-3.5" /> {t('adminDashboard.create_task')}
               </Button>
             </Link>
 
             {isTopLeader && (
               <Link to="/employees">
                 <Button variant="outline" size="sm" className="font-semibold text-xs gap-1.5">
-                  <Users className="h-3.5 w-3.5" /> إدارة الفريق
+                  <Users className="h-3.5 w-3.5" /> {t('adminDashboard.manage_team')}
                 </Button>
               </Link>
             )}
 
             <Link to="/meetings">
               <Button variant="outline" size="sm" className="font-semibold text-xs gap-1.5">
-                <Calendar className="h-3.5 w-3.5" /> الاجتماعات
+                <Calendar className="h-3.5 w-3.5" /> {t('adminDashboard.meetings')}
               </Button>
             </Link>
           </div>
@@ -417,51 +419,51 @@ export function AdminDashboard() {
 
       {/* Semantic KPI Cards Grid — Tailored for Committee or Top Leaders */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-3.5">
-        <Link to="/employees" className="block focus:outline-none group cursor-pointer" title={!isTopLeader ? "انتقل إلى صفحة أعضاء لجنتي" : "انتقل إلى إدارة الأعضاء"}>
+        <Link to="/employees" className="block focus:outline-none group cursor-pointer" title={!isTopLeader ? t('adminDashboard.my_committee_members') : t('adminDashboard.team_members')}>
           <StatCard
-            title={!isTopLeader ? "أعضاء لجنتي" : "فريق العمل"}
+            title={!isTopLeader ? t('adminDashboard.my_committee_members') : t('adminDashboard.team_members')}
             value={!isTopLeader ? myCommitteeUsers.length : totalEmployees}
             variant="primary"
             icon={<Users className="h-4 w-4 transition-transform duration-200 group-hover:scale-110" />}
-            subtext={!isTopLeader ? `أعضاء ${userProfile?.committeeName || 'اللجنة'} • عرض القائمة ←` : "الأعضاء النشطين • إدارة الأعضاء ←"}
+            subtext={!isTopLeader ? t('adminDashboard.committee_members_view_list').replace('{committeeName}', userProfile?.committeeName || 'اللجنة') : t('adminDashboard.active_members_manage')}
             className="group-hover:border-[var(--brand-primary)] group-hover:shadow-md transition-all cursor-pointer"
           />
         </Link>
         <StatCard
-          title={!isTopLeader ? "تسليمات لجنتي" : "تسليمات معلقة"}
+          title={!isTopLeader ? t('adminDashboard.my_committee_submissions') : t('adminDashboard.pending_submissions')}
           value={!isTopLeader ? myCommitteeSubmitted.length : stats.submitted}
           variant={(!isTopLeader ? myCommitteeSubmitted.length : stats.submitted) > 0 ? 'warm' : 'default'}
           icon={<Upload className="h-4 w-4" />}
-          subtext="تحتاج مراجعة وقبول"
+          subtext={t('adminDashboard.need_review_approval')}
         />
         <StatCard
-          title={!isTopLeader ? "مهام لجنتي الجارية" : "قيد التنفيذ"}
+          title={!isTopLeader ? t('adminDashboard.my_committee_ongoing') : t('adminDashboard.in_progress_tasks')}
           value={!isTopLeader ? myCommitteeTasks.filter(t => t.status === 'in_progress').length : stats.inProgress}
           variant="accent"
           icon={<Clock className="h-4 w-4" />}
-          subtext="يعمل عليها الفريق"
+          subtext={t('adminDashboard.team_working_on')}
         />
         <StatCard
-          title={!isTopLeader ? "مهام متأخرة بلجنتي" : "مهام متأخرة"}
+          title={!isTopLeader ? t('adminDashboard.my_committee_overdue') : t('adminDashboard.overdue_tasks')}
           value={!isTopLeader ? myCommitteeTasks.filter(t => isOverdue(t.deadline, t.status)).length : stats.overdue}
           variant="default"
           icon={<AlertTriangle className="h-4 w-4" />}
           iconBg={(!isTopLeader ? myCommitteeTasks.filter(t => isOverdue(t.deadline, t.status)).length : stats.overdue) > 0 ? "bg-[var(--brand-danger)]/15 text-[var(--brand-danger)]" : undefined}
-          subtext="تجاوزت الموعد"
+          subtext={t('adminDashboard.exceeded_deadline')}
         />
         <StatCard
-          title={!isTopLeader ? "مهام معتمدة بلجنتي" : "مهام معتمدة"}
+          title={!isTopLeader ? t('adminDashboard.my_committee_approved') : t('adminDashboard.approved_tasks')}
           value={!isTopLeader ? myCommitteeTasks.filter(t => t.status === 'approved' || t.status === 'completed').length : stats.approved}
           variant="success"
           icon={<CheckCircle2 className="h-4 w-4" />}
-          subtext="مكتملة ومصروفة"
+          subtext={t('adminDashboard.completed_and_paid')}
         />
         <StatCard
-          title="مكافآت O Coins"
+          title={t('adminDashboard.ocoins_rewards')}
           value={hasUnlimitedCoins(userProfile?.role) ? "∞" : formatOCoins(totalCoinsDistributed)}
           variant="warm"
           icon={<Coins className="h-4 w-4" />}
-          subtext={hasUnlimitedCoins(userProfile?.role) ? (isHead ? "خزينة رئيس اللجنة: غير محدودة" : "خزينة لا نهائية") : "إجمالي المكافآت المصروفة"}
+          subtext={hasUnlimitedCoins(userProfile?.role) ? (isHead ? t('adminDashboard.committee_head_vault_unlimited') : t('adminDashboard.unlimited_vault')) : t('adminDashboard.total_distributed_rewards')}
         />
       </div>
 
@@ -475,15 +477,15 @@ export function AdminDashboard() {
               </span>
               <div>
                 <h2 className="section-title text-sm sm:text-base text-[var(--text-primary)]">
-                  مؤشر نبض وأداء اللجان في المنظومة
+                  {t('adminDashboard.committee_pulse_title')}
                 </h2>
                 <p className="text-[11px] text-[var(--text-muted)]">
-                  متابعة حية لمعدلات إنجاز المهام وعدد الأعضاء في كل لجنة
+                  {t('adminDashboard.committee_pulse_desc')}
                 </p>
               </div>
             </div>
             <Link to="/tasks" className="text-xs font-bold text-[var(--brand-primary)] hover:underline flex items-center gap-1">
-              <span>إدارة مهام اللجان</span>
+              <span>{t('adminDashboard.manage_committee_tasks')}</span>
               <ArrowUpRight className="h-3 w-3" />
             </Link>
           </div>
@@ -546,39 +548,39 @@ export function AdminDashboard() {
               </span>
               <div>
                 <h2 className="section-title text-sm sm:text-base text-[var(--text-primary)]">
-                  طابور مراجعة واعتماد تسليمات لجنة {userProfile?.committeeName || ''}
+                  {t('adminDashboard.review_queue_title').replace('{name}', userProfile?.committeeName || '')}
                 </h2>
                 <p className="text-[11px] text-[var(--text-muted)]">
-                  التسليمات المرفوعة من أعضاء لجنتك بانتظار فحصك واعتماد صرف المكافأة
+                  {t('adminDashboard.review_queue_desc')}
                 </p>
               </div>
             </div>
             <Link to="/submitted-tasks" className="text-xs font-bold text-[var(--brand-primary)] hover:underline flex items-center gap-1">
-              <span>صفحة التسليمات الكاملة</span>
+              <span>{t('adminDashboard.full_submissions_page')}</span>
               <ArrowUpRight className="h-3 w-3" />
             </Link>
           </div>
 
           {myCommitteeSubmitted.length === 0 ? (
             <div className="p-6 text-center rounded-2xl bg-[var(--bg-elevated)]/30 border border-dashed border-[var(--border-subtle)] space-y-1">
-              <p className="text-xs font-bold text-[var(--text-primary)]">🎉 رائع! لا توجد تسليمات معلقة في لجنتك حالياً.</p>
-              <p className="text-[11px] text-[var(--text-muted)]">كافة التكليفات المسلّمة تم فحصها واعتمادها بنجاح.</p>
+              <p className="text-xs font-bold text-[var(--text-primary)]">{t('adminDashboard.no_pending_submissions')}</p>
+              <p className="text-[11px] text-[var(--text-muted)]">{t('adminDashboard.all_submissions_approved')}</p>
             </div>
           ) : (
             <div className="divide-y divide-[var(--border-subtle)] rounded-2xl border border-[var(--border-subtle)] overflow-hidden bg-[var(--bg-surface)]">
-              {myCommitteeSubmitted.slice(0, 5).map((t) => (
-                <div key={t.id} className="p-3.5 sm:p-4 flex items-center justify-between gap-3 hover:bg-[var(--bg-elevated)]/50 transition-colors">
+              {myCommitteeSubmitted.slice(0, 5).map((task) => (
+                <div key={task.id} className="p-3.5 sm:p-4 flex items-center justify-between gap-3 hover:bg-[var(--bg-elevated)]/50 transition-colors">
                   <div className="min-w-0 space-y-1">
-                    <p className="text-xs sm:text-sm font-bold text-[var(--text-primary)] truncate">{t.title}</p>
+                    <p className="text-xs sm:text-sm font-bold text-[var(--text-primary)] truncate">{task.title}</p>
                     <div className="flex items-center gap-2 text-[11px] text-[var(--text-muted)]">
-                      <span>بواسطة: {t.assignedToNames?.[0] || 'أحد أعضاء اللجنة'}</span>
+                      <span>{t('adminDashboard.submitted_by').replace('{name}', task.assignedToNames?.[0] || 'أحد أعضاء اللجنة')}</span>
                       <span>·</span>
-                      <span className="text-[var(--brand-warm)] font-bold">مكافأة: {t.oCoinsReward} OC</span>
+                      <span className="text-[var(--brand-warm)] font-bold">{t('adminDashboard.reward_amount').replace('{amount}', String(task.oCoinsReward))}</span>
                     </div>
                   </div>
                   <Link to="/submitted-tasks">
                     <Button size="sm" variant="reward" className="font-bold text-xs gap-1 cursor-pointer">
-                      <span>فحص واعتماد</span>
+                      <span>{t('adminDashboard.review_and_approve')}</span>
                       <ChevronLeft className="h-3.5 w-3.5" />
                     </Button>
                   </Link>
@@ -596,14 +598,14 @@ export function AdminDashboard() {
           <div className="p-4 sm:p-5 border-b border-[var(--border-subtle)] flex items-center justify-between bg-[var(--bg-elevated)]/30">
             <div>
               <h2 className="section-title text-sm sm:text-base text-[var(--text-primary)]">
-                {!isTopLeader ? `أحدث مهام لجنة ${userProfile?.committeeName || 'اللجنة'}` : 'أحدث التكليفات والمهام'}
+                {!isTopLeader ? t('adminDashboard.latest_committee_tasks').replace('{name}', userProfile?.committeeName || 'اللجنة') : t('adminDashboard.latest_all_tasks')}
               </h2>
               <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
-                {!isTopLeader ? `${myCommitteeTasks.length} مهمة بلجنتك` : `${tasks.length} مهمة مسجلة بالنظام`}
+                {!isTopLeader ? t('adminDashboard.committee_tasks_count').replace('{count}', String(myCommitteeTasks.length)) : t('adminDashboard.all_tasks_count').replace('{count}', String(tasks.length))}
               </p>
             </div>
             <Link to="/tasks" className="text-xs font-bold text-[var(--brand-primary)] hover:text-[var(--brand-accent)] hover:underline flex items-center gap-1">
-              عرض كافة المهام <ArrowUpRight className="h-3 w-3" />
+              {t('adminDashboard.view_all_tasks')} <ArrowUpRight className="h-3 w-3" />
             </Link>
           </div>
 
@@ -614,9 +616,9 @@ export function AdminDashboard() {
               </div>
             ) : (isTopLeader ? tasks : myCommitteeTasks).length === 0 ? (
               <div className="p-8 text-center text-[var(--text-muted)] text-xs sm:text-sm">
-                لا توجد مهام مسجلة حالياً.{' '}
+                {t('adminDashboard.no_tasks_registered')}{' '}
                 <Link to="/tasks" className="text-[var(--brand-primary)] font-bold hover:underline">
-                  أنشئ أول مهمة الآن.
+                  {t('adminDashboard.create_first_task')}
                 </Link>
               </div>
             ) : (
@@ -664,20 +666,20 @@ export function AdminDashboard() {
           <div className="card overflow-hidden">
             <div className="p-3.5 sm:p-4 border-b border-[var(--border-subtle)] flex items-center justify-between bg-[var(--bg-elevated)]/30">
               <h2 className="text-xs sm:text-sm font-bold text-[var(--text-primary)] flex items-center gap-2">
-                <Bell className="h-4 w-4 text-[var(--brand-primary)]" /> التنبيهات والإشعارات
+                <Bell className="h-4 w-4 text-[var(--brand-primary)]" /> {t('adminDashboard.alerts_notifications')}
                 {unreadCount > 0 && (
                   <span className="px-1.5 py-0.5 text-[10px] font-black rounded-full bg-[var(--brand-danger)] text-white">
-                    {unreadCount} جديدة
+                    {t('adminDashboard.new_count').replace('{count}', String(unreadCount))}
                   </span>
                 )}
               </h2>
               <Link to="/notifications" className="text-[11px] font-bold text-[var(--brand-primary)] hover:underline">
-                مركز التنبيهات
+                {t('adminDashboard.alerts_center')}
               </Link>
             </div>
             <div className="p-3 space-y-2">
               {notifications.length === 0 ? (
-                <p className="text-xs text-[var(--text-muted)] text-center py-3">لا توجد إشعارات حالياً.</p>
+                <p className="text-xs text-[var(--text-muted)] text-center py-3">{t('common.no_data')}</p>
               ) : (
                 notifications.slice(0, 4).map((n) => (
                   <Link
@@ -706,15 +708,15 @@ export function AdminDashboard() {
           <div className="card overflow-hidden">
             <div className="p-3.5 sm:p-4 border-b border-[var(--border-subtle)] flex items-center justify-between bg-[var(--bg-elevated)]/30">
               <h2 className="text-xs sm:text-sm font-bold text-[var(--text-primary)] flex items-center gap-2">
-                <Activity className="h-4 w-4 text-[var(--brand-accent)]" /> سجل النشاط المباشر
+                <Activity className="h-4 w-4 text-[var(--brand-accent)]" /> {t('adminDashboard.live_activity_log')}
               </h2>
               <Link to="/activity-logs" className="text-[11px] font-bold text-[var(--brand-primary)] hover:underline">
-                السجل كامل
+                {t('adminDashboard.full_log')}
               </Link>
             </div>
             <div className="p-3.5 space-y-2.5">
               {recentActivity.length === 0 ? (
-                <p className="text-xs text-[var(--text-muted)] text-center py-3">لا توجد أنشطة مسجلة بعد.</p>
+                <p className="text-xs text-[var(--text-muted)] text-center py-3">{t('common.no_data')}</p>
               ) : (
                 recentActivity.slice(0, 5).map((log) => (
                   <div key={log.id} className="flex items-start gap-2.5 text-right">
@@ -738,15 +740,15 @@ export function AdminDashboard() {
           <div className="card overflow-hidden">
             <div className="p-3.5 sm:p-4 border-b border-[var(--border-subtle)] flex items-center justify-between bg-[var(--bg-elevated)]/30">
               <h2 className="text-xs sm:text-sm font-bold text-[var(--text-primary)] flex items-center gap-2">
-                <Coins className="h-4 w-4 text-[var(--brand-warm)]" /> مكافآت O Coins الأخيرة
+                <Coins className="h-4 w-4 text-[var(--brand-warm)]" /> {t('adminDashboard.recent_ocoins_rewards')}
               </h2>
               <Link to="/ocoins" className="text-[11px] font-bold text-[var(--brand-primary)] hover:underline">
-                دفتر المكافآت
+                {t('adminDashboard.rewards_ledger')}
               </Link>
             </div>
             <div className="p-3 space-y-2">
               {recentTransactions.length === 0 ? (
-                <p className="text-xs text-[var(--text-muted)] text-center py-3">لا توجد مكافآت مسجلة بعد.</p>
+                <p className="text-xs text-[var(--text-muted)] text-center py-3">{t('adminDashboard.no_rewards_recorded')}</p>
               ) : (
                 recentTransactions.map((tx) => (
                   <div key={tx.id} className="flex items-center justify-between gap-2 p-2 rounded-xl bg-[var(--bg-elevated)]/50 border border-[var(--border-subtle)]">
@@ -777,10 +779,10 @@ export function AdminDashboard() {
           <div>
             <h2 className="text-base sm:text-lg font-black text-[var(--text-primary)] flex items-center gap-2">
               <BarChart3 className="h-5 w-5 text-[var(--brand-primary)]" />
-              <span>مؤشرات أداء الفرق وإحصائيات الإنجاز الشاملة</span>
+              <span>{t('adminDashboard.team_performance_title')}</span>
             </h2>
             <p className="text-xs text-[var(--text-muted)] mt-1">
-              متابعة كفاءة تسليم المهام للأعضاء واللجان، ونسب الإنجاز اللحظية، وتوزيع مكافآت المنظومة.
+              {t('adminDashboard.team_performance_desc')}
             </p>
           </div>
 
@@ -789,7 +791,7 @@ export function AdminDashboard() {
             {isHead ? (
               <span className="px-3 py-1.5 rounded-xl text-xs bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] border border-[var(--brand-primary)]/30 font-bold flex items-center gap-1.5 shadow-xs">
                 <Lock className="h-3.5 w-3.5" />
-                <span>لجنة {userProfile?.committeeName || 'التابعة لك'} (حصرياً)</span>
+                <span>{t('adminDashboard.committee_exclusive').replace('{name}', userProfile?.committeeName || 'التابعة لك')}</span>
               </span>
             ) : (
               <select
@@ -797,7 +799,7 @@ export function AdminDashboard() {
                 onChange={(e) => setLeaderboardCommitteeFilter(e.target.value)}
                 className="px-3 py-1.5 rounded-xl text-xs bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] cursor-pointer"
               >
-                <option value="">جميع اللجان</option>
+                <option value="">{t('adminDashboard.all_committees')}</option>
                 {DEFAULT_COMMITTEES.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
@@ -813,7 +815,7 @@ export function AdminDashboard() {
               className="gap-1.5 text-xs font-bold shadow-xs cursor-pointer"
             >
               <Download className="h-3.5 w-3.5 text-[var(--brand-primary)]" />
-              <span>تصدير CSV</span>
+              <span>{t('adminDashboard.export_csv')}</span>
             </Button>
           </div>
         </div>
@@ -824,17 +826,17 @@ export function AdminDashboard() {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-extrabold text-[var(--text-primary)] flex items-center gap-2">
                 <Crown className="h-4 w-4 text-amber-500" />
-                <span>لوحة شرف المتميزين (Top Performers)</span>
+                <span>{t('adminDashboard.honor_board_title')}</span>
               </h3>
-              <span className="text-[11px] text-[var(--text-muted)] font-bold">الأعلى إنجازاً للتكليفات من الأعضاء</span>
+              <span className="text-[11px] text-[var(--text-muted)] font-bold">{t('adminDashboard.honor_board_subtitle')}</span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
               {topPerformers.map((item, idx) => {
                 const medals = [
-                  { rank: 'المركز الأول 🥇', color: 'border-amber-400/50 bg-amber-500/10 text-amber-500', icon: '🏆' },
-                  { rank: 'المركز الثاني 🥈', color: 'border-slate-300 dark:border-slate-700 bg-slate-500/10 text-slate-400', icon: '🥈' },
-                  { rank: 'المركز الثالث 🥉', color: 'border-amber-700/50 bg-amber-700/10 text-amber-700 dark:text-amber-500', icon: '🥉' },
+                  { rank: t('adminDashboard.rank_1'), color: 'border-amber-400/50 bg-amber-500/10 text-amber-500', icon: '🏆' },
+                  { rank: t('adminDashboard.rank_2'), color: 'border-slate-300 dark:border-slate-700 bg-slate-500/10 text-slate-400', icon: '🥈' },
+                  { rank: t('adminDashboard.rank_3'), color: 'border-amber-700/50 bg-amber-700/10 text-amber-700 dark:text-amber-500', icon: '🥉' },
                 ];
                 const medal = medals[idx] || medals[0];
                 return (
@@ -852,7 +854,7 @@ export function AdminDashboard() {
                         {formatFullName(item.user.displayName || 'عضو')}
                       </p>
                       <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
-                        أنجز <strong className="text-emerald-500">{item.completed}</strong> مهمة بنجاح ({Math.round(item.rate)}%)
+                        {t('adminDashboard.completed_tasks_count').replace('{count}', String(item.completed)).replace('{rate}', String(Math.round(item.rate)))}
                       </p>
                     </div>
                   </div>
@@ -866,9 +868,9 @@ export function AdminDashboard() {
               🏆
             </div>
             <div className="min-w-0 text-right">
-              <h4 className="text-xs sm:text-sm font-bold text-[var(--text-primary)]">لوحة شرف المتميزين للأعضاء (Top Performers)</h4>
+              <h4 className="text-xs sm:text-sm font-bold text-[var(--text-primary)]">{t('adminDashboard.member_honor_board')}</h4>
               <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
-                لوحة الشرف مخصصة للأعضاء فقط، وتعتلي المراكز الأولى تلقائياً فور تسليم واعتماد أولى المهام المنجزة وصرف مكافآت O-Coins.
+                {t('adminDashboard.member_honor_board_desc')}
               </p>
             </div>
           </div>
@@ -882,11 +884,11 @@ export function AdminDashboard() {
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-extrabold text-[var(--text-primary)] flex items-center gap-2">
                   <PieChartIcon className="h-4 w-4 text-[var(--brand-primary)]" />
-                  <span>توزيع حالة المهام</span>
+                  <span>{t('adminDashboard.task_status_distribution')}</span>
                 </h3>
-                <span className="text-xs text-[var(--text-muted)] font-mono">{tasks.length} مهمة</span>
+                <span className="text-xs text-[var(--text-muted)] font-mono">{t('adminDashboard.total_tasks_count').replace('{count}', String(tasks.length))}</span>
               </div>
-              <p className="text-xs text-[var(--text-muted)] mt-1">نسبة الإنجاز مقارنة بالمهام الجارية والمتأخرة</p>
+              <p className="text-xs text-[var(--text-muted)] mt-1">{t('adminDashboard.completion_vs_ongoing')}</p>
             </div>
 
             <div className="my-6 flex items-center justify-center">
@@ -911,22 +913,22 @@ export function AdminDashboard() {
                 </svg>
                 <div className="absolute flex flex-col items-center justify-center text-center">
                   <span className="text-2xl font-black text-[var(--text-primary)] font-mono">{Math.round(overallCompletionRate)}%</span>
-                  <span className="text-[10px] font-bold text-emerald-500">معدل الإنجاز</span>
+                  <span className="text-[10px] font-bold text-emerald-500">{t('adminDashboard.completion_rate')}</span>
                 </div>
               </div>
             </div>
 
             <div className="grid grid-cols-3 gap-2 text-center text-xs pt-4 border-t border-[var(--border-subtle)]">
               <div>
-                <p className="text-[10px] text-[var(--text-muted)] font-bold">مكتملة</p>
+                <p className="text-[10px] text-[var(--text-muted)] font-bold">{t('adminDashboard.completed_label')}</p>
                 <p className="font-extrabold text-emerald-500 mt-0.5">{stats.approved}</p>
               </div>
               <div>
-                <p className="text-[10px] text-[var(--text-muted)] font-bold">جارية</p>
+                <p className="text-[10px] text-[var(--text-muted)] font-bold">{t('adminDashboard.in_progress_label')}</p>
                 <p className="font-extrabold text-[var(--brand-primary)] mt-0.5">{stats.inProgress + stats.pending}</p>
               </div>
               <div>
-                <p className="text-[10px] text-[var(--text-muted)] font-bold">متأخرة</p>
+                <p className="text-[10px] text-[var(--text-muted)] font-bold">{t('adminDashboard.overdue_label')}</p>
                 <p className="font-extrabold text-rose-500 mt-0.5">{stats.overdue}</p>
               </div>
             </div>
@@ -938,11 +940,11 @@ export function AdminDashboard() {
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-extrabold text-[var(--text-primary)] flex items-center gap-2">
                   <TrendingUp className="h-4 w-4 text-cyan-500" />
-                  <span>معدل إنجاز اللجان والفرق</span>
+                  <span>{t('adminDashboard.committee_completion_rates')}</span>
                 </h3>
-                <span className="text-xs text-[var(--text-muted)]">{committeesStats.length} لجان نشطة</span>
+                <span className="text-xs text-[var(--text-muted)]">{t('adminDashboard.active_committees_count').replace('{count}', String(committeesStats.length))}</span>
               </div>
-              <p className="text-xs text-[var(--text-muted)] mt-1">مقارنة بصرية لكفاءة وسرعة تسليم كل لجنة للتكليفات</p>
+              <p className="text-xs text-[var(--text-muted)] mt-1">{t('adminDashboard.committee_efficiency_desc')}</p>
             </div>
 
             <div className="my-4 space-y-3">
@@ -966,7 +968,7 @@ export function AdminDashboard() {
             </div>
 
             <div className="flex items-center justify-between text-[11px] text-[var(--text-muted)] pt-3 border-t border-[var(--border-subtle)]">
-              <span>💡 يتم تحديث مؤشرات اللجان لحظياً بمجرد اعتماد المشرفين للتسليمات.</span>
+              <span>{t('adminDashboard.committee_update_note')}</span>
             </div>
           </div>
         </div>

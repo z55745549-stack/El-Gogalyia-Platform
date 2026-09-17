@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { deleteTask, endTask, archiveTask } from '@/lib/database-service';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,6 +41,7 @@ const PRIORITY_OPTIONS = [
 
 export function TasksPage() {
   const { userProfile } = useAuth();
+  const { t } = useLanguage();
   const isViceHead = userProfile?.role === 'vice_head';
   const [tasks, setTasks] = useState<Task[]>([]);
   const [committees, setCommittees] = useState<Committee[]>([]);
@@ -119,11 +121,11 @@ export function TasksPage() {
         email: userProfile.username || userProfile.email || 'admin',
         displayName: userProfile.displayName,
       });
-      toast.success(`تم حذف المهمة "${targetTitle}" بنجاح!`);
+             toast.success(t('tasks.toast_deleted', 'تم حذف المهمة "{{title}}" بنجاح!').replace('{{title}}', targetTitle));
       setDeleteTarget(null);
     } catch (err) {
       console.error(err);
-      toast.error('حدث خطأ أثناء حذف المهمة.');
+       toast.error(t('tasks.toast_delete_error', 'حدث خطأ أثناء حذف المهمة.'));
     } finally {
       setActionLoading(false);
     }
@@ -137,11 +139,11 @@ export function TasksPage() {
         email: userProfile.username || userProfile.email || 'admin',
         displayName: userProfile.displayName,
       });
-      toast.success(`تم إنهاء المهمة "${endTarget.title}" وإغلاق باب التسليمات بنجاح.`);
+      toast.success(t('tasks.toast_ended', 'تم إنهاء المهمة "{{title}}" وإغلاق باب التسليمات بنجاح.').replace('{{title}}', endTarget.title));
       setEndTarget(null);
     } catch (err) {
       console.error(err);
-      toast.error('فشل إنهاء المهمة.');
+      toast.error(t('tasks.toast_end_error', 'فشل إنهاء المهمة.'));
     } finally {
       setActionLoading(false);
     }
@@ -155,11 +157,11 @@ export function TasksPage() {
         email: userProfile.username || userProfile.email || 'admin',
         displayName: userProfile.displayName,
       });
-      toast.success(`تم نقل المهمة "${archiveTarget.title}" إلى الأرشيف.`);
+      toast.success(t('tasks.toast_archived', 'تم نقل المهمة "{{title}}" إلى الأرشيف.').replace('{{title}}', archiveTarget.title));
       setArchiveTarget(null);
     } catch (err) {
       console.error(err);
-      toast.error('فشل أرشفة المهمة.');
+      toast.error(t('tasks.toast_archive_error', 'فشل أرشفة المهمة.'));
     } finally {
       setActionLoading(false);
     }
@@ -202,6 +204,11 @@ export function TasksPage() {
     return matchSearch && matchTab && matchPriority && matchCommittee;
   });
 
+  const priorityOptions = PRIORITY_OPTIONS.map((opt) => ({
+    value: opt.value,
+    label: t('tasks.prio_' + (opt.value || 'all'), opt.label),
+  }));
+
   const isTopTier = userProfile?.role === 'lead' || userProfile?.role === 'co_lead';
   const canCreate = userProfile ? isAdminRole(userProfile.role) : false;
 
@@ -212,20 +219,20 @@ export function TasksPage() {
         <div>
           <h1 className="text-xl sm:text-2xl font-black text-[var(--text-primary)] flex items-center gap-2">
             <CheckSquare className="h-6 w-6 text-amber-500" />
-            {!isTopTier ? `مهام وتكليفات لجنة ${userProfile?.committeeName || 'اللجنة'}` : 'إدارة وتكليف المهام'}
+             {!isTopTier ? t('tasks.title_committee', 'مهام وتكليفات لجنة {{name}}').replace('{{name}}', userProfile?.committeeName || t('tasks.committee_default', 'لجنتك')) : t('tasks.title_manage', 'إدارة وتكليف المهام')}
           </h1>
           <p className="text-xs sm:text-sm text-[var(--text-muted)] mt-1">
-            {isViceHead
-              ? `استعراض مهام ومشاريع أعضاء لجنتك ومتابعة التسليمات (${submittedCount} بانتظار الاعتماد)`
-              : `إجمالي ${tasks.length} مهمة مسجلة بالنظام · ${submittedCount} بانتظار الاعتماد`}
+             {isViceHead
+               ? t('tasks.subtitle_vice', 'استعراض مهام ومشاريع أعضاء لجنتك ومتابعة التسليمات ({{count}} بانتظار الاعتماد)').replace('{{count}}', String(submittedCount))
+               : t('tasks.subtitle_default', 'إجمالي {{total}} مهمة مسجلة بالنظام · {{count}} بانتظار الاعتماد').replace('{{total}}', String(tasks.length)).replace('{{count}}', String(submittedCount))}
           </p>
         </div>
         <div className="flex items-center gap-2.5 flex-wrap">
           {submittedCount > 0 && (
             <Link to="/submitted-tasks">
-              <Button size="sm" variant="outline" className="gap-2 border-amber-500/40 text-amber-500 text-xs font-bold">
-                <Inbox className="h-4 w-4" /> مراجعة التسليمات ({submittedCount})
-              </Button>
+                 <Button size="sm" variant="outline" className="gap-2 border-amber-500/40 text-amber-500 text-xs font-bold">
+                   <Inbox className="h-4 w-4" /> {t('tasks.btn_review_submissions', 'مراجعة التسليمات ({{count}})').replace('{{count}}', String(submittedCount))}
+                 </Button>
             </Link>
           )}
           {canCreate && (
@@ -233,7 +240,7 @@ export function TasksPage() {
               onClick={() => setShowCreateModal(true)}
               className="gap-2 font-black text-xs py-2.5 px-4 rounded-xl shadow-sm cursor-pointer"
             >
-              <Plus className="h-4 w-4" /> إنشاء مهمة جديدة
+               <Plus className="h-4 w-4" /> {t('tasks.btn_create', 'إنشاء مهمة جديدة')}
             </Button>
           )}
         </div>
@@ -243,7 +250,7 @@ export function TasksPage() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="card p-4 rounded-2xl flex items-center justify-between">
           <div>
-            <p className="text-xs font-bold text-[var(--text-muted)]">إجمالي المهام</p>
+             <p className="text-xs font-bold text-[var(--text-muted)]">{t('tasks.kpi_total', 'إجمالي المهام')}</p>
             <p className="text-2xl font-black text-[var(--text-primary)] mt-0.5">{tasks.length}</p>
           </div>
           <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center font-bold">
@@ -253,7 +260,7 @@ export function TasksPage() {
 
         <div className="card p-4 rounded-2xl flex items-center justify-between">
           <div>
-            <p className="text-xs font-bold text-[var(--text-muted)]">مهام قيد العمل</p>
+             <p className="text-xs font-bold text-[var(--text-muted)]">{t('tasks.kpi_active', 'مهام قيد العمل')}</p>
             <p className="text-2xl font-black text-[var(--brand-primary)] mt-0.5">{activeCount}</p>
           </div>
           <div className="w-10 h-10 rounded-xl bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] flex items-center justify-center font-bold">
@@ -263,7 +270,7 @@ export function TasksPage() {
 
         <div className="card p-4 rounded-2xl flex items-center justify-between">
           <div>
-            <p className="text-xs font-bold text-[var(--text-muted)]">بانتظار الاعتماد</p>
+             <p className="text-xs font-bold text-[var(--text-muted)]">{t('tasks.kpi_pending', 'بانتظار الاعتماد')}</p>
             <p className="text-2xl font-black text-amber-500 mt-0.5">{submittedCount}</p>
           </div>
           <div className="w-10 h-10 rounded-xl bg-amber-500/15 text-amber-500 flex items-center justify-center font-bold">
@@ -273,7 +280,7 @@ export function TasksPage() {
 
         <div className="card p-4 rounded-2xl flex items-center justify-between">
           <div>
-            <p className="text-xs font-bold text-[var(--text-muted)]">تم اعتمادها</p>
+             <p className="text-xs font-bold text-[var(--text-muted)]">{t('tasks.kpi_completed', 'تم اعتمادها')}</p>
             <p className="text-2xl font-black text-emerald-500 mt-0.5">{completedCount}</p>
           </div>
           <div className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center font-bold">
@@ -285,12 +292,12 @@ export function TasksPage() {
       {/* Tabs - Wrapped cleanly for instant mobile access */}
       <div className="flex flex-wrap items-center gap-1.5 pb-2 border-b border-[var(--border-subtle)]">
         {[
-          { id: 'all', label: 'جميع المهام', count: tasks.length },
-          { id: 'active', label: 'المهام النشطة', count: activeCount },
-          { id: 'submitted', label: 'تم التسليم', count: submittedCount, alert: submittedCount > 0 },
-          { id: 'completed', label: 'المكتملة والمنتهية', count: completedCount },
-          { id: 'expired', label: 'منتهية الموعد', count: expiredCount },
-          { id: 'archived', label: 'المؤرشفة', count: archivedCount },
+           { id: 'all', label: t('tasks.tab_all', 'جميع المهام'), count: tasks.length },
+           { id: 'active', label: t('tasks.tab_active', 'المهام النشطة'), count: activeCount },
+           { id: 'submitted', label: t('tasks.tab_submitted', 'تم التسليم'), count: submittedCount, alert: submittedCount > 0 },
+           { id: 'completed', label: t('tasks.tab_completed', 'المكتملة والمنتهية'), count: completedCount },
+           { id: 'expired', label: t('tasks.tab_overdue', 'منتهية الموعد'), count: expiredCount },
+           { id: 'archived', label: t('tasks.tab_archived', 'المؤرشفة'), count: archivedCount },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -322,7 +329,7 @@ export function TasksPage() {
       <div className="card p-4 rounded-2xl flex flex-col sm:flex-row gap-3">
         <div className="flex-1">
           <Input
-            placeholder="البحث باسم المهمة أو الوصف..."
+             placeholder={t('tasks.search_placeholder', 'البحث باسم المهمة أو الوصف...')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             leftIcon={<Search className="h-4 w-4 text-[var(--text-muted)]" />}
@@ -331,7 +338,7 @@ export function TasksPage() {
         <div className="w-full sm:w-56">
           {!isTopTier ? (
             <div className="w-full px-3 py-2.5 rounded-xl text-xs bg-indigo-500/10 border border-indigo-500/30 text-indigo-600 dark:text-indigo-400 font-bold flex items-center gap-1.5 justify-center">
-              <span>🏛️ لجنة {userProfile?.committeeName || 'لجنتك'} (مقيد)</span>
+               <span>🏛️ {t('tasks.committee_restricted', 'لجنة {{name}} (مقيد)').replace('{{name}}', userProfile?.committeeName || t('tasks.committee_default', 'لجنتك'))}</span>
             </div>
           ) : (
             <select
@@ -339,7 +346,7 @@ export function TasksPage() {
               onChange={(e) => setCommitteeFilter(e.target.value)}
               className="w-full px-3 py-2.5 rounded-xl text-xs bg-[var(--surface-elevated)] border border-[var(--border-subtle)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] cursor-pointer"
             >
-              <option value="">جميع اللجان</option>
+               <option value="">{t('tasks.committees_all', 'جميع اللجان')}</option>
               {committees.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
@@ -364,12 +371,12 @@ export function TasksPage() {
         ) : filtered.length === 0 ? (
           <EmptyState
             icon={<CheckSquare className="h-8 w-8 text-slate-400" />}
-            title="لا توجد مهام مطابقة"
-            description={
-              search || statusTab !== 'all' || priorityFilter
-                ? 'جرّب تغيير خيارات البحث أو التبويب.'
-                : 'ابدأ بإنشاء أول مهمة للموظفين.'
-            }
+             title={t('tasks.empty_title', 'لا توجد مهام مطابقة')}
+             description={
+               search || statusTab !== 'all' || priorityFilter
+                 ? t('tasks.empty_search_desc', 'جرّب تغيير خيارات البحث أو التبويب.')
+                 : t('tasks.empty_create_desc', 'ابدأ بإنشاء أول مهمة للموظفين.')
+             }
             action={
               canCreate ? (
                 <Button
@@ -377,7 +384,7 @@ export function TasksPage() {
                   onClick={() => setShowCreateModal(true)}
                   className="gap-2 font-bold"
                 >
-                  <Plus className="h-4 w-4" /> إنشاء مهمة
+                   <Plus className="h-4 w-4" /> {t('tasks.empty_create_btn', 'إنشاء مهمة')}
                 </Button>
               ) : undefined
             }
@@ -389,12 +396,12 @@ export function TasksPage() {
               <table className="w-full text-right text-xs sm:text-sm">
                 <thead className="bg-slate-50 dark:bg-white/[0.02] border-b border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 font-bold">
                   <tr>
-                    <th className="p-4">بيانات المهمة</th>
-                    <th className="p-4">المكلفون بها</th>
-                    <th className="p-4">الأولوية</th>
-                    <th className="p-4">الموعد النهائي</th>
-                    <th className="p-4">الحالة</th>
-                    <th className="p-4 text-left">الإجراءات</th>
+                    <th className="p-4">{t('tasks.col_task_data', 'بيانات المهمة')}</th>
+                    <th className="p-4">{t('tasks.col_assignees', 'المكلفون بها')}</th>
+                    <th className="p-4">{t('tasks.col_priority', 'الأولوية')}</th>
+                    <th className="p-4">{t('tasks.col_deadline', 'الموعد النهائي')}</th>
+                    <th className="p-4">{t('tasks.col_status', 'الحالة')}</th>
+                    <th className="p-4 text-left">{t('tasks.col_actions', 'الإجراءات')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-white/5 font-medium">
@@ -460,7 +467,7 @@ export function TasksPage() {
                           <div className="flex items-center justify-end gap-1.5">
                             <Link to={`/tasks/${task.id}`}>
                               <Button size="sm" variant="outline" className="text-xs gap-1.5">
-                                <ExternalLink className="h-3.5 w-3.5" /> التفاصيل
+                                 <ExternalLink className="h-3.5 w-3.5" /> {t('tasks.btn_details', 'التفاصيل')}
                               </Button>
                             </Link>
 
@@ -468,7 +475,7 @@ export function TasksPage() {
                             {canCreate && !isClosed && (
                               <button
                                 onClick={() => setEndTarget(task)}
-                                title="إنهاء المهمة وإغلاق التسليمات"
+                                 title={t('tasks.action_end', 'إنهاء المهمة وإغلاق التسليمات')}
                                 className="p-2 hover:bg-amber-50 dark:hover:bg-amber-950/30 rounded-lg text-amber-600 dark:text-amber-400 transition-colors cursor-pointer"
                               >
                                 <CheckCircle2 className="h-4 w-4" />
@@ -479,7 +486,7 @@ export function TasksPage() {
                             {canCreate && task.status !== 'archived' && (
                               <button
                                 onClick={() => setArchiveTarget(task)}
-                                title="أرشفة المهمة"
+                                 title={t('tasks.action_archive', 'أرشفة المهمة')}
                                 className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg text-slate-500 dark:text-slate-400 transition-colors cursor-pointer"
                               >
                                 <Archive className="h-4 w-4" />
@@ -490,7 +497,7 @@ export function TasksPage() {
                             {canCreate && (
                               <button
                                 onClick={() => setDeleteTarget(task)}
-                                title="حذف المهمة نهائياً"
+                                 title={t('tasks.action_delete', 'حذف المهمة نهائياً')}
                                 className="p-2 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg text-rose-600 dark:text-rose-400 transition-colors cursor-pointer"
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -569,7 +576,7 @@ export function TasksPage() {
                       {canCreate && !isClosed && (
                         <button
                           onClick={() => setEndTarget(task)}
-                          title="إنهاء المهمة"
+                           title={t('tasks.action_end_short', 'إنهاء المهمة')}
                           className="px-3 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 hover:bg-amber-100"
                         >
                           <CheckCircle2 className="h-4 w-4" />
@@ -578,7 +585,7 @@ export function TasksPage() {
                       {canCreate && (
                         <button
                           onClick={() => setDeleteTarget(task)}
-                          title="حذف المهمة"
+                           title={t('tasks.action_delete_short', 'حذف المهمة')}
                           className="px-3 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -600,10 +607,10 @@ export function TasksPage() {
         open={Boolean(endTarget)}
         onClose={() => setEndTarget(null)}
         onConfirm={handleEndTask}
-        title="تأكيد إنهاء المهمة"
-        description={`هل تريد إنهاء المهمة "${endTarget?.title}"؟ إنهاء المهمة سيغلق باب رفع التسليمات الجديدة ويحتفظ بجميع التسليمات والإحصائيات الحالية.`}
-        confirmLabel="إنهاء المهمة الآن"
-        cancelLabel="إلغاء"
+        title={t('tasks.confirm_end_title', 'تأكيد إنهاء المهمة')}
+        description={t('tasks.confirm_end_desc', 'هل تريد إنهاء المهمة "{{title}}"؟ إنهاء المهمة سيغلق باب رفع التسليمات الجديدة ويحتفظ بجميع التسليمات والإحصائيات الحالية.').replace('{{title}}', endTarget?.title || '')}
+        confirmLabel={t('tasks.confirm_end_btn', 'إنهاء المهمة الآن')}
+        cancelLabel={t('action.cancel', 'إلغاء')}
         variant="warning"
         loading={actionLoading}
       />
@@ -613,10 +620,10 @@ export function TasksPage() {
         open={Boolean(archiveTarget)}
         onClose={() => setArchiveTarget(null)}
         onConfirm={handleArchiveTask}
-        title="تأكيد أرشفة المهمة"
-        description={`هل تريد نقل المهمة "${archiveTarget?.title}" إلى الأرشيف؟`}
-        confirmLabel="أرشفة"
-        cancelLabel="إلغاء"
+        title={t('tasks.confirm_archive_title', 'تأكيد أرشفة المهمة')}
+        description={t('tasks.confirm_archive_desc', 'هل تريد نقل المهمة "{{title}}" إلى الأرشيف؟').replace('{{title}}', archiveTarget?.title || '')}
+        confirmLabel={t('tasks.confirm_archive_btn', 'أرشفة')}
+        cancelLabel={t('action.cancel', 'إلغاء')}
         variant="default"
         loading={actionLoading}
       />
@@ -626,10 +633,10 @@ export function TasksPage() {
         open={Boolean(deleteTarget)}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDeleteTask}
-        title="تأكيد حذف المهمة"
-        description={`هل أنت متأكد من حذف المهمة "${deleteTarget?.title}"؟ سيتم حذف المهمة نهائياً من جميع اللوحات وشاشات الموظفين.`}
-        confirmLabel="تأكيد الحذف"
-        cancelLabel="إلغاء"
+        title={t('tasks.confirm_delete_title', 'تأكيد حذف المهمة')}
+        description={t('tasks.confirm_delete_desc', 'هل أنت متأكد من حذف المهمة "{{title}}"؟ سيتم حذفها نهائياً من جميع اللوحات وشاشات الموظفين.').replace('{{title}}', deleteTarget?.title || '')}
+        confirmLabel={t('tasks.confirm_delete_btn', 'تأكيد الحذف')}
+        cancelLabel={t('action.cancel', 'إلغاء')}
         variant="danger"
         loading={actionLoading}
       />

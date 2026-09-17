@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { collection, query, orderBy, onSnapshot, limit, db } from '@/lib/supabase';
 import { Search, ClipboardList, Shield, Filter, Download, Users, Crown, Eye, Info, Copy, Check, Calendar, User, Tag } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { Avatar } from '@/components/ui/avatar';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SkeletonTable } from '@/components/ui/skeleton';
@@ -63,6 +64,7 @@ const FILTER_GROUPS = [
 ];
 
 export function ActivityLogsPage() {
+  const { t } = useLanguage();
   const { userProfile } = useAuth();
   const isHighLeadership = userProfile?.role === 'lead' || userProfile?.role === 'co_lead';
 
@@ -365,9 +367,9 @@ export function ActivityLogsPage() {
     return matchesSearch && matchesType;
   });
 
-  const exportLogs = () => {
+const exportLogs = () => {
     const csvContent = [
-      ['التاريخ والوقت', 'المسؤول', 'الإجراء', 'الهدف'].join(','),
+      [t('activitylogs.col_time', 'التاريخ والوقت'), t('activitylogs.col_actor', 'القائم بالعملية'), t('activitylogs.col_action', 'نوع الإجراء'), t('activitylogs.col_target', 'الهدف / المستهدف')].join(','),
       ...filtered.map((l) =>
         [
           `"${(l as any).createdAt ? formatDateTime((l as any).createdAt) : ''}"`,

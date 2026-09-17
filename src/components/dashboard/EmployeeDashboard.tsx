@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useLanguage } from '@/context/LanguageContext';
 import { StatusBadge, PriorityBadge } from '@/components/ui/status-badge';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SkeletonCard } from '@/components/ui/loading-spinner';
@@ -24,16 +25,16 @@ import { BroadcastBanner } from '@/components/dashboard/BroadcastBanner';
 import type { Task, TaskStatus, OCoinTransaction, Notification, Meeting } from '@/types';
 import type { SupportTicket } from '@/types/support';
 
-const TABS: { label: string; value: TaskStatus | 'all' | 'overdue' }[] = [
-  { label: 'جميع مهامي', value: 'all' },
-  { label: 'قيد التنفيذ', value: 'in_progress' },
-  { label: 'تم تسليمها', value: 'submitted' },
-  { label: 'المعتمدة', value: 'approved' },
-  { label: 'المتأخرة', value: 'overdue' },
-];
-
 export function EmployeeDashboard() {
   const { userProfile } = useAuth();
+  const { t } = useLanguage();
+  const TABS: { label: string; value: TaskStatus | 'all' | 'overdue' }[] = [
+    { label: t('employeeDashboard.tab_all_tasks'), value: 'all' },
+    { label: t('employeeDashboard.tab_in_progress'), value: 'in_progress' },
+    { label: t('employeeDashboard.tab_submitted'), value: 'submitted' },
+    { label: t('employeeDashboard.tab_approved'), value: 'approved' },
+    { label: t('employeeDashboard.tab_overdue'), value: 'overdue' },
+  ];
   const [tasks, setTasks] = useState<Task[]>([]);
   const [recentTransactions, setRecentTransactions] = useState<OCoinTransaction[]>([]);
   const [upcomingMeetings, setUpcomingMeetings] = useState<Meeting[]>([]);
@@ -258,6 +259,9 @@ export function EmployeeDashboard() {
     levelProgress = Math.min(100, Math.round(((completedTasksCount - 2) / 3) * 100));
   }
 
+  const { notifications } = useNotifications(3);
+  const unreadNotifsCount = notifications.filter((n) => !n.read).length;
+
   if (activeBan) {
     const end = activeBan.endAt?.toDate ? activeBan.endAt.toDate() : new Date(activeBan.endAt);
     return (
@@ -282,9 +286,6 @@ export function EmployeeDashboard() {
   const roleBadgeText = isViceHead
     ? `🔹 VICE-HEAD · نائب رئيس لجنة ${userProfile?.committeeName || 'اللجنة'}`
     : `👤 عضو لجنة ${userProfile?.committeeName || 'المنظومة'}`;
-
-  const { notifications } = useNotifications(3);
-  const unreadNotifsCount = notifications.filter((n) => !n.read).length;
 
   return (
     <div className="space-y-5 sm:space-y-6 font-sans text-right dir-rtl">
@@ -324,7 +325,7 @@ export function EmployeeDashboard() {
                 className="font-bold text-xs gap-1.5 cursor-pointer"
               >
                 <LifeBuoy className="h-4 w-4 text-[var(--brand-accent)]" />
-                <span>مركز المساعدة والدعم</span>
+                <span>{t('employeeDashboard.help_support_center')}</span>
               </Button>
             </Link>
             <div className="px-3.5 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] rounded-xl text-xs font-bold text-[var(--text-secondary)] flex items-center gap-2">
@@ -344,7 +345,7 @@ export function EmployeeDashboard() {
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-[var(--brand-warm)] animate-pulse" />
                 <p className="text-xs font-bold text-[var(--brand-warm)] uppercase tracking-wider">
-                  رصيد عملات O-Coins
+                  {t('employeeDashboard.ocoins_balance')}
                 </p>
               </div>
               <p className="text-3xl sm:text-4xl font-black text-[var(--text-primary)] tracking-tight">
@@ -353,7 +354,7 @@ export function EmployeeDashboard() {
                   : formatOCoins(userProfile?.oCoinsBalance ?? 0)
                 }
                 <span className="text-xs font-bold text-[var(--brand-warm)] mr-2">
-                  {hasUnlimitedCoins(userProfile?.role) ? 'خزينة لا نهائية' : 'OC'}
+                  {hasUnlimitedCoins(userProfile?.role) ? t('employeeDashboard.unlimited_vault') : t('employeeDashboard.oc_label')}
                 </span>
               </p>
             </div>
@@ -371,7 +372,7 @@ export function EmployeeDashboard() {
               to="/ocoins"
               className="text-xs font-bold text-[var(--brand-primary)] hover:text-[var(--brand-accent)] hover:underline flex items-center gap-1"
             >
-              <span>سجل المحفظة</span>
+              <span>{t('employeeDashboard.wallet_ledger')}</span>
               <ChevronLeft className="h-3.5 w-3.5" />
             </Link>
           </div>
@@ -385,7 +386,7 @@ export function EmployeeDashboard() {
             </div>
             <div>
               <p className="text-2xl font-extrabold text-[var(--text-primary)]">{stats.inProgress}</p>
-              <p className="text-xs font-semibold text-[var(--text-muted)] mt-0.5">قيد التنفيذ</p>
+              <p className="text-xs font-semibold text-[var(--text-muted)] mt-0.5">{t('employeeDashboard.stat_in_progress')}</p>
             </div>
           </div>
 
@@ -395,7 +396,7 @@ export function EmployeeDashboard() {
             </div>
             <div>
               <p className="text-2xl font-extrabold text-[var(--text-primary)]">{stats.submitted}</p>
-              <p className="text-xs font-semibold text-[var(--text-muted)] mt-0.5">تم التسليم</p>
+              <p className="text-xs font-semibold text-[var(--text-muted)] mt-0.5">{t('employeeDashboard.stat_submitted')}</p>
             </div>
           </div>
 
@@ -405,7 +406,7 @@ export function EmployeeDashboard() {
             </div>
             <div>
               <p className="text-2xl font-extrabold text-[var(--text-primary)]">{stats.completed}</p>
-              <p className="text-xs font-semibold text-[var(--text-muted)] mt-0.5">تم الاعتماد</p>
+              <p className="text-xs font-semibold text-[var(--text-muted)] mt-0.5">{t('employeeDashboard.stat_approved')}</p>
             </div>
           </div>
 
@@ -418,7 +419,7 @@ export function EmployeeDashboard() {
             </div>
             <div>
               <p className={cn('text-2xl font-extrabold', stats.overdue > 0 ? 'text-[var(--brand-danger)]' : 'text-[var(--text-primary)]')}>{stats.overdue}</p>
-              <p className="text-xs font-semibold text-[var(--text-muted)] mt-0.5">متأخرة</p>
+              <p className="text-xs font-semibold text-[var(--text-muted)] mt-0.5">{t('employeeDashboard.stat_overdue')}</p>
             </div>
           </div>
         </div>
@@ -435,22 +436,22 @@ export function EmployeeDashboard() {
               </span>
               <div>
                 <h3 className="text-xs sm:text-sm font-bold text-[var(--text-primary)]">
-                  حالة تسجيل حضور اليوم
+                  {t('employeeDashboard.today_attendance_status')}
                 </h3>
                 <p className="text-[10px] text-[var(--text-muted)] font-mono">
-                  كود الحضور: {userProfile?.employeeCode || 'جاري التوليد...'}
+                  {t('employeeDashboard.attendance_code').replace('{code}', userProfile?.employeeCode || 'جاري التوليد...')}
                 </p>
               </div>
             </div>
             <Link to="/attendance" className="text-xs font-bold text-[var(--brand-primary)] hover:underline flex items-center gap-1">
-              <span>سجل الحضور</span>
+              <span>{t('employeeDashboard.attendance_record')}</span>
               <ChevronLeft className="h-3 w-3" />
             </Link>
           </div>
 
           {checkingAttendance ? (
             <div className="p-3 bg-[var(--bg-elevated)] rounded-xl animate-pulse text-xs text-[var(--text-muted)] text-center">
-              جاري فحص حالة الحضور...
+              {t('employeeDashboard.checking_attendance')}
             </div>
           ) : todayAttendance ? (
             <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between gap-3">
@@ -460,15 +461,15 @@ export function EmployeeDashboard() {
                 </div>
                 <div>
                   <p className="text-xs font-bold text-emerald-800 dark:text-emerald-200">
-                    تم تسجيل حضورك بنجاح اليوم ✅
+                    {t('employeeDashboard.attendance_recorded')}
                   </p>
                   <p className="text-[11px] text-emerald-700/80 dark:text-emerald-300/80 mt-0.5">
-                    وقت التسجيل: {todayAttendance.checkInTime} ({todayAttendance.status === 'late' ? 'متأخر' : 'في الموعد'})
+                    {t('employeeDashboard.checkin_time').replace('{time}', todayAttendance.checkInTime).replace('{status}', todayAttendance.status === 'late' ? t('employeeDashboard.late') : t('employeeDashboard.on_time'))}
                   </p>
                 </div>
               </div>
               <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 shrink-0">
-                حاضر
+                {t('employeeDashboard.present')}
               </span>
             </div>
           ) : (
@@ -479,17 +480,17 @@ export function EmployeeDashboard() {
                 </div>
                 <div>
                   <p className="text-xs font-bold text-amber-800 dark:text-amber-200">
-                    لم تقم بتسجيل حضور اليوم بعد ⏰
+                    {t('employeeDashboard.no_attendance_yet')}
                   </p>
                   <p className="text-[10px] text-amber-700/80 dark:text-amber-300/80 mt-0.5">
-                    الجلسات متاحة الآن للتسجيل برمزك الشخصي
+                    {t('employeeDashboard.sessions_available')}
                   </p>
                 </div>
               </div>
               <Link to="/attendance-check-in">
                 <Button size="sm" variant="primary" className="font-bold text-xs gap-1 cursor-pointer shrink-0">
                   <QrCode className="h-3.5 w-3.5" />
-                  <span>تسجيل الآن</span>
+                  <span>{t('employeeDashboard.register_now')}</span>
                 </Button>
               </Link>
             </div>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { cn } from '@/utils';
+import { useLanguage } from '@/context/LanguageContext';
 import type { TaskStatus, TaskPriority } from '@/types';
 import { getStatusLabel, getPriorityLabel } from '@/utils';
 import { AlertCircle, Clock, CheckCircle2, Send, AlertTriangle, Archive, FileText, Ban } from 'lucide-react';
@@ -71,11 +72,12 @@ const priorityConfig: Record<TaskPriority, { classes: string; indicator: string;
 };
 
 export function StatusBadge({ status, overdue }: { status: TaskStatus; overdue?: boolean }) {
+  const { t } = useLanguage();
   if (overdue && status !== 'approved' && status !== 'completed' && status !== 'archived') {
     return (
       <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[var(--brand-danger)]/12 text-[var(--brand-danger)] border border-[var(--brand-danger)]/25 shadow-xs">
         <span className="w-1.5 h-1.5 rounded-full bg-[var(--brand-danger)] animate-ping" />
-        منتهية الصلاحية
+        {t('attendance.overdue', 'منتهية الصلاحية')}
       </span>
     );
   }

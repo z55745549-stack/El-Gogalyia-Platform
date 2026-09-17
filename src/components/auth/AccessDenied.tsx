@@ -1,19 +1,19 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ShieldX, LogOut, KeyRound, Lock, AlertCircle } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
-const MASTER_OWNER_KEY = 'oPPerationGDGG2$2182026';
-
 export function AccessDenied() {
   const { signOut, userProfile } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
-  const [passcode, setPasscode] = useState('');
+  const [ownerUsername, setOwnerUsername] = useState('');
+  const [ownerPassword, setOwnerPassword] = useState('');
   const [passError, setPassError] = useState<string | null>(null);
   const [initializing, setInitializing] = useState(false);
 
@@ -26,51 +26,41 @@ export function AccessDenied() {
     e.preventDefault();
     setPassError(null);
 
-    if (!passcode.trim()) {
-      setPassError('يرجى إدخال رمز أمان مالك المنصة.');
+    if (!ownerUsername.trim() || !ownerPassword.trim()) {
+      setPassError(t('access_denied.credentials_required', 'يرجى إدخال بيانات تفويض مالك المنصة.'));
       return;
     }
 
-    if (passcode.trim() !== MASTER_OWNER_KEY) {
-      setPassError('رمز الأمان غير صحيح! هذا الخيار مخصص لمالك المنصة فقط.');
-      return;
-    }
-
-    if (!userProfile?.email) return;
+    if (!userProfile?.uid || !userProfile.email) return;
     setInitializing(true);
 
-    const adminProfile = {
-      id: userProfile.uid,
-      username: userProfile.username,
-      display_name: userProfile.displayName || 'System Admin',
-      email: userProfile.email.toLowerCase(),
-      photo_url: userProfile.photoURL || null,
-      role: 'lead',
-      status: 'active',
-      permissions: [
-        'tasks.create', 'tasks.edit', 'tasks.delete', 'tasks.assign',
-        'tasks.review', 'tasks.view_all', 'employees.view', 'employees.manage',
-        'ocoins.manage', 'ocoins.view_all', 'reports.view', 'reports.export',
-        'access.manage', 'activity.view', 'notifications.send'
-      ],
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-
     try {
-      await supabase.from('users').upsert(adminProfile, { onConflict: 'id' });
+      const response = await fetch('/api/claim-owner-admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ownerUsername: ownerUsername.trim(),
+          ownerPassword: ownerPassword.trim(),
+          profile: {
+            uid: userProfile.uid,
+            username: userProfile.username,
+            displayName: userProfile.displayName,
+            email: userProfile.email,
+            photoURL: userProfile.photoURL || '',
+          },
+        }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.error || t('access_denied.claim_failed', 'تعذر تفعيل صلاحية المالك.'));
+      }
+      toast.success(t('access_denied.claim_success', 'تم التحقق بنجاح وتفعيل حسابك كـ LEAD!'));
+      window.location.reload();
     } catch (err) {
-      console.warn('Supabase upsert notice:', err);
+      setPassError(err instanceof Error ? err.message : t('access_denied.claim_failed', 'تعذر تفعيل صلاحية المالك.'));
+    } finally {
+      setInitializing(false);
     }
-
-    // Save local session override so admin access works immediately
-    localStorage.setItem('elgogalyia_owner_admin', JSON.stringify({
-      ...userProfile,
-      role: 'lead',
-    }));
-    toast.success('تم التحقق بنجاح وتفعيل حسابك كـ LEAD!');
-    window.location.reload();
-    setInitializing(false);
   };
 
   return (
@@ -91,15 +81,15 @@ export function AccessDenied() {
         </div>
 
         <div>
-          <h1 className="text-2xl font-black tracking-tight" style={{ color: 'var(--text-primary)' }}>Access Restricted</h1>
+          <h1 className="text-2xl font-black tracking-tight" style={{ color: 'var(--text-primary)' }}>{t('access_denied.title', 'Access Restricted')}</h1>
           <p className="text-xs sm:text-sm mt-1 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-            هذا الحساب غير مضاف حالياً في لوحة الموظفين المصرح لهم بدخول النظام.
+            {t('access_denied.desc', 'هذا الحساب غير مضاف حالياً في لوحة الموظفين المصرح لهم بدخول النظام.')}
           </p>
         </div>
 
         {userProfile?.email && (
           <div className="p-3.5 rounded-2xl text-left" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)' }}>
-            <span className="text-[10px] block font-bold uppercase tracking-wider mb-0.5" style={{ color: 'var(--text-muted)' }}>Attempted Account</span>
+            <span className="text-[10px] block font-bold uppercase tracking-wider mb-0.5" style={{ color: 'var(--text-muted)' }}>{t('access_denied.attempted', 'Attempted Account')}</span>
             <span className="text-xs font-mono font-bold break-all" style={{ color: 'var(--text-primary)' }}>{userProfile.email}</span>
           </div>
         )}
@@ -108,24 +98,30 @@ export function AccessDenied() {
         <form onSubmit={handleClaimAdmin} className="p-5 bg-slate-900 text-white rounded-2xl text-left space-y-4 shadow-lg border border-slate-800">
           <div className="flex items-center gap-2">
             <KeyRound className="h-4 w-4 text-blue-400" />
-            <span className="text-xs font-bold text-slate-200">دخول صاحب المنصة (Platform Owner)</span>
+            <span className="text-xs font-bold text-slate-200">{t('access_denied.owner_login', 'دخول صاحب المنصة (Platform Owner)')}</span>
           </div>
 
           <p className="text-[11px] text-slate-400 leading-relaxed">
-            إذا كنت مالك المنصة وتملك رمز الأمان الخاص، أدخله أدناه لتفعيل حسابك فوراً كـ Admin.
+            {t('access_denied.owner_desc', 'إذا كنت مالك المنصة وتملك بيانات التفويض الخاصة، أدخلها أدناه لتفعيل حسابك فوراً كـ Admin.')}
           </p>
 
           <div className="space-y-1">
-            <div className="relative">
-              <Input
-                type="password"
-                placeholder="أدخل رمز أمان مالك المنصة..."
-                value={passcode}
-                onChange={(e) => setPasscode(e.target.value)}
-                leftIcon={<Lock className="h-4 w-4 text-slate-400" />}
-                className="bg-slate-950 border-slate-800 text-white placeholder:text-slate-500 focus:border-blue-500 text-xs"
-              />
-            </div>
+            <Input
+              type="text"
+              placeholder={t('access_denied.owner_username_placeholder', 'اسم تفويض المالك')}
+              value={ownerUsername}
+              onChange={(e) => setOwnerUsername(e.target.value)}
+              leftIcon={<KeyRound className="h-4 w-4 text-slate-400" />}
+              className="bg-slate-950 border-slate-800 text-white placeholder:text-slate-500 focus:border-blue-500 text-xs"
+            />
+            <Input
+              type="password"
+              placeholder={t('access_denied.owner_password_placeholder', 'كلمة مرور تفويض المالك')}
+              value={ownerPassword}
+              onChange={(e) => setOwnerPassword(e.target.value)}
+              leftIcon={<Lock className="h-4 w-4 text-slate-400" />}
+              className="bg-slate-950 border-slate-800 text-white placeholder:text-slate-500 focus:border-blue-500 text-xs"
+            />
             {passError && (
               <p className="text-[11px] text-rose-400 font-semibold flex items-center gap-1 mt-1">
                 <AlertCircle className="h-3 w-3 flex-shrink-0" /> {passError}
@@ -138,14 +134,14 @@ export function AccessDenied() {
             loading={initializing}
             className="w-full gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs py-3 shadow-md shadow-blue-600/30"
           >
-            <span>التحقق وتفعيل صلاحية الأدمن</span>
+            <span>{t('access_denied.activate_admin', 'التحقق وتفعيل صلاحية الأدمن')}</span>
           </Button>
         </form>
 
         <div className="pt-2 border-t border-slate-100">
           <Button variant="outline" onClick={handleSignOut} className="w-full gap-2 py-2.5 text-xs text-slate-600 font-semibold">
             <LogOut className="h-4 w-4" />
-            <span>تسجيل الخروج والمحاولة بحساب آخر</span>
+            <span>{t('access_denied.signout_other', 'تسجيل الخروج والمحاولة بحساب آخر')}</span>
           </Button>
         </div>
       </motion.div>

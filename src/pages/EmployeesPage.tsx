@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { generateSalt, hashPassword } from '@/lib/auth-security';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,6 +27,7 @@ import { logActivity } from '@/lib/database-service';
 
 export function EmployeesPage() {
   const { userProfile } = useAuth();
+  const { t } = useLanguage();
   const [employees, setEmployees] = useState<UserProfile[]>([]);
   const [committees, setCommittees] = useState<Committee[]>([]);
   const [committeeFilter, setCommitteeFilter] = useState<string>('');
@@ -675,10 +677,10 @@ export function EmployeesPage() {
         <div>
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2.5">
             <Users className="h-6 w-6 sm:h-7 sm:w-7 text-indigo-600 dark:text-indigo-400" />
-            إدارة أعضاء منصة الجوجالية (Team & Members)
+            {t('employees.title', 'إدارة أعضاء منصة الجوجالية (Team & Members)')}
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-            إدارة وتفعيل حسابات أعضاء مجتمع الجوجالية، اعتماد طلبات الانضمام، وإسناد الصلاحيات واللجان
+            {t('employees.subtitle', 'إدارة وتفعيل حسابات أعضاء مجتمع الجوجالية، اعتماد طلبات الانضمام، وإسناد الصلاحيات واللجان')}
           </p>
         </div>
 
@@ -686,7 +688,7 @@ export function EmployeesPage() {
           onClick={() => { resetForm(); setShowAddModal(true); }}
           className="w-full sm:w-auto justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs py-3 rounded-xl shadow-md shadow-indigo-600/20"
         >
-          <UserPlus className="h-4 w-4" /> إضافة عضو جديد
+          <UserPlus className="h-4 w-4" /> {t('employees.add_btn', 'إضافة عضو جديد')}
         </Button>
       </div>
 
@@ -702,7 +704,7 @@ export function EmployeesPage() {
           }`}
         >
           <Users className="h-4 w-4 shrink-0" />
-          <span className="truncate">الأعضاء المعتمدون</span>
+          <span className="truncate">{t('employees.tab_approved', 'الأعضاء المعتمدون')}</span>
           <span className="shrink-0 px-2 py-0.5 rounded-full text-[10px] bg-black/20 text-white font-mono font-bold">
             {approvedMembers.length}
           </span>
@@ -718,7 +720,7 @@ export function EmployeesPage() {
           }`}
         >
           <UserPlus className="h-4 w-4 shrink-0" />
-          <span className="truncate">طلبات الانضمام</span>
+          <span className="truncate">{t('employees.tab_pending', 'طلبات الانضمام')}</span>
           {pendingMembers.length > 0 && (
             <span className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-500 text-white animate-pulse font-mono">
               {pendingMembers.length}
@@ -731,7 +733,7 @@ export function EmployeesPage() {
       <div className="flex flex-col lg:flex-row gap-3">
         <div className="relative flex-1 max-w-md">
           <Input
-            placeholder="البحث بالاسم أو اسم المستخدم أو اللجنة..."
+            placeholder={t('employees.search_placeholder', 'البحث بالاسم أو اسم المستخدم أو اللجنة...')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             leftIcon={<Search className="h-4 w-4 text-slate-400" />}
@@ -743,19 +745,19 @@ export function EmployeesPage() {
               value={committeeFilter}
               onChange={(e) => setCommitteeFilter(e.target.value)}
               options={[
-                { value: '', label: 'كل اللجان' },
+                { value: '', label: t('employees.all_committees', 'كل اللجان') },
                 ...committees.map((c) => ({ value: c.id, label: c.name })),
               ]}
               className="flex-1 lg:w-56"
             />
             <Button variant="outline" onClick={() => setShowCommitteeModal(true)} className="whitespace-nowrap gap-1.5 border-[#7C00FE]/20 text-[#7C00FE] hover:bg-[#7C00FE]/10">
-              <Shield className="h-4 w-4" /> لجنة جديدة
+              <Shield className="h-4 w-4" /> {t('nav.committee.new', 'لجنة جديدة')}
             </Button>
           </div>
         ) : (
           <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800/50 text-indigo-700 dark:text-indigo-300 text-xs font-bold self-center">
-            <span>🏛️ لجنة {userProfile?.committeeName || 'اللجنة'}</span>
-            <span className="text-[10px] opacity-75 font-normal">· صلاحيات الإشراف مقتصرة على أعضاء لجنتك فقط</span>
+            <span>🏛️ {t('common.committee', 'اللجنة')} {userProfile?.committeeName || t('common.committee', 'اللجنة')}</span>
+            <span className="text-[10px] opacity-75 font-normal">· {t('employees.committee_restricted', 'صلاحيات الإشراف مقتصرة على أعضاء لجنتك فقط')}</span>
           </div>
         )}
       </div>
@@ -772,7 +774,7 @@ export function EmployeesPage() {
               : "bg-[var(--surface-elevated)] border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-default)]"
           )}
         >
-          <span>كل اللجان</span>
+          <span>{t('employees.all_committees', 'كل اللجان')}</span>
           <span className={cn(
             "text-[10px] font-mono px-1.5 py-0.2 rounded-full",
             committeeFilter === '' ? "bg-black/20 text-white" : "bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-slate-300"
@@ -821,9 +823,9 @@ export function EmployeesPage() {
               <div className="w-16 h-16 rounded-full bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 flex items-center justify-center mx-auto text-amber-500">
                 <UserCheck className="h-8 w-8" />
               </div>
-              <h3 className="text-base font-bold text-slate-800 dark:text-white">لا توجد طلبات انضمام معلقة حالياً</h3>
+              <h3 className="text-base font-bold text-slate-800 dark:text-white">{t('employees.empty_pending', 'لا توجد طلبات انضمام معلقة حالياً')}</h3>
               <p className="text-xs text-slate-400 dark:text-slate-400 max-w-sm mx-auto">
-                جميع طلبات الانضمام المرسلة عبر صفحة التسجيل تم مراجعتها واعتمادها بنجاح.
+                {t('employees.empty_pending_desc', 'جميع طلبات الانضمام المرسلة عبر صفحة التسجيل تم مراجعتها واعتمادها بنجاح.')}
               </p>
             </div>
           ) : (
@@ -866,7 +868,7 @@ export function EmployeesPage() {
                         </div>
                       </div>
                       <span className="shrink-0 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[10px] font-extrabold bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-500/20 whitespace-nowrap self-start mt-0.5">
-                        طلب انضمام جديد ⏳
+                        {t('employees.pending_badge', 'طلب انضمام جديد ⏳')}
                       </span>
                     </div>
 
@@ -874,7 +876,7 @@ export function EmployeesPage() {
                     {emp.specialtyTag && (
                       <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 text-xs font-bold border border-indigo-200/70 dark:border-indigo-500/20 w-fit">
                         <Tag className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
-                        <span>التخصص / مجاله: {emp.specialtyTag}</span>
+                        <span>{t('common.specialty_tag', 'التخصص / مجاله')}: {emp.specialtyTag}</span>
                       </div>
                     )}
 
@@ -883,7 +885,7 @@ export function EmployeesPage() {
                       {/* Committee Selection */}
                       <div className="space-y-1">
                         <label className="text-slate-500 dark:text-slate-400 block text-[11px] font-bold">
-                          اللجنة المخصصة:
+                          {t('employees.committee_assigned', 'اللجنة المخصصة:')}
                         </label>
                         <select
                           value={selectedComm}
@@ -893,11 +895,11 @@ export function EmployeesPage() {
                         >
                           {!isTopTier ? (
                             <option value={userProfile?.committeeId || 'none'}>
-                              {userProfile?.committeeName || 'لجنتك المعتمدة'}
+                              {userProfile?.committeeName || t('employees.your_committee', 'لجنتك المعتمدة')}
                             </option>
                           ) : (
                             <>
-                              <option value="none">بدون لجنة (قيادة / عام)</option>
+                              <option value="none">{t('employees.no_committee', 'بدون لجنة (قيادة / عام)')}</option>
                               {committees.length > 0
                                 ? committees.map((c) => (
                                     <option key={c.id} value={c.id}>
@@ -917,7 +919,7 @@ export function EmployeesPage() {
                       {/* Membership Code */}
                       <div className="space-y-1">
                         <span className="text-slate-500 dark:text-slate-400 block text-[11px] font-bold">
-                          كود العضوية المقترح:
+                          {t('employees.membership_code', 'كود العضوية المقترح:')}
                         </span>
                         <div className="h-[31px] flex items-center px-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/15 font-mono font-bold text-purple-700 dark:text-purple-300 text-xs">
                           {emp.employeeCode || generateEmployeeCode(emp.username || emp.uid)}
@@ -928,7 +930,7 @@ export function EmployeesPage() {
                     {/* Role Selection Row */}
                     <div className="space-y-1.5">
                       <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
-                        الرتبة الممنوحة للحساب:
+                        {t('employees.assigned_role', 'الرتبة الممنوحة للحساب:')}
                       </label>
                       <select
                         value={currentRole}
@@ -941,15 +943,15 @@ export function EmployeesPage() {
                         }}
                         className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/15 rounded-xl px-3 py-2 text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                       >
-                        <option value="member">👤 عضو (MEMBER)</option>
-                        <option value="vice_head">🔹 نائب لجنة (VICE-HEAD)</option>
-                        {isTopTier && <option value="head">👑 رئيس لجنة (HEAD)</option>}
-                        {isTopTier && <option value="co_lead">🌟 نائب قائد (CO-LEAD)</option>}
-                        {isTopTier && <option value="lead">🏆 قائد (LEAD)</option>}
+                        <option value="member">{t('role.member', '👤 عضو (MEMBER)')}</option>
+                        <option value="vice_head">{t('role.vice_head', '🔹 نائب لجنة (VICE-HEAD)')}</option>
+                        {isTopTier && <option value="head">{t('role.head', '👑 رئيس لجنة (HEAD)')}</option>}
+                        {isTopTier && <option value="co_lead">{t('role.co_lead', '🌟 نائب قائد (CO-LEAD)')}</option>}
+                        {isTopTier && <option value="lead">{t('role.lead', '🏆 قائد (LEAD)')}</option>}
                       </select>
                       {isLeaderRole && (
                         <p className="text-[11px] text-amber-600 dark:text-amber-400 font-medium">
-                          🌟 رتبة قيادية عليا — تم تحديد "بدون لجنة" تلقائياً لإشراف عام فوق كافة اللجان.
+                          {t('employees.leadership_role_note', '🌟 رتبة قيادية عليا — تم تحديد "بدون لجنة" تلقائياً لإشراف عام فوق كافة اللجان.')}
                         </p>
                       )}
                     </div>
@@ -961,7 +963,7 @@ export function EmployeesPage() {
                         onClick={() => handleApprovePending(emp)}
                         className="flex-1 h-10 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow-sm shadow-emerald-600/20 cursor-pointer flex items-center justify-center gap-1.5"
                       >
-                        <UserCheck className="h-4 w-4 ml-1.5" /> اعتماد وتفعيل الحساب
+                        <UserCheck className="h-4 w-4 ml-1.5" /> {t('action.approve', 'اعتماد وتفعيل الحساب')}
                       </Button>
                       <Button
                         size="sm"
@@ -969,7 +971,7 @@ export function EmployeesPage() {
                         onClick={() => handleRejectPending(emp)}
                         className="h-10 px-4 shrink-0 border-rose-200 dark:border-rose-900/50 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-xs sm:text-sm font-bold rounded-xl cursor-pointer flex items-center justify-center gap-1.5"
                       >
-                        <Trash2 className="h-4 w-4 ml-1.5" /> رفض
+                        <Trash2 className="h-4 w-4 ml-1.5" /> {t('action.reject', 'رفض')}
                       </Button>
                     </div>
                   </div>
