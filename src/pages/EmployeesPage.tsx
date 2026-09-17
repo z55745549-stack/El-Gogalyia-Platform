@@ -642,10 +642,10 @@ export function EmployeesPage() {
     }
     return true;
   });
-  // Strictly filter approved members: only 'active' users are counted and shown as approved members
+  // Strictly filter approved members: exclude 'pending' join requests so both active and suspended members remain visible and manageable
   // For non-top tier (Heads/Vice-Heads/Members), ONLY show members of their own committee!
   const approvedMembers = employees.filter((e) => {
-    if (e.status !== 'active') return false;
+    if (e.status === 'pending') return false;
     if (!isTopTier) {
       const myCommId = userProfile?.committeeId;
       const myCommName = (userProfile?.committeeName || '').trim().toLowerCase();
@@ -777,12 +777,12 @@ export function EmployeesPage() {
             "text-[10px] font-mono px-1.5 py-0.2 rounded-full",
             committeeFilter === '' ? "bg-black/20 text-white" : "bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-slate-300"
           )}>
-            {employees.length}
+            {approvedMembers.length}
           </span>
         </button>
         {committees.map((c) => {
           const isSelected = committeeFilter === c.id;
-          const count = employees.filter((e) => e.committeeId === c.id).length;
+          const count = approvedMembers.filter((e) => e.committeeId === c.id).length;
           return (
             <button
               key={c.id}
