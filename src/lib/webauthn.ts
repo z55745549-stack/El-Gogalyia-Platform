@@ -297,109 +297,49 @@ export async function authenticateWithDevice(): Promise<{
     ? 'localhost'
     : window.location.hostname;
 
-  // 1. Gather all registered credential IDs from local storage and Supabase database.
-  // CRITICAL: Passing specific allowCredentials is what tells Android/Windows to look
-  // directly on "This Device". Calling navigator.credentials.get without allowCredentials
-  // is what triggers the 3 fallback choices (USB key, NFC, and QR code / Different device).
-  const credentialIds = new Set<string>();
-
+  // Target ONLY the credential registered on THIS physical device (stored in local device cache).
+  // CRITICAL: We do NOT include credentials from other devices (like PC credentials from Supabase),
+  // because asking an Android phone for a Windows PC credential causes Android to prompt for USB / NFC / external devices.
   const localList = getLocalDevices();
-  for (const dev of localList) {
-    if (dev.credentialId) credentialIds.add(dev.credentialId);
-  }
 
-  // Also fetch credentials from Supabase in case local storage was cleared or user switched browsers
-  try {
-    const { data: dbCreds } = await supabase
-      .from('webauthn_credentials')
-      .select('credential_id')
-      .limit(50);
-    if (dbCreds) {
-      for (const c of dbCreds) {
-        if (c.credential_id) credentialIds.add(c.credential_id);
-      }
-    }
-  } catch (e) {
-    console.warn('[WebAuthn] Credential fetch notice:', e);
-  }
-
-  // If no credentials exist anywhere, do NOT call navigator.credentials.get (which would trigger the 3 external options).
-  if (credentialIds.size === 0) {
+  if (localList.length === 0) {
     return {
       userId: null,
-      error: 'لا توجد أي بصمة مسجلة لهذا الجهاز. يرجى تسجيل الدخول باسم المستخدم وكلمة المرور أولاً، ثم ربط بصمة جهازك من صفحة الإعدادات.',
+      error: 'هذا الجهاز غير مربوط بالبصمة بعد — يرجى تسجيل الدخول أولاً باسم المستخدم وتفعيل هوية الجهاز من صفحة الإعدادات.',
     };
   }
 
-  const buildDescriptors = (transports: AuthenticatorTransport[]): PublicKeyCredentialDescriptor[] => {
-    return Array.from(credentialIds).map((credId) => {
-      const binaryStr = atob(credId);
-      const bytes = new Uint8Array(binaryStr.length);
-      for (let i = 0; i < binaryStr.length; i++) {
-        bytes[i] = binaryStr.charCodeAt(i);
-      }
-      return {
-        id: bytes.buffer,
-        type: 'public-key' as const,
-        transports,
-      };
-    });
-  };
+  const allowedDescriptors: PublicKeyCredentialDescriptor[] = localList.map((dev) => {
+    const binaryStr = atob(dev.credentialId);
+    const bytes = new Uint8Array(binaryStr.length);
+    for (let i = 0; i < binaryStr.length; i++) {
+      bytes[i] = binaryStr.charCodeAt(i);
+    }
+    return {
+      id: bytes.buffer,
+      type: 'public-key' as const,
+      transports: ['internal' as AuthenticatorTransport, 'hybrid' as AuthenticatorTransport],
+    };
+  });
 
   let assertion: PublicKeyCredential | null = null;
   let lastErr: any = null;
 
-  // Primary Attempt: Direct to "This Device" (internal biometric sensor)
-  // transports: ['internal'] restricts the authenticator search to This Device only.
+  // Sole, direct method: The exact proven Attempt 2 configuration that targets This Device
   try {
-    const challenge1 = crypto.getRandomValues(new Uint8Array(32));
-    const allowedDescriptors1 = buildDescriptors(['internal']);
-
-    const publicKeyReq: any = {
-      challenge: challenge1,
-      timeout: 60000,
-      userVerification: 'preferred',
-      rpId,
-      allowCredentials: allowedDescriptors1,
-      hints: ['client-device'],
-    };
-
+    const challenge = crypto.getRandomValues(new Uint8Array(32));
     assertion = await navigator.credentials.get({
-      publicKey: publicKeyReq,
+      publicKey: {
+        challenge,
+        timeout: 60000,
+        userVerification: 'preferred',
+        rpId,
+        allowCredentials: allowedDescriptors,
+      },
     }) as PublicKeyCredential | null;
-  } catch (err1: any) {
-    lastErr = err1;
-    console.warn('[WebAuthn] Direct internal biometric notice:', err1);
-
-    // If the user cancelled the fingerprint popup, don't trigger another prompt
-    if (err1?.name === 'NotAllowedError') {
-      return {
-        userId: null,
-        error: 'تم إلغاء المصادقة البيومترية من الهاتف أو لم يتم التعرف على البصمة.',
-      };
-    }
-  }
-
-  // Permissive fallback: if browser rejected internal-only transport before prompting user,
-  // try with internal + hybrid transports (The proven configuration that opened "This device")
-  if (!assertion && lastErr?.name !== 'NotAllowedError') {
-    try {
-      const challenge2 = crypto.getRandomValues(new Uint8Array(32));
-      const allowedDescriptors2 = buildDescriptors(['internal', 'hybrid']);
-
-      assertion = await navigator.credentials.get({
-        publicKey: {
-          challenge: challenge2,
-          timeout: 60000,
-          userVerification: 'preferred',
-          rpId,
-          allowCredentials: allowedDescriptors2,
-        },
-      }) as PublicKeyCredential | null;
-    } catch (err2: any) {
-      lastErr = err2;
-      console.warn('[WebAuthn] Hybrid fallback notice:', err2);
-    }
+  } catch (err: any) {
+    lastErr = err;
+    console.warn('[WebAuthn] Device biometric assertion notice:', err);
   }
 
   if (!assertion) {
