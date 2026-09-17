@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { collection, onSnapshot, doc, setDoc, updateDoc, deleteDoc, getDocs, query, where, serverTimestamp, db } from '@/lib/supabase';
 import { motion } from 'framer-motion';
 import {
-  Users, UserPlus, Shield, MoreVertical, KeyRound, Edit3, Trash2, UserX, UserCheck, Search, CheckSquare, Ban as BanIcon, Gavel, AlertTriangle
+  Users, UserPlus, Shield, MoreVertical, KeyRound, Edit3, Trash2, UserX, UserCheck, Search, CheckSquare, Ban as BanIcon, Gavel, AlertTriangle, Tag
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
@@ -50,6 +50,7 @@ export function EmployeesPage() {
   const [formRole, setFormRole] = useState<UserRole>('member');
   const [formStatus, setFormStatus] = useState<UserStatus>('active');
   const [formCommitteeId, setFormCommitteeId] = useState<string>('');
+  const [formSpecialtyTag, setFormSpecialtyTag] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   // Password reset state
@@ -118,6 +119,7 @@ export function EmployeesPage() {
     setFormRole('member');
     setFormStatus('active');
     setFormCommitteeId(isHeadRole && userProfile?.committeeId ? userProfile.committeeId : '');
+    setFormSpecialtyTag('');
     setSelectedUser(null);
     setNewPassword('');
   };
@@ -133,6 +135,7 @@ export function EmployeesPage() {
     setFormRole(user.role);
     setFormStatus(user.status);
     setFormCommitteeId(user.committeeId || '');
+    setFormSpecialtyTag(user.specialtyTag || '');
     setShowEditModal(true);
   };
 
@@ -293,6 +296,8 @@ export function EmployeesPage() {
         status: formStatus,
         committeeId: isTopLeadership ? null : (committee?.id || null),
         committeeName: isTopLeadership ? 'بدون لجنة' : (committee?.name || 'بدون لجنة'),
+        specialtyTag: formSpecialtyTag.trim() || null,
+        specialty_tag: formSpecialtyTag.trim() || null,
         permissions: ROLE_PERMISSIONS[formRole] || [],
         updatedAt: new Date().toISOString(),
         ...balanceUpdate,
@@ -631,7 +636,8 @@ export function EmployeesPage() {
     }
     return true;
   });
-  const approvedMembers = employees.filter((e) => e.status !== 'pending');
+  // Strictly filter approved members: only 'active' users are counted and shown as approved members
+  const approvedMembers = employees.filter((e) => e.status === 'active');
 
   const currentList = viewTab === 'pending' ? pendingMembers : approvedMembers;
 
@@ -834,6 +840,14 @@ export function EmployeesPage() {
                       </span>
                     </div>
 
+                    {/* Candidate Specialty Tag (if provided during registration) */}
+                    {emp.specialtyTag && (
+                      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 text-xs font-bold border border-indigo-200/70 dark:border-indigo-500/20 w-fit">
+                        <Tag className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                        <span>التخصص / مجاله: {emp.specialtyTag}</span>
+                      </div>
+                    )}
+
                     {/* Committee and Code Control Box */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 rounded-xl bg-slate-50 dark:bg-black/30 border border-slate-200/70 dark:border-white/10 text-xs">
                       {/* Committee Selection */}
@@ -973,6 +987,12 @@ export function EmployeesPage() {
 
                       <td className="p-4 font-mono font-bold text-indigo-400">
                         @{emp.username || 'n/a'}
+                        {emp.specialtyTag && (
+                          <div className="flex items-center gap-1 mt-1 text-[11px] font-sans font-semibold text-indigo-600 dark:text-indigo-300">
+                            <Tag className="h-3 w-3" />
+                            <span>{emp.specialtyTag}</span>
+                          </div>
+                        )}
                       </td>
 
                       <td className="p-4 hidden md:table-cell">
@@ -1083,6 +1103,12 @@ export function EmployeesPage() {
                           </span>
                         );
                       })()}
+                      {emp.specialtyTag && (
+                        <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 dark:bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 border border-indigo-200/50 dark:border-indigo-500/30">
+                          <Tag className="h-2.5 w-2.5" />
+                          <span>{emp.specialtyTag}</span>
+                        </span>
+                      )}
                     </div>
                   </div>
                   <span className="text-xs font-black px-2 py-1 rounded-lg bg-amber-500/15 text-amber-500 border border-amber-500/20 shrink-0">🪙 {hasUnlimitedCoins(emp.role) ? '∞' : (emp.oCoinsBalance ?? 0)}</span>
@@ -1278,6 +1304,20 @@ export function EmployeesPage() {
               ]}
             />
           )}
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+              الوسم التخصصي / مجال الموظف (Specialty Tag)
+            </label>
+            <Input
+              value={formSpecialtyTag}
+              onChange={(e) => setFormSpecialtyTag(e.target.value)}
+              placeholder="مثال: Flutter, UI/UX, بايثون، تدريس برمجيات..."
+            />
+            <p className="text-[11px] text-slate-400 mt-1">
+              يساعد رئيس اللجنة والإدارة على تذكر مجال العضو والموضوعات التي يبدع أو يُدرّس فيها.
+            </p>
+          </div>
 
           {/* Automated Role Permissions Notice */}
           <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-xs space-y-1 text-right">

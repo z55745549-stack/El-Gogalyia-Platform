@@ -659,7 +659,8 @@ export async function approveTask(
   task: Task,
   reviewer: { email: string; displayName: string; photoURL?: string },
   targetAssignee?: { uid?: string; email?: string; username?: string; displayName?: string },
-  submissionId?: string
+  submissionId?: string,
+  customCoinsReward?: number
 ) {
   // 1. Resolve target user identity
   let resolvedUid = targetAssignee?.uid || '';
@@ -741,6 +742,11 @@ export async function approveTask(
     console.warn('approveTask duplicate check notice:', e);
   }
 
+  // Determine final coins to award (supports reviewer dynamic adjustment)
+  const finalCoinsToAward = typeof customCoinsReward === 'number' && !isNaN(customCoinsReward) && customCoinsReward >= 0
+    ? customCoinsReward
+    : (task.oCoinsReward || 0);
+
   // 4. Calculate updated userStatuses and determine overall task status
   const currentStatuses: Record<string, UserTaskStatus> = { ...(task.userStatuses || {}) };
   const targetUserStatus: UserTaskStatus = {
@@ -749,7 +755,7 @@ export async function approveTask(
     reviewedBy: reviewer.email.toLowerCase(),
     reviewedByName: reviewer.displayName,
     reviewedAt: serverTimestamp() as unknown as Timestamp,
-    oCoinsAwarded: task.oCoinsReward,
+    oCoinsAwarded: finalCoinsToAward,
   };
 
   if (targetIdentifier) currentStatuses[targetIdentifier] = targetUserStatus;
@@ -809,7 +815,7 @@ export async function approveTask(
     }
   } catch {}
 
-  if (!alreadyRewarded && !isUnlimitedRole(assigneeRole)) {
+  if (!alreadyRewarded && !isUnlimitedRole(assigneeRole) && finalCoinsToAward > 0) {
     const ocoinRef = doc(collection(db, 'oCoins'));
     batch.set(ocoinRef, {
       userId: resolvedUid || '',
@@ -818,7 +824,7 @@ export async function approveTask(
       userDisplayName: assigneeDisplayForLedger,
       uid: resolvedUid || '',
       employeeId: resolvedUid || '',
-      amount: task.oCoinsReward,
+      amount: finalCoinsToAward,
       type: 'task_reward' as OCoinTransactionType,
       reason: `Task approved: ${task.title}`,
       taskId: task.id,
@@ -835,7 +841,7 @@ export async function approveTask(
         if (userSnap.exists()) {
           // FIX: Use atomic increment() to prevent race conditions with concurrent approvals
           batch.update(userRef, {
-            oCoinsBalance: increment(task.oCoinsReward),
+            oCoinsBalance: increment(finalCoinsToAward),
           });
         }
       } catch {}
@@ -846,18 +852,18 @@ export async function approveTask(
 
   // 6. Update local session & cache for instant UI response (skip for unlimited-coin roles)
   try {
-    if (resolvedUid && !alreadyRewarded && !isUnlimitedRole(assigneeRole)) {
+    if (resolvedUid && !alreadyRewarded && !isUnlimitedRole(assigneeRole) && finalCoinsToAward > 0) {
       const localUsers: any[] = JSON.parse(localStorage.getItem('elgogalyia_local_users') || '[]');
       const idx = localUsers.findIndex((u: any) => u.uid === resolvedUid);
       if (idx !== -1) {
-        localUsers[idx].oCoinsBalance = (localUsers[idx].oCoinsBalance ?? 0) + task.oCoinsReward;
+        localUsers[idx].oCoinsBalance = (localUsers[idx].oCoinsBalance ?? 0) + finalCoinsToAward;
         localStorage.setItem('elgogalyia_local_users', JSON.stringify(localUsers));
       }
       const sessRaw = localStorage.getItem('elgogalyia_user_session');
       if (sessRaw) {
         const sess: any = JSON.parse(sessRaw);
         if (sess.uid === resolvedUid || sess.email?.toLowerCase() === assigneeEmailForLedger.toLowerCase()) {
-          sess.oCoinsBalance = (sess.oCoinsBalance ?? 0) + task.oCoinsReward;
+          sess.oCoinsBalance = (sess.oCoinsBalance ?? 0) + finalCoinsToAward;
           localStorage.setItem('elgogalyia_user_session', JSON.stringify(sess));
         }
       }

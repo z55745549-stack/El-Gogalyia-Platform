@@ -48,6 +48,7 @@ export function SubmittedTasksPage() {
 
   // Review Modals state
   const [approveTarget, setApproveTarget] = useState<SubmissionItem | null>(null);
+  const [coinsToAward, setCoinsToAward] = useState<number>(0);
   const [rejectTarget, setRejectTarget] = useState<SubmissionItem | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
@@ -187,9 +188,10 @@ export function SubmittedTasksPage() {
           email: approveTarget.submission.submittedBy,
           displayName: approveTarget.submission.submittedByName,
         },
-        approveTarget.submission.id
+        approveTarget.submission.id,
+        coinsToAward
       );
-      toast.success(`تم قبول تسليم (${approveTarget.submission.submittedByName}) وصرف +${approveTarget.task.oCoinsReward} عملة O-Coins بنجاح! 🎉`);
+      toast.success(`تم قبول تسليم (${approveTarget.submission.submittedByName}) وصرف +${coinsToAward} عملة O-Coins بنجاح! 🎉`);
       setApproveTarget(null);
     } catch (err: any) {
       console.error(err);
@@ -532,7 +534,10 @@ export function SubmittedTasksPage() {
                           <>
                             <Button
                               size="sm"
-                              onClick={() => setApproveTarget({ task, submission })}
+                              onClick={() => {
+                                setApproveTarget({ task, submission });
+                                setCoinsToAward(task.oCoinsReward ?? 0);
+                              }}
                               className="font-black text-xs gap-1.5 shadow-sm"
                             >
                               <Check className="h-3.5 w-3.5" /> قبول وصرف
@@ -609,11 +614,28 @@ export function SubmittedTasksPage() {
               <span className="text-xs text-slate-500">الموظف / الطالب:</span>
               <span className="text-sm font-bold text-slate-900 dark:text-white">{approveTarget?.submission.submittedByName}</span>
             </div>
-            <div className="flex justify-between items-center pt-2 border-t border-slate-200 dark:border-white/10">
-              <span className="text-xs font-bold text-slate-700 dark:text-slate-300">مكافأة O-Coins المستحقة:</span>
-              <span className="text-base font-black text-amber-600 dark:text-amber-400">
-                +{approveTarget?.task.oCoinsReward} OC
-              </span>
+            <div className="pt-3 border-t border-slate-200 dark:border-white/10 space-y-2">
+              <div className="flex justify-between items-center">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  عدد عملات O-Coins الممنوحة للموظف:
+                </label>
+                <span className="text-[11px] text-slate-400">
+                  (القيمة التقديرية للتاسك: {approveTarget?.task.oCoinsReward} OC)
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min="0"
+                  value={coinsToAward}
+                  onChange={(e) => setCoinsToAward(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                  className="w-full h-11 px-3.5 rounded-xl border border-amber-300 dark:border-amber-500/40 bg-white dark:bg-black/40 text-base font-black text-amber-600 dark:text-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                />
+                <span className="font-bold text-xs text-slate-400 shrink-0">عملة OC</span>
+              </div>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                يمكنك تعديل القيمة بحرية (تقليلها إذا كان العمل غير مكتمل، أو زيادتها إن كان مميزاً، أو تركها كما هي).
+              </p>
             </div>
           </div>
         </div>

@@ -11,7 +11,7 @@ import { generateSalt, hashPassword } from '@/lib/auth-security';
 import {
   Coins, Shield, User, Info, Users, KeyRound,
   Lock, AtSign, Eye, EyeOff, CheckCircle2, Sparkles, Infinity,
-  Camera, Upload, Trash2, Check, RefreshCw, Crop
+  Camera, Upload, Trash2, Check, RefreshCw, Crop, Tag
 } from 'lucide-react';
 import { DeviceIdentitySection } from '@/components/settings/DeviceIdentitySection';
 import { ImageCropperModal } from '@/components/ui/ImageCropperModal';
@@ -21,6 +21,7 @@ export function SettingsPage() {
 
   // Profile Edit State
   const [displayName, setDisplayName] = useState(userProfile?.displayName || '');
+  const [specialtyTag, setSpecialtyTag] = useState(userProfile?.specialtyTag || '');
   const [savingProfile, setSavingProfile] = useState(false);
 
   // Avatar Upload & Crop State
@@ -137,14 +138,20 @@ export function SettingsPage() {
 
     setSavingProfile(true);
     try {
-      await updateCurrentUserProfile({ displayName: cleanName });
+      const cleanTag = specialtyTag.trim();
+      await updateCurrentUserProfile({
+        displayName: cleanName,
+        specialtyTag: cleanTag || undefined,
+      });
       try {
         await updateDoc(doc(db, 'users', userProfile.uid), {
           displayName: cleanName,
+          specialtyTag: cleanTag || null,
+          specialty_tag: cleanTag || null,
           updatedAt: serverTimestamp(),
         });
       } catch (e) {}
-      toast.success('تم تحديث الاسم الظاهر بنجاح!');
+      toast.success('تم تحديث الملف الشخصي والوسم التخصصي بنجاح!');
     } catch (err: any) {
       toast.error(err?.message || 'فشل حفظ البيانات.');
     } finally {
@@ -381,6 +388,21 @@ export function SettingsPage() {
                   leftIcon={<Users className="h-4 w-4" />}
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5">
+                الوسم التخصصي / مجالك في المنصة (لتوجيه المهام والمحتوى المناسب لك)
+              </label>
+              <Input
+                value={specialtyTag}
+                onChange={(e) => setSpecialtyTag(e.target.value)}
+                placeholder="مثال: Flutter, UI/UX, Python, تدريس برمجيات..."
+                leftIcon={<Tag className="h-4 w-4 text-indigo-500" />}
+              />
+              <p className="text-[11px] text-[var(--text-muted)] mt-1">
+                يظهر هذا الوسم لرؤساء لجانك وللإدارة لتسهيل تكليفك بالمهام والأنشطة المناسبة لخبرتك.
+              </p>
             </div>
 
             <div className="flex justify-end pt-1">

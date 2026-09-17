@@ -34,6 +34,15 @@ export function TaskFormModal({ open, onClose }: TaskFormModalProps) {
   const [employeeSearch, setEmployeeSearch] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  // Time & AM/PM Deadline controls
+  const [deadlineDate, setDeadlineDate] = useState(() => {
+    const d = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    return d.toISOString().split('T')[0];
+  });
+  const [deadlineHour, setDeadlineHour] = useState('11');
+  const [deadlineMinute, setDeadlineMinute] = useState('59');
+  const [deadlinePeriod, setDeadlinePeriod] = useState<'AM' | 'PM'>('PM');
+
   const { register, handleSubmit, reset, formState: { errors } } = useForm<TaskFormData>({
     defaultValues: {
       title: '',
@@ -71,11 +80,34 @@ export function TaskFormModal({ open, onClose }: TaskFormModalProps) {
         }
       });
 
-      setEmployees(allUsers);
+      // Strict Assignment Hierarchy:
+      // 1. Lead & Co-Lead are executive administrators only — NEVER assigned tasks by anyone!
+      // 2. Head & Vice-Head can ONLY assign to members/vice-heads of their own committee.
+      // 3. Exclude self.
+      const isTopLeader = userProfile?.role === 'lead' || userProfile?.role === 'co_lead';
+      const myCommId = userProfile?.committeeId;
+      const myCommName = (userProfile?.committeeName || '').trim().toLowerCase();
+
+      const assignableUsers = allUsers.filter((u) => {
+        if (u.uid === userProfile?.uid) return false;
+        // Strictly exclude Lead and Co-Lead
+        if (u.role === 'lead' || u.role === 'co_lead') return false;
+        // If creator is Head or Vice-Head, strictly restrict to their committee
+        if (!isTopLeader) {
+          const uCommId = u.committeeId;
+          const uCommName = (u.committeeName || '').trim().toLowerCase();
+          const matchId = Boolean(myCommId && uCommId === myCommId);
+          const matchName = Boolean(myCommName && uCommName === myCommName);
+          return matchId || matchName;
+        }
+        return true;
+      });
+
+      setEmployees(assignableUsers);
     };
 
     loadEmployees();
-  }, [open]);
+  }, [open, userProfile]);
 
   const filteredEmployees = employees.filter((e) =>
     (e.displayName || '').toLowerCase().includes(employeeSearch.toLowerCase()) ||
@@ -92,8 +124,14 @@ export function TaskFormModal({ open, onClose }: TaskFormModalProps) {
     if (!userProfile) return;
     if (!data.title.trim()) { toast.error('عنوان المهمة مطلوب.'); return; }
     if (!data.description.trim()) { toast.error('وصف المهمة مطلوب.'); return; }
-    if (!data.deadline) { toast.error('الموعد النهائي مطلوب.'); return; }
+    if (!deadlineDate) { toast.error('الموعد النهائي مطلوب.'); return; }
     if (selectedUids.length === 0) { toast.error('يجب تحديد موظف واحد على الأقل للتكليف.'); return; }
+
+    let hour24 = parseInt(deadlineHour, 10);
+    if (deadlinePeriod === 'PM' && hour24 < 12) hour24 += 12;
+    if (deadlinePeriod === 'AM' && hour24 === 12) hour24 = 0;
+    const [y, m, d] = deadlineDate.split('-').map(Number);
+    const finalDeadline = new Date(y, m - 1, d, hour24, parseInt(deadlineMinute, 10), 0);
 
     setSubmitting(true);
     try {
@@ -107,7 +145,7 @@ export function TaskFormModal({ open, onClose }: TaskFormModalProps) {
           description: data.description,
           requirements: data.requirements || '',
           priority: data.priority,
-          deadline: new Date(data.deadline),
+          deadline: finalDeadline,
           oCoinsReward: Number(data.oCoinsReward) || 0,
           assignedTo: selectedUids, // use stable UID as identifier (spec requirement)
         },
@@ -207,18 +245,83 @@ export function TaskFormModal({ open, onClose }: TaskFormModalProps) {
             ]}
             {...register('priority')}
           />
-          <Input
-            label="الموعد النهائي *"
-            type="date"
-            min={new Date().toISOString().split('T')[0]}
-            {...register('deadline', { required: 'الموعد النهائي مطلوب' })}
-          />
-          <Input
-            label="مكافأة O Coins *"
-            type="number"
-            min="0"
-            {...register('oCoinsReward', { valueAsNumber: true })}
-          />
+
+          <div>
+            <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5">
+              مكافأة O-Coins التقديرية *
+            </label>
+            <Input
+              type="number"
+              min="0"
+              {...register('oCoinsReward', { valueAsNumber: true })}
+            />
+            <p className="text-[10px] text-[var(--text-muted)] mt-1">
+              ملاحظة: يمكنك تأكيد أو تعديل مكافأة كل عضو عند اعتماد تسليمه.
+            </p>
+          </div>
+        </div>
+
+        {/* Deadline with Exact Time & AM/PM Selector */}
+        <div className="p-3.5 rounded-xl border border-[var(--border-default)] bg-slate-50/50 dark:bg-white/[0.02] space-y-2.5">
+          <label className="block text-xs font-bold text-[var(--text-secondary)]">
+            الموعد النهائي والتوقيت الدقيق للتسليم *
+          </label>
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
+            <div className="sm:col-span-2">
+              <label className="block text-[11px] font-semibold text-slate-500 mb-1">اليوم والتاريخ:</label>
+              <Input
+                type="date"
+                value={deadlineDate}
+                min={new Date().toISOString().split('T')[0]}
+                onChange={(e) => setDeadlineDate(e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-500 mb-1">الساعة:</label>
+              <select
+                value={deadlineHour}
+                onChange={(e) => setDeadlineHour(e.target.value)}
+                className="w-full h-10 px-3 rounded-lg border border-[var(--border-default)] bg-[var(--bg-input)] text-xs font-bold text-[var(--text-primary)] outline-none"
+              >
+                {Array.from({ length: 12 }, (_, i) => String(i + 1)).map((h) => (
+                  <option key={h} value={h}>
+                    {h.padStart(2, '0')}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-500 mb-1">الفترة (AM/PM):</label>
+              <div className="flex rounded-lg overflow-hidden border border-[var(--border-default)] h-10">
+                <button
+                  type="button"
+                  onClick={() => setDeadlinePeriod('PM')}
+                  className={`flex-1 text-xs font-black transition-colors ${
+                    deadlinePeriod === 'PM'
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-[var(--bg-input)] text-[var(--text-secondary)] hover:bg-slate-100 dark:hover:bg-white/5'
+                  }`}
+                >
+                  مساءً (PM)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDeadlinePeriod('AM')}
+                  className={`flex-1 text-xs font-black transition-colors ${
+                    deadlinePeriod === 'AM'
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-[var(--bg-input)] text-[var(--text-secondary)] hover:bg-slate-100 dark:hover:bg-white/5'
+                  }`}
+                >
+                  صباحاً (AM)
+                </button>
+              </div>
+            </div>
+          </div>
+          <p className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400">
+            ⏰ التسليم ينتهي في: {deadlineDate || '—'} الساعة {deadlineHour}:{deadlineMinute} {deadlinePeriod === 'PM' ? 'مساءً' : 'صباحاً'}
+          </p>
         </div>
 
         {/* Assign To (Multi-Select by UID) */}

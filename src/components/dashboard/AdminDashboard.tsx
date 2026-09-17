@@ -73,8 +73,11 @@ export function AdminDashboard() {
 
     getDocs(collection(db, 'users'))
       .then((s) => {
-        setTotalEmployees(s.size);
-        setAllUsers(s.docs.map((d) => ({ uid: d.id, ...d.data() } as UserProfile)));
+        const activeUsers = s.docs
+          .map((d) => ({ uid: d.id, ...d.data() } as UserProfile))
+          .filter((u) => u.status === 'active');
+        setTotalEmployees(activeUsers.length);
+        setAllUsers(activeUsers);
       })
       .catch((err) => console.error('Employees count error:', err));
 

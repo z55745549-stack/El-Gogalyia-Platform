@@ -16,7 +16,7 @@ import { isWebAuthnSupported } from '@/lib/webauthn';
 import {
   Lock, User, Mail, Sun, Moon,
   CheckCircle2, Eye, EyeOff, Layers, Award, Zap,
-  ShieldCheck, Fingerprint
+  ShieldCheck, Fingerprint, Tag
 } from 'lucide-react';
 import { DEFAULT_COMMITTEES } from '@/types';
 import { formatFullName, formatTitleCaseLive, hasArabic } from '@/utils';
@@ -380,6 +380,7 @@ export function LoginPage() {
   const [regPassword, setRegPassword]               = useState('');
   const [regConfirmPassword, setRegConfirmPassword] = useState('');
   const [regCommittee, setRegCommittee]             = useState(DEFAULT_COMMITTEES[0]?.id ?? 'tech-dev');
+  const [regSpecialtyTag, setRegSpecialtyTag]       = useState('');
   const [regSubmitting, setRegSubmitting]           = useState(false);
   const [showRegPassword, setShowRegPassword]       = useState(false);
 
@@ -496,6 +497,7 @@ export function LoginPage() {
         password:      pass,
         committeeId:   isNoCommittee ? 'none' : regCommittee,
         committeeName: isNoCommittee ? 'بدون لجنة' : (selectedComm?.name ?? 'Tech Dev'),
+        specialtyTag:  regSpecialtyTag.trim() || undefined,
       });
       setMode('success');
       toast.success('تم إرسال طلب انضمامك بنجاح');
@@ -776,6 +778,17 @@ export function LoginPage() {
                       </select>
                     </div>
                   </div>
+
+                  <InputField
+                    id="reg-tag"
+                    label="الوسم التخصصي / مجال الخبرة (اختياري)"
+                    type="text"
+                    placeholder="مثال: Flutter, UI/UX, بايثون، مهارات تدريس"
+                    value={regSpecialtyTag}
+                    onChange={setRegSpecialtyTag}
+                    IconLeft={Tag}
+                    isDark={isDark}
+                  />
 
                   <InputField
                     id="reg-email"

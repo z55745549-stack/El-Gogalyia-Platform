@@ -26,6 +26,7 @@ export interface AuthorizedUser {
   permissions: Permission[];
   status: UserStatus;
   uid: string | null;
+  specialtyTag?: string;
   createdAt: Timestamp;
   createdBy: string;
 }
@@ -41,6 +42,7 @@ export interface UserProfile {
   status: UserStatus;
   committeeId?: string | null;
   committeeName?: string | null;
+  specialtyTag?: string;
   passwordHash?: string;
   salt?: string;
   googleLinkedEmail?: string;

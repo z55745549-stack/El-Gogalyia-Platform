@@ -53,6 +53,8 @@ export function TaskDetailPage() {
   const [rejectTargetSubmission, setRejectTargetSubmission] = useState<TaskSubmission | null>(null);
   const [rejecting, setRejecting] = useState(false);
   const [approvingSubmissionId, setApprovingSubmissionId] = useState<string | null>(null);
+  const [approveTargetSubmission, setApproveTargetSubmission] = useState<TaskSubmission | null>(null);
+  const [coinsToAward, setCoinsToAward] = useState<number>(0);
 
   // Edit Task Modal
   const [showEditModal, setShowEditModal] = useState(false);
@@ -260,12 +262,13 @@ export function TaskDetailPage() {
     }
   };
 
-  const handleApproveSubmission = async (submission: TaskSubmission) => {
+  const handleApproveSubmission = async (submission: TaskSubmission, rewardCoins?: number) => {
     if (!task || !userProfile) return;
     if (!canReviewTask) {
       toast.error('❌ ليس لديك صلاحية مراجعة أو اعتماد تسليمات هذه المهمة.');
       return;
     }
+    const finalAmount = typeof rewardCoins === 'number' ? rewardCoins : (task.oCoinsReward ?? 0);
     setApprovingSubmissionId(submission.id);
     try {
       const reviewerEmail = (userProfile.email || userProfile.username || 'admin').toLowerCase();
@@ -282,9 +285,11 @@ export function TaskDetailPage() {
           username: submission.submittedBy,
           displayName: submission.submittedByName,
         },
-        submission.id
+        submission.id,
+        finalAmount
       );
-      toast.success(`تمت الموافقة على تسليم (${submission.submittedByName}) وتم صرف +${task.oCoinsReward} O Coins لمحفظته بنجاح! 🎉`);
+      toast.success(`تمت الموافقة على تسليم (${submission.submittedByName}) وصرف +${finalAmount} O Coins لمحفظته بنجاح! 🎉`);
+      setApproveTargetSubmission(null);
     } catch (err) {
       console.error(err);
       toast.error('فشل اعتماد تسليم المهمة.');
@@ -874,11 +879,14 @@ export function TaskDetailPage() {
                       <div className="flex flex-col sm:flex-row gap-3 pt-2">
                         <Button
                           variant="default"
-                          onClick={() => handleApproveSubmission(sub)}
+                          onClick={() => {
+                            setApproveTargetSubmission(sub);
+                            setCoinsToAward(task.oCoinsReward ?? 0);
+                          }}
                           loading={approvingSubmissionId === sub.id}
                           className="flex-1 gap-2 py-2.5 btn-primary font-black rounded-xl"
                         >
-                          <Check className="h-4 w-4 font-bold" /> قبول وصرف (+{task.oCoinsReward} OC) لـ {sub.submittedByName}
+                          <Check className="h-4 w-4 font-bold" /> مراجعة وقبول التسليم لـ {sub.submittedByName}
                         </Button>
                         <Button
                           variant="destructive"
@@ -1040,6 +1048,65 @@ export function TaskDetailPage() {
               onChange={(e) => setEditForm((p) => ({ ...p, requirements: e.target.value }))}
               placeholder="متطلبات أو تعليمات إضافية للمهمة"
             />
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal: Confirm Approval & Adjust Coins */}
+      <Modal
+        open={Boolean(approveTargetSubmission)}
+        onClose={() => setApproveTargetSubmission(null)}
+        title="تأكيد قبول التسليم وتحديد مكافأة O-Coins"
+        size="md"
+        footer={
+          <div className="flex items-center justify-end gap-2 w-full">
+            <Button variant="outline" onClick={() => setApproveTargetSubmission(null)} disabled={Boolean(approvingSubmissionId)}>
+              إلغاء
+            </Button>
+            <Button
+              onClick={() => approveTargetSubmission && handleApproveSubmission(approveTargetSubmission, coinsToAward)}
+              loading={Boolean(approvingSubmissionId)}
+              className="btn-primary font-black gap-2"
+            >
+              <Check className="h-4 w-4" />
+              تأكيد القبول وصرف +{coinsToAward} OC
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4 font-sans text-right dir-rtl">
+          <p className="text-sm text-slate-600 dark:text-slate-300">
+            أنت على وشك اعتماد تسليم العضو وإيداع المكافأة في حسابه. يمكنك ضبط المكافأة المستحقة حسب جودة الإنجاز:
+          </p>
+
+          <div className="p-4 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 space-y-3">
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-slate-500">اسم العضو:</span>
+              <span className="font-bold text-slate-900 dark:text-white">{approveTargetSubmission?.submittedByName}</span>
+            </div>
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-slate-500">المكافأة التقديرية الأصلية:</span>
+              <span className="font-bold text-amber-600 dark:text-amber-400">+{task?.oCoinsReward} OC</span>
+            </div>
+
+            <div className="pt-3 border-t border-slate-200 dark:border-white/10 space-y-1.5">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                عدد عملات O-Coins المعتمدة للصرف:
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min="0"
+                  value={coinsToAward}
+                  onChange={(e) => setCoinsToAward(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                  className="w-full h-11 px-3.5 rounded-xl border border-amber-300 dark:border-amber-500/40 bg-white dark:bg-black/40 text-base font-black text-amber-600 dark:text-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                />
+                <span className="font-bold text-xs text-slate-400 shrink-0">عملة OC</span>
+              </div>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                يمكنك تقليل المكافأة إذا كان العمل غير مكتمل، أو زيادتها إن كان مميزاً.
+              </p>
+            </div>
           </div>
         </div>
       </Modal>

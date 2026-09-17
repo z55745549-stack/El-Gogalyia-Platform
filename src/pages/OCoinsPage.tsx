@@ -185,10 +185,12 @@ export function OCoinsPage() {
     if (canManage) {
       getDocs(collection(db, 'users'))
         .then((snap) => {
-          const localUsers: UserProfile[] = JSON.parse(
+          const localUsers: UserProfile[] = (JSON.parse(
             localStorage.getItem('elgogalyia_local_users') || '[]'
-          );
-          const fsUsers = snap.docs.map((d) => ({ uid: d.id, ...d.data() } as UserProfile));
+          ) as UserProfile[]).filter((u) => u.status === 'active');
+          const fsUsers = snap.docs
+            .map((d) => ({ uid: d.id, ...d.data() } as UserProfile))
+            .filter((u) => u.status === 'active');
           const map = new Map<string, UserProfile>();
           fsUsers.forEach((u) => map.set(u.uid, u));
           localUsers.forEach((u) => {

@@ -136,6 +136,7 @@ function mapRowToProfile(row: any): UserProfile {
     status: row.status,
     committeeId: row.committee_id ?? undefined,
     committeeName: row.committee_name || (row.role === 'lead' || row.role === 'co_lead' ? 'بدون لجنة' : undefined),
+    specialtyTag: row.specialty_tag || row.specialtyTag || undefined,
     employeeCode: row.employee_code ?? undefined,
     oCoinsBalance,
     permissions: row.permissions ?? [],
@@ -166,6 +167,7 @@ async function upsertProfileToSupabase(profile: UserProfile & { passwordHash?: s
       status: profile.status,
       committee_id: profile.committeeId || null,
       committee_name: profile.committeeName || null,
+      specialty_tag: profile.specialtyTag || null,
       employee_code: profile.employeeCode || null,
       ocoins_balance,
       permissions: profile.permissions ?? [],
@@ -200,6 +202,7 @@ interface AuthContextValue {
     password: string;
     committeeId: string;
     committeeName: string;
+    specialtyTag?: string;
   }) => Promise<void>;
   updateCurrentUserProfile: (updated: Partial<UserProfile>) => Promise<void>;
   signOut: () => Promise<void>;
@@ -614,6 +617,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (safeUpdated.status !== undefined) dbUpdate.status = safeUpdated.status;
       if (safeUpdated.committeeId !== undefined) dbUpdate.committee_id = safeUpdated.committeeId;
       if (safeUpdated.committeeName !== undefined) dbUpdate.committee_name = safeUpdated.committeeName;
+      if (safeUpdated.specialtyTag !== undefined) dbUpdate.specialty_tag = safeUpdated.specialtyTag;
       if (safeUpdated.employeeCode !== undefined) dbUpdate.employee_code = safeUpdated.employeeCode;
       // FIX: Never update ocoins_balance to a number for unlimited-coin roles
       if (safeUpdated.oCoinsBalance !== undefined) {
@@ -675,6 +679,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     password: string;
     committeeId: string;
     committeeName: string;
+    specialtyTag?: string;
   }): Promise<void> => {
     const unameClean = data.username.trim().toLowerCase();
     const emailClean = data.email.trim().toLowerCase();
@@ -747,6 +752,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       status: 'pending',
       committee_id: data.committeeId === 'none' ? null : (data.committeeId || null),
       committee_name: data.committeeId === 'none' ? 'بدون لجنة' : (data.committeeName || 'Tech Dev'),
+      specialty_tag: data.specialtyTag?.trim() || null,
       employee_code: employeeCode,
       ocoins_balance: 0,
       permissions: [],
