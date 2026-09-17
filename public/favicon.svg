@@ -1,84 +1,167 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
   <defs>
-    <!-- Background Gradient: Violet/Indigo to Cyan/Blue -->
-    <linearGradient id="iconBg" x1="15%" y1="0%" x2="85%" y2="100%">
-      <stop offset="0%" stop-color="#8B5CF6" />
-      <stop offset="35%" stop-color="#6C63FF" />
+    <!-- Background Canvas Gradient: Deep Obsidian & Midnight Sapphire -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#070913" />
+      <stop offset="50%" stop-color="#0B0F1F" />
+      <stop offset="100%" stop-color="#05070E" />
+    </linearGradient>
+
+    <!-- Glass Rim Highlight -->
+    <linearGradient id="rimGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#818CF8" stop-opacity="0.6" />
+      <stop offset="30%" stop-color="#C084FC" stop-opacity="0.3" />
+      <stop offset="70%" stop-color="#38BDF8" stop-opacity="0.2" />
+      <stop offset="100%" stop-color="#6366F1" stop-opacity="0.5" />
+    </linearGradient>
+
+    <!-- Primary Futuristic G-Ribbon: Electric Indigo to Vivid Cyan -->
+    <linearGradient id="primaryRibbon" x1="10%" y1="10%" x2="90%" y2="90%">
+      <stop offset="0%" stop-color="#6366F1" />
+      <stop offset="35%" stop-color="#8B5CF6" />
       <stop offset="70%" stop-color="#3B82F6" />
       <stop offset="100%" stop-color="#06B6D4" />
     </linearGradient>
 
-    <!-- Subtle Top Highlight Glow -->
-    <linearGradient id="topGlow" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.35" />
-      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0" />
+    <!-- Secondary Accent Ribbon: Platinum Silver & Ice White Reflection -->
+    <linearGradient id="sheenGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.95" />
+      <stop offset="50%" stop-color="#E0E7FF" stop-opacity="0.8" />
+      <stop offset="100%" stop-color="#A5B4FC" stop-opacity="0.4" />
     </linearGradient>
 
-    <!-- Amber / Gold Core Gradient -->
-    <linearGradient id="goldCore" x1="0%" y1="0%" x2="100%" y2="100%">
+    <!-- Core Golden Amber Quantum Diamond Gradient -->
+    <linearGradient id="quantumCore" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#FDE047" />
-      <stop offset="60%" stop-color="#FBBF24" />
-      <stop offset="100%" stop-color="#F59E0B" />
+      <stop offset="45%" stop-color="#F59E0B" />
+      <stop offset="100%" stop-color="#D97706" />
     </linearGradient>
 
-    <!-- Drop Shadow for White Arc & Center Dot -->
-    <filter id="elementShadow" x="-20%" y="-20%" width="140%" height="140%" filterUnits="userSpaceOnUse">
-      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.25" />
+    <!-- Ambient Glow Filter -->
+    <filter id="ambientGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="24" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
     </filter>
 
-    <!-- Soft Glow for Golden Core -->
-    <filter id="goldGlow" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur" />
+    <!-- Core Sparkle Glow Filter -->
+    <filter id="coreGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="12" result="blur1" />
+      <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur2" />
       <feMerge>
-        <feMergeNode in="blur" />
+        <feMergeNode in="blur1" />
+        <feMergeNode in="blur2" />
         <feMergeNode in="SourceGraphic" />
       </feMerge>
     </filter>
+
+    <!-- Inner Shadow / Depth -->
+    <filter id="plateShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="16" stdDeviation="20" flood-color="#000000" flood-opacity="0.75" />
+    </filter>
   </defs>
 
-  <!-- 1. Transparent Outside - Main Squircle App Icon -->
+  <!-- 1. Background Rounded Tile (Modern App Icon Squircle) -->
   <rect
-    x="32"
-    y="32"
-    width="448"
-    height="448"
-    rx="124"
-    ry="124"
-    fill="url(#iconBg)"
+    x="24"
+    y="24"
+    width="464"
+    height="464"
+    rx="128"
+    ry="128"
+    fill="url(#bgGrad)"
+    stroke="url(#rimGrad)"
+    stroke-width="3.5"
+    filter="url(#plateShadow)"
   />
 
-  <!-- Subtle Rim Light -->
-  <rect
-    x="32"
-    y="32"
-    width="448"
-    height="448"
-    rx="124"
-    ry="124"
-    fill="url(#topGlow)"
-    stroke="rgba(255, 255, 255, 0.28)"
-    stroke-width="5"
-  />
-
-  <!-- 2. White Arc 'C' Emblem -->
-  <!-- Center at (248, 256), Radius = 104 -->
-  <!-- Opening from 38° to 322° facing right -->
-  <path
-    d="M 330 192 A 104 104 0 1 0 330 320"
-    fill="none"
-    stroke="#FFFFFF"
-    stroke-width="38"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    filter="url(#elementShadow)"
-  />
-
-  <!-- 3. Glowing Amber / Golden Center Dot -->
+  <!-- 2. Subtle Radial Background Atmosphere Glow -->
   <circle
-    cx="248"
+    cx="256"
     cy="256"
-    r="34"
-    fill="url(#goldCore)"
-    filter="url(#goldGlow)"
+    r="160"
+    fill="url(#primaryRibbon)"
+    opacity="0.16"
+    filter="url(#ambientGlow)"
+  />
+
+  <!-- 3. High-Precision Geometric Monogram 'G' -->
+  <!-- Outer Sculpted Geometric Facet (Gogalyia Monogram) -->
+  <g filter="url(#plateShadow)">
+    <!-- Top Arc & Outer Perimeter of 'G' -->
+    <path
+      d="M 366 172 
+         C 336 122 286 102 232 102 
+         C 146 102 82 170 82 256 
+         C 82 342 146 410 236 410 
+         C 324 410 380 348 386 266 
+         L 242 266 
+         L 242 222 
+         L 430 222 
+         C 434 234 436 248 436 264 
+         C 436 380 350 458 234 458 
+         C 118 458 34 368 34 256 
+         C 34 144 118 54 234 54 
+         C 304 54 372 82 414 142 
+         Z"
+      fill="url(#primaryRibbon)"
+    />
+
+    <!-- Precision Inner Light Chamfer (Specular Edge Reflection) -->
+    <path
+      d="M 234 76
+         C 300 76 358 102 396 154
+         L 374 176
+         C 342 134 292 114 234 114
+         C 156 114 96 176 96 256
+         C 96 336 156 398 236 398
+         C 310 398 360 346 368 280
+         L 256 280
+         L 256 252
+         L 416 252
+         C 414 366 338 440 234 440
+         C 130 440 48 358 48 256
+         C 48 154 130 76 234 76
+         Z"
+      fill="url(#sheenGrad)"
+      opacity="0.88"
+    />
+
+    <!-- Futuristic Terminal Arrow / Horizontal Quantum Core Bar -->
+    <path
+      d="M 276 238
+         L 396 238
+         L 376 280
+         L 276 280
+         Z"
+      fill="url(#sheenGrad)"
+      opacity="0.95"
+    />
+  </g>
+
+  <!-- 4. Luminous Quantum Diamond (The 'Intelligence & Value' Core) -->
+  <g filter="url(#coreGlow)" transform="translate(256, 256)">
+    <!-- Central Golden Rhombus -->
+    <polygon
+      points="0,-32 32,0 0,32 -32,0"
+      fill="url(#quantumCore)"
+    />
+    <!-- White Hot Center Core -->
+    <polygon
+      points="0,-14 14,0 0,14 -14,0"
+      fill="#FFFFFF"
+      opacity="0.92"
+    />
+  </g>
+
+  <!-- 5. Top Specular Glass Curve Highlight -->
+  <path
+    d="M 46 140 
+       C 80 70 148 34 240 34 
+       C 332 34 400 70 434 140 
+       C 370 110 310 98 240 98 
+       C 170 98 110 110 46 140 
+       Z"
+    fill="#FFFFFF"
+    opacity="0.08"
   />
 </svg>

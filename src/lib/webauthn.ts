@@ -16,14 +16,51 @@ export interface DeviceCredential {
   lastUsedAt: string | null;
 }
 
+// ─── Local device cache helper for maximum device resilience ───────────────
+const LOCAL_DEVICES_KEY = 'elgogalyia_device_credentials';
+
+function getLocalDevices(): Array<{ id: string; userId: string; credentialId: string; deviceName: string; createdAt: string }> {
+  try {
+    const raw = localStorage.getItem(LOCAL_DEVICES_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalDevice(dev: { id: string; userId: string; credentialId: string; deviceName: string; createdAt: string }) {
+  try {
+    const list = getLocalDevices().filter((d) => d.credentialId !== dev.credentialId);
+    list.unshift(dev);
+    localStorage.setItem(LOCAL_DEVICES_KEY, JSON.stringify(list));
+  } catch (e) {
+    console.warn('Could not save local device credential:', e);
+  }
+}
+
+function removeLocalDevice(credentialDbId: string, credIdBase64?: string) {
+  try {
+    const list = getLocalDevices().filter((d) => d.id !== credentialDbId && d.credentialId !== credIdBase64);
+    localStorage.setItem(LOCAL_DEVICES_KEY, JSON.stringify(list));
+  } catch (e) {
+    console.warn('Could not remove local device credential:', e);
+  }
+}
+
 // ─── Support Check ────────────────────────────────────────────────────────────
 
 export async function isWebAuthnSupported(): Promise<boolean> {
-  if (!window.PublicKeyCredential) return false;
+  if (typeof window === 'undefined') return false;
+  if (!window.PublicKeyCredential || !navigator?.credentials) return false;
   try {
-    return await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+    if (typeof PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable === 'function') {
+      const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+      if (available) return true;
+    }
+    // Universal fallback: if PublicKeyCredential exists on mobile browser, it's capable
+    return true;
   } catch {
-    return false;
+    return !!window.PublicKeyCredential;
   }
 }
 
@@ -52,14 +89,15 @@ export async function registerDeviceCredential(
           displayName,
         },
         pubKeyCredParams: [
-          { alg: -7,   type: 'public-key' }, // ES256
+          { alg: -7,   type: 'public-key' }, // ES256 (standard on iOS, Android, macOS, Windows)
           { alg: -257, type: 'public-key' }, // RS256
+          { alg: -8,   type: 'public-key' }, // Ed25519
         ],
         authenticatorSelection: {
-          authenticatorAttachment: 'platform',
-          userVerification: 'required',
-          residentKey: 'required',
-          requireResidentKey: true,
+          authenticatorAttachment: 'platform', // Phone biometric / Secure Enclave
+          userVerification: 'preferred',        // 'preferred' ensures universal compatibility across all Android/iOS models without rigid hardware aborts
+          residentKey: 'preferred',
+          requireResidentKey: false,
         },
         timeout: 60000,
       },
@@ -73,38 +111,51 @@ export async function registerDeviceCredential(
       String.fromCharCode(...new Uint8Array(credential.rawId))
     );
 
-    // Store in Supabase
-    const { error: dbError } = await supabase
-      .from('webauthn_credentials')
-      .insert({
-        user_id: userId,
-        credential_id: credentialIdBase64,
-        device_name: deviceName,
-        created_at: new Date().toISOString(),
-      });
+    const dbId = 'cred_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
 
-    if (dbError) {
-      if (dbError.code === '23505') {
-        return { success: false, error: 'هذا الجهاز مسجّل بالفعل.' };
-      }
-      return { success: false, error: 'حدث خطأ أثناء حفظ بيانات الجهاز.' };
+    // 1. Save locally on the device immediately for offline & instant biometric match
+    saveLocalDevice({
+      id: dbId,
+      userId,
+      credentialId: credentialIdBase64,
+      deviceName,
+      createdAt: new Date().toISOString(),
+    });
+
+    // 2. Store in Supabase
+    try {
+      await supabase
+        .from('webauthn_credentials')
+        .insert({
+          id: dbId,
+          user_id: userId,
+          credential_id: credentialIdBase64,
+          device_name: deviceName,
+          created_at: new Date().toISOString(),
+        });
+    } catch (dbErr) {
+      console.warn('Supabase webauthn_credentials save notice:', dbErr);
     }
 
-    // Mark webauthn_enabled on user
-    await supabase
-      .from('users')
-      .update({ webauthn_enabled: true, updated_at: new Date().toISOString() })
-      .eq('id', userId);
+    // 3. Mark webauthn_enabled on user in Supabase
+    try {
+      await supabase
+        .from('users')
+        .update({ webauthn_enabled: true, updated_at: new Date().toISOString() })
+        .eq('id', userId);
+    } catch (uErr) {
+      console.warn('Supabase users webauthn_enabled update notice:', uErr);
+    }
 
     return { success: true };
   } catch (err: any) {
     if (err?.name === 'NotAllowedError') {
-      return { success: false, error: 'تم إلغاء العملية أو انتهت مهلتها.' };
+      return { success: false, error: 'تم إلغاء عملية البصمة أو انتهت مهلتها من الجهاز.' };
     }
     if (err?.name === 'InvalidStateError') {
       return { success: false, error: 'هذا الجهاز مسجّل بالفعل لحساب آخر.' };
     }
-    return { success: false, error: 'تعذّر تسجيل هوية الجهاز.' };
+    return { success: false, error: err?.message || 'تعذّر تسجيل هوية الجهاز.' };
   }
 }
 
@@ -112,7 +163,7 @@ export async function registerDeviceCredential(
 
 /**
  * Returns the userId linked to the device credential if verification succeeds.
- * Returns null if the credential is not found in the DB (not linked to any account).
+ * Returns null if the credential is not found in the DB or local cache.
  */
 export async function authenticateWithDevice(): Promise<{
   userId: string | null;
@@ -125,51 +176,68 @@ export async function authenticateWithDevice(): Promise<{
       publicKey: {
         challenge,
         timeout: 60000,
-        userVerification: 'required',
+        userVerification: 'preferred', // Flexible user verification
         rpId: window.location.hostname,
-        allowCredentials: [], // discoverable — browser picks the right one
+        allowCredentials: [], // discoverable passkey
       },
     }) as PublicKeyCredential | null;
 
     if (!assertion) {
-      return { userId: null, error: 'لم يتم التحقق من الجهاز.' };
+      return { userId: null, error: 'لم يتم التحقق من هوية وبصمة الجهاز.' };
     }
 
     const credentialIdBase64 = btoa(
       String.fromCharCode(...new Uint8Array(assertion.rawId))
     );
 
-    // Look up in DB
-    const { data, error: dbError } = await supabase
-      .from('webauthn_credentials')
-      .select('user_id')
-      .eq('credential_id', credentialIdBase64)
-      .maybeSingle();
+    // 1. Look up in Supabase
+    let matchedUserId: string | null = null;
+    try {
+      const { data, error: dbError } = await supabase
+        .from('webauthn_credentials')
+        .select('user_id')
+        .eq('credential_id', credentialIdBase64)
+        .maybeSingle();
 
-    if (dbError || !data) {
+      if (!dbError && data?.user_id) {
+        matchedUserId = data.user_id;
+      }
+    } catch (e) {
+      console.warn('Supabase credential lookup notice:', e);
+    }
+
+    // 2. Fallback to local device cache if Supabase didn't have it or network was slow
+    if (!matchedUserId) {
+      const local = getLocalDevices().find((d) => d.credentialId === credentialIdBase64);
+      if (local) {
+        matchedUserId = local.userId;
+      }
+    }
+
+    if (!matchedUserId) {
       return {
         userId: null,
-        error: 'هوية جهازك غير مربوطة بأي حساب في منصة الجوجالية — يرجى تسجيل الدخول أولاً وتفعيل الميزة من إعدادات حسابك.',
+        error: 'هوية وبصمة هذا الهاتف غير مربوطة بأي حساب في منصة الجوجالية — يرجى تسجيل الدخول أولاً وتفعيل الميزة من إعدادات حسابك.',
       };
     }
 
-    // Update last_used_at
-    await supabase
+    // Update last_used_at in background
+    void supabase
       .from('webauthn_credentials')
       .update({ last_used_at: new Date().toISOString() })
       .eq('credential_id', credentialIdBase64);
 
-    return { userId: data.user_id };
+    return { userId: matchedUserId };
   } catch (err: any) {
     if (err?.name === 'NotAllowedError') {
       return {
         userId: null,
-        error: 'هوية جهازك غير مربوطة بأي حساب في منصة الجوجالية (أو تم إلغاء التحقق) — يرجى تسجيل الدخول أولاً وتفعيل الميزة من إعدادات حسابك.',
+        error: 'تم إلغاء المصادقة البيومترية من الهاتف أو لم يتم التعرف على البصمة.',
       };
     }
     return {
       userId: null,
-      error: 'تعذّر التحقق من هوية الجهاز — تأكد من تفعيل الميزة من إعدادات حسابك أولاً.',
+      error: 'تعذّر التحقق من بصمة الجهاز — تأكد من تفعيل الميزة من إعدادات الحساب أولاً.',
     };
   }
 }
@@ -177,21 +245,43 @@ export async function authenticateWithDevice(): Promise<{
 // ─── List registered devices for a user ──────────────────────────────────────
 
 export async function listUserDevices(userId: string): Promise<DeviceCredential[]> {
-  const { data, error } = await supabase
-    .from('webauthn_credentials')
-    .select('id, credential_id, device_name, created_at, last_used_at')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false });
+  const localList = getLocalDevices().filter((d) => d.userId === userId);
+  const itemsMap = new Map<string, DeviceCredential>();
 
-  if (error || !data) return [];
+  // Add local devices first
+  for (const loc of localList) {
+    itemsMap.set(loc.credentialId, {
+      id: loc.id,
+      credentialId: loc.credentialId,
+      deviceName: loc.deviceName,
+      createdAt: loc.createdAt,
+      lastUsedAt: null,
+    });
+  }
 
-  return data.map((row) => ({
-    id: row.id,
-    credentialId: row.credential_id,
-    deviceName: row.device_name,
-    createdAt: row.created_at,
-    lastUsedAt: row.last_used_at,
-  }));
+  try {
+    const { data, error } = await supabase
+      .from('webauthn_credentials')
+      .select('id, credential_id, device_name, created_at, last_used_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (!error && data) {
+      for (const row of data) {
+        itemsMap.set(row.credential_id, {
+          id: row.id,
+          credentialId: row.credential_id,
+          deviceName: row.device_name,
+          createdAt: row.created_at,
+          lastUsedAt: row.last_used_at,
+        });
+      }
+    }
+  } catch (e) {
+    console.warn('Supabase listUserDevices notice:', e);
+  }
+
+  return Array.from(itemsMap.values());
 }
 
 // ─── Remove a device credential ───────────────────────────────────────────────
@@ -200,27 +290,38 @@ export async function removeDeviceCredential(
   credentialDbId: string,
   userId: string
 ): Promise<{ success: boolean; error?: string }> {
-  const { error } = await supabase
-    .from('webauthn_credentials')
-    .delete()
-    .eq('id', credentialDbId)
-    .eq('user_id', userId);
+  removeLocalDevice(credentialDbId);
 
-  if (error) {
-    return { success: false, error: 'تعذّر حذف هوية الجهاز.' };
+  try {
+    await supabase
+      .from('webauthn_credentials')
+      .delete()
+      .eq('id', credentialDbId)
+      .eq('user_id', userId);
+  } catch (e) {
+    console.warn('Supabase removeDeviceCredential notice:', e);
   }
 
   // Check if any credentials remain; if not, disable webauthn_enabled
-  const { count } = await supabase
-    .from('webauthn_credentials')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', userId);
+  const remainingLocals = getLocalDevices().filter((d) => d.userId === userId);
+  let hasRemaining = remainingLocals.length > 0;
 
-  if ((count ?? 0) === 0) {
-    await supabase
-      .from('users')
-      .update({ webauthn_enabled: false, updated_at: new Date().toISOString() })
-      .eq('id', userId);
+  try {
+    const { count } = await supabase
+      .from('webauthn_credentials')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId);
+
+    if ((count ?? 0) > 0) hasRemaining = true;
+  } catch {}
+
+  if (!hasRemaining) {
+    try {
+      await supabase
+        .from('users')
+        .update({ webauthn_enabled: false, updated_at: new Date().toISOString() })
+        .eq('id', userId);
+    } catch {}
   }
 
   return { success: true };

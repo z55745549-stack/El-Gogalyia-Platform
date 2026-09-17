@@ -144,11 +144,13 @@ const COLLECTION_MAP: Record<string, string> = {
   system_settings: 'system_settings',
   archive_items: 'archive_items',
   archive: 'archive_items',
+  webauthn_credentials: 'webauthn_credentials',
 };
 
 // Known columns per table for explicit column mapping
 const KNOWN_COLUMNS: Record<string, Set<string>> = {
-  users: new Set(['id', 'username', 'display_name', 'email', 'photo_url', 'role', 'permissions', 'status', 'committee_id', 'committee_name', 'password_hash', 'salt', 'google_linked_email', 'is_two_factor_enabled', 'employee_code', 'ocoins_balance', 'created_at', 'updated_at', 'raw_data']),
+  users: new Set(['id', 'username', 'display_name', 'email', 'photo_url', 'role', 'permissions', 'status', 'committee_id', 'committee_name', 'password_hash', 'salt', 'google_linked_email', 'is_two_factor_enabled', 'webauthn_enabled', 'employee_code', 'ocoins_balance', 'created_at', 'updated_at', 'raw_data']),
+  webauthn_credentials: new Set(['id', 'user_id', 'credential_id', 'device_name', 'created_at', 'last_used_at', 'raw_data']),
   tasks: new Set(['id', 'title', 'description', 'committee_id', 'committee_name', 'assigned_to', 'deadline', 'ocoins_reward', 'priority', 'status', 'files', 'created_by', 'created_by_name', 'created_at', 'updated_at', 'raw_data']),
   task_submissions: new Set(['id', 'task_id', 'submitted_by', 'submitted_by_name', 'notes', 'files', 'status', 'reviewed_by', 'reviewed_at', 'created_at', 'raw_data']),
   attendance_sessions: new Set(['id', 'title', 'description', 'session_code', 'date', 'start_time', 'end_time', 'status', 'created_by', 'committee_id', 'total_attended', 'created_at', 'raw_data']),

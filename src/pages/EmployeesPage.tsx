@@ -543,8 +543,8 @@ export function EmployeesPage() {
   // Pending Approval Handlers
   const handleApprovePending = async (emp: UserProfile) => {
     const assignedRole = pendingRoles[emp.uid] || emp.role || 'member';
-    if (isHeadRole && !['member', 'vice_head'].includes(assignedRole)) {
-      toast.error('صلاحيات رئيس اللجنة تسمح فقط باعتماد أعضاء (MEMBER) ونواب رؤساء (VICE-HEAD).');
+    if (!isTopTier && !['member', 'vice_head'].includes(assignedRole)) {
+      toast.error('صلاحيات حسابك تسمح فقط باعتماد أعضاء (MEMBER) ونواب رؤساء (VICE-HEAD).');
       return;
     }
     const isLeader = assignedRole === 'lead' || assignedRole === 'co_lead';
@@ -563,8 +563,8 @@ export function EmployeesPage() {
       }
     }
 
-    if (isHeadRole && userProfile?.committeeId && commId !== userProfile.committeeId) {
-      toast.error('صلاحيات رئيس اللجنة تسمح باعتماد وتعيين الأعضاء ضمن لجنتك فقط.');
+    if (!isTopTier && userProfile?.committeeId && commId !== userProfile.committeeId) {
+      toast.error('صلاحياتك تسمح باعتماد وتعيين الأعضاء ضمن لجنتك فقط.');
       return;
     }
 
@@ -616,10 +616,11 @@ export function EmployeesPage() {
     }
   };
 
-  // Scoped pending requests: HEAD only sees requests from candidates who chose their committee
+  // Scoped pending requests: ONLY Lead & Co-Lead have access to all committees.
+  // Heads, HR, and any other roles ONLY see requests from candidates who chose their committee!
   const pendingMembers = employees.filter((e) => {
     if (e.status !== 'pending') return false;
-    if (isHeadRole) {
+    if (!isTopTier) {
       const myCommId = userProfile?.committeeId;
       const myCommName = (userProfile?.committeeName || '').trim().toLowerCase();
       const empCommId = e.committeeId;
@@ -794,7 +795,7 @@ export function EmployeesPage() {
               {filteredEmployees.map((emp) => {
                 const currentRole = pendingRoles[emp.uid] || emp.role || 'member';
                 const isLeaderRole = currentRole === 'lead' || currentRole === 'co_lead';
-                const selectedComm = isHeadRole && userProfile?.committeeId
+                const selectedComm = !isTopTier && userProfile?.committeeId
                   ? userProfile.committeeId
                   : (pendingCommittees[emp.uid] !== undefined
                     ? pendingCommittees[emp.uid]
@@ -842,11 +843,11 @@ export function EmployeesPage() {
                         </label>
                         <select
                           value={selectedComm}
-                          disabled={isHeadRole}
+                          disabled={!isTopTier}
                           onChange={(e) => setPendingCommittees({ ...pendingCommittees, [emp.uid]: e.target.value })}
                           className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/15 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 cursor-pointer focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-85 disabled:cursor-not-allowed"
                         >
-                          {isHeadRole ? (
+                          {!isTopTier ? (
                             <option value={userProfile?.committeeId || 'none'}>
                               {userProfile?.committeeName || 'لجنتك المعتمدة'}
                             </option>
