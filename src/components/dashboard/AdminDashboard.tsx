@@ -210,16 +210,44 @@ export function AdminDashboard() {
       t.committeeId === comm.id ||
       (t.committeeName && t.committeeName.trim().toLowerCase() === comm.name.trim().toLowerCase())
     );
-    const commCompleted = commTasks.filter(t => t.status === 'approved' || t.status === 'completed').length;
+
+    // Calculate assignments total and approved
+    const totalAssignments = commTasks.reduce(
+      (acc, t) => acc + Math.max(1, (t.assignedTo || []).length),
+      0
+    );
+    const approvedAssignments = commTasks.reduce((acc, t) => {
+      if (t.status === 'completed' || t.status === 'approved') {
+        return acc + Math.max(1, (t.assignedTo || []).length);
+      }
+      const approvedCount = (t.assignedTo || []).filter(
+        (uid) => t.userStatuses?.[uid]?.status === 'approved'
+      ).length;
+      return acc + approvedCount;
+    }, 0);
+
+    const commCompletedTasks = commTasks.filter(
+      (t) => t.status === 'approved' || t.status === 'completed'
+    ).length;
+
     const commMembers = allUsers.filter(u =>
       u.committeeId === comm.id ||
       (u.committeeName && u.committeeName.trim().toLowerCase() === comm.name.trim().toLowerCase())
     ).length;
-    const rate = commTasks.length > 0 ? Math.round((commCompleted / commTasks.length) * 100) : 0;
+
+    // Rate: based on approved assignments out of total assignments if assignments exist
+    const rate = totalAssignments > 0
+      ? Math.round((approvedAssignments / totalAssignments) * 100)
+      : commTasks.length > 0
+      ? Math.round((commCompletedTasks / commTasks.length) * 100)
+      : 0;
+
     return {
       ...comm,
       totalTasks: commTasks.length,
-      completedTasks: commCompleted,
+      completedTasks: commCompletedTasks,
+      totalAssignments,
+      approvedAssignments,
       membersCount: commMembers,
       completionRate: rate,
     };
@@ -554,65 +582,92 @@ export function AdminDashboard() {
               </span>
               <div>
                 <h2 className="section-title text-sm sm:text-base text-[var(--text-primary)]">
-                  {t('adminDashboard.committee_pulse_title')}
+                  نبض وأداء لجان المنصة
                 </h2>
                 <p className="text-[11px] text-[var(--text-muted)]">
-                  {t('adminDashboard.committee_pulse_desc')}
+                  متابعة شاملة لحالة المهام ومعدلات إنجاز وتكليفات جميع لجان المنصة.
                 </p>
               </div>
             </div>
             <Link to="/tasks" className="text-xs font-bold text-[var(--brand-primary)] hover:underline flex items-center gap-1">
-              <span>{t('adminDashboard.manage_committee_tasks')}</span>
+              <span>إدارة واستعراض المهام</span>
               <ArrowUpRight className="h-3 w-3" />
             </Link>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-            {committeesStats.map((c) => (
-              <div
-                key={c.id}
-                className="p-4 rounded-2xl bg-[var(--bg-elevated)]/50 border border-[var(--border-subtle)] space-y-3 hover:border-[var(--brand-primary)]/40 transition-all"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <h3 className="text-xs font-bold text-[var(--text-primary)]">{c.name}</h3>
-                    <p className="text-[10px] text-[var(--text-muted)] mt-0.5">
-                      {c.membersCount} أعضاء مسجلين
-                    </p>
-                  </div>
-                  <span className={cn(
-                    "text-xs font-black px-2 py-0.5 rounded-lg",
-                    c.completionRate >= 75
-                      ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
-                      : c.completionRate >= 40
-                      ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
-                      : "bg-rose-500/15 text-rose-600 dark:text-rose-400"
-                  )}>
-                    {c.completionRate}%
-                  </span>
-                </div>
-
-                <div className="space-y-1">
-                  <div className="w-full h-1.5 rounded-full bg-[var(--border-subtle)] overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-500"
-                      style={{
-                        width: `${c.completionRate}%`,
-                        background: c.completionRate >= 75
-                          ? 'var(--brand-success)'
+            {committeesStats.map((c) => {
+              const hasNoTasks = c.totalTasks === 0;
+              return (
+                <div
+                  key={c.id}
+                  className="p-4 rounded-2xl bg-[var(--bg-elevated)]/50 border border-[var(--border-subtle)] space-y-3 hover:border-[var(--brand-primary)]/40 transition-all"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <h3 className="text-xs font-bold text-[var(--text-primary)]">{c.name}</h3>
+                      <p className="text-[10px] text-[var(--text-muted)] mt-0.5">
+                        {c.membersCount} أعضاء مسجلين
+                      </p>
+                    </div>
+                    {hasNoTasks ? (
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-lg bg-[var(--border-subtle)]/60 text-[var(--text-muted)]">
+                        لا توجد مهام
+                      </span>
+                    ) : (
+                      <span className={cn(
+                        "text-xs font-black px-2 py-0.5 rounded-lg",
+                        c.completionRate >= 75
+                          ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
                           : c.completionRate >= 40
-                          ? 'var(--brand-warm)'
-                          : 'var(--brand-danger)',
-                      }}
-                    />
+                          ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                          : c.completionRate > 0
+                          ? "bg-blue-500/15 text-blue-600 dark:text-blue-400"
+                          : "bg-rose-500/15 text-rose-600 dark:text-rose-400"
+                      )}>
+                        {c.completionRate}%
+                      </span>
+                    )}
                   </div>
-                  <div className="flex justify-between text-[10px] text-[var(--text-muted)] font-medium">
-                    <span>{c.completedTasks} مهمة منجزة</span>
-                    <span>من أصل {c.totalTasks}</span>
+
+                  <div className="space-y-1">
+                    <div className="w-full h-1.5 rounded-full bg-[var(--border-subtle)] overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{
+                          width: `${c.completionRate}%`,
+                          background: hasNoTasks
+                            ? 'transparent'
+                            : c.completionRate >= 75
+                            ? 'var(--brand-success)'
+                            : c.completionRate >= 40
+                            ? 'var(--brand-warm)'
+                            : c.completionRate > 0
+                            ? 'var(--brand-primary)'
+                            : 'var(--brand-danger)',
+                        }}
+                      />
+                    </div>
+                    <div className="flex justify-between text-[10px] text-[var(--text-muted)] font-medium">
+                      {hasNoTasks ? (
+                        <span className="text-[10px] text-[var(--text-muted)]">لا توجد تكليفات حالياً</span>
+                      ) : (
+                        <>
+                          <span>
+                            {c.approvedAssignments > 0
+                              ? `${c.approvedAssignments} تسليم معتمد`
+                              : `${c.completedTasks} مهمة منجزة`}
+                          </span>
+                          <span>
+                            من أصل {c.totalAssignments > c.totalTasks ? `${c.totalAssignments} تكليف` : `${c.totalTasks} مهمة`}
+                          </span>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
