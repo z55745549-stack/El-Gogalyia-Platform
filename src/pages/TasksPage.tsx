@@ -31,18 +31,18 @@ import { formatDate, safeDate, isOverdue, cn } from '@/utils';
 import { subscribeCommittees } from '@/lib/committees';
 import type { Task, Committee } from '@/types';
 
-const PRIORITY_OPTIONS = [
-  { value: '', label: 'جميع الأولويات' },
-  { value: 'urgent', label: '🔴 عاجل' },
-  { value: 'high', label: '🟠 عالي' },
-  { value: 'medium', label: '🟡 متوسط' },
-  { value: 'low', label: '🟢 منخفض' },
-];
-
 export function TasksPage() {
   const { userProfile } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const isViceHead = userProfile?.role === 'vice_head';
+
+  const priorityOptions = [
+    { value: '', label: language === 'en' ? 'All Priorities' : 'جميع الأولويات' },
+    { value: 'urgent', label: language === 'en' ? '🔴 Urgent' : '🔴 عاجل' },
+    { value: 'high', label: language === 'en' ? '🟠 High' : '🟠 عالي' },
+    { value: 'medium', label: language === 'en' ? '🟡 Medium' : '🟡 متوسط' },
+    { value: 'low', label: language === 'en' ? '🟢 Low' : '🟢 منخفض' },
+  ];
   const [tasks, setTasks] = useState<Task[]>([]);
   const [committees, setCommittees] = useState<Committee[]>([]);
   const [committeeFilter, setCommitteeFilter] = useState<string>(
@@ -204,10 +204,7 @@ export function TasksPage() {
     return matchSearch && matchTab && matchPriority && matchCommittee;
   });
 
-  const priorityOptions = PRIORITY_OPTIONS.map((opt) => ({
-    value: opt.value,
-    label: t('tasks.prio_' + (opt.value || 'all'), opt.label),
-  }));
+  
 
   const isTopTier = userProfile?.role === 'lead' || userProfile?.role === 'co_lead';
   const canCreate = userProfile ? isAdminRole(userProfile.role) : false;
@@ -357,7 +354,7 @@ export function TasksPage() {
         </div>
         <div className="w-full sm:w-48">
           <Select
-            options={PRIORITY_OPTIONS}
+            options={priorityOptions}
             value={priorityFilter}
             onChange={(e) => setPriorityFilter(e.target.value)}
           />
@@ -457,7 +454,7 @@ export function TasksPage() {
                               overdue ? 'text-rose-600 dark:text-rose-400' : 'text-slate-600 dark:text-slate-400'
                             )}
                           >
-                            {formatDate(task.deadline)}
+                            {formatDate(task.deadline, language)}
                           </span>
                         </td>
                         <td className="p-4">

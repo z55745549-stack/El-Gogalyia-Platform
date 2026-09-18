@@ -39,10 +39,12 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Avatar } from '@/components/ui/avatar';
 import { EmptyState } from '@/components/ui/empty-state';
 import { formatDate, formatRelative, cn } from '@/utils';
+import { useLanguage } from '@/context/LanguageContext';
 import type { AttendanceSession, AttendanceRecord, AttendanceSessionStatus } from '@/types/attendance';
 
 export function AttendanceAdminPage() {
   const { userProfile } = useAuth();
+  const { t, isRTL, language } = useLanguage();
 
   const [sessions, setSessions] = useState<AttendanceSession[]>([]);
   const [loading, setLoading] = useState(true);
@@ -238,20 +240,20 @@ export function AttendanceAdminPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto dir-rtl text-right font-sans pb-16">
+    <div className={cn("space-y-6 max-w-6xl mx-auto font-sans pb-16", isRTL ? "dir-rtl text-right" : "text-left")}>
       {/* Header Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className="page-title text-2xl font-black text-slate-900 dark:text-white">
-              نظام وجلسات الحضور الذكي QR
+              {t('compliance.hero_title')}
             </h1>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-[var(--brand-accent)]/15 text-[var(--brand-accent-dark)] dark:text-[var(--brand-accent)] border border-[var(--brand-accent)]/30">
-              ⚡ Live Scanner
+              ⚡ {t('compliance.live_scanner')}
             </span>
           </div>
           <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mt-1">
-            إدارة جلسات الحضور بالباركود التفاعلي، التحقق الفوري من هوية الموظفين بالأكواد الدائمة (GOGA-XXXXX).
+            {t('compliance.hero_desc')}
           </p>
         </div>
 
@@ -260,7 +262,7 @@ export function AttendanceAdminPage() {
           className="btn-primary font-black text-xs gap-2 shadow-xs shrink-0"
         >
           <Plus className="h-4 w-4" />
-          <span>بدء جلسة حضور جديدة</span>
+          <span>{t('compliance.btn_new_session')}</span>
         </Button>
       </div>
 
@@ -268,7 +270,7 @@ export function AttendanceAdminPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="card p-5 rounded-2xl bg-white dark:bg-[#130d29] border border-slate-200/90 dark:border-[#281e4b] flex items-center justify-between shadow-xs">
           <div>
-            <p className="text-xs font-bold text-slate-500 dark:text-slate-400">الجلسات النشطة حالياً</p>
+            <p className="text-xs font-bold text-slate-500 dark:text-slate-400">{t('compliance.stat_active')}</p>
             <p className="text-3xl font-black text-emerald-500 dark:text-emerald-400 mt-1">
               {activeSessionsCount}
             </p>
@@ -280,7 +282,7 @@ export function AttendanceAdminPage() {
 
         <div className="card p-5 rounded-2xl bg-white dark:bg-[#130d29] border border-slate-200/90 dark:border-[#281e4b] flex items-center justify-between shadow-xs">
           <div>
-            <p className="text-xs font-bold text-slate-500 dark:text-slate-400">إجمالي الحضور المسجل</p>
+            <p className="text-xs font-bold text-slate-500 dark:text-slate-400">{t('compliance.stat_total_attendees')}</p>
             <p className="text-3xl font-black text-[var(--brand-primary)] dark:text-[var(--brand-primary)] mt-1">
               {totalAttendeesAll}
             </p>
@@ -292,7 +294,7 @@ export function AttendanceAdminPage() {
 
         <div className="card p-5 rounded-2xl bg-white dark:bg-[#130d29] border border-slate-200/90 dark:border-[#281e4b] flex items-center justify-between shadow-xs">
           <div>
-            <p className="text-xs font-bold text-slate-500 dark:text-slate-400">إجمالي الجلسات المنعقدة</p>
+            <p className="text-xs font-bold text-slate-500 dark:text-slate-400">{t('compliance.stat_total_sessions')}</p>
             <p className="text-3xl font-black text-slate-900 dark:text-white mt-1">
               {sessions.length}
             </p>
@@ -308,26 +310,30 @@ export function AttendanceAdminPage() {
         <div className="flex items-center justify-between">
           <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
             <QrCode className="h-5 w-5 text-[var(--brand-primary)] dark:text-[var(--brand-accent)]" />
-            <span>جلسات تسجيل الحضور ({sessions.length})</span>
+            <span>
+              {language === 'en'
+                ? `Attendance Sessions (${sessions.length})`
+                : `جلسات تسجيل الحضور (${sessions.length})`}
+            </span>
           </h2>
-          <span className="text-xs text-slate-400">محدث لحظياً بالـ Realtime</span>
+          <span className="text-xs text-slate-400">{t('compliance.realtime_status')}</span>
         </div>
 
         {loading ? (
           <div className="p-8 text-center text-slate-400 text-xs">
-            جاري تحميل جلسات الحضور...
+            {language === 'en' ? 'Loading attendance sessions...' : 'جاري تحميل جلسات الحضور...'}
           </div>
         ) : sessions.length === 0 ? (
           <EmptyState
             icon={<QrCode className="h-10 w-10 text-[var(--brand-accent)]" />}
-            title="لا توجد جلسات حضور حتى الآن"
-            description="اضغط على زر (بدء جلسة حضور جديدة) لتوليد رمز QR فوري وعرضه لأعضاء الفريق لمسحه وتأكيد الحضور."
+            title={t('compliance.empty_title')}
+            description={t('compliance.empty_desc')}
             action={
               <Button
                 onClick={() => setShowCreateModal(true)}
                 className="mt-3 btn-primary text-xs font-bold"
               >
-                بدء أول جلسة الآن
+                {language === 'en' ? 'Start First Session Now' : 'بدء أول جلسة الآن'}
               </Button>
             }
           />
@@ -354,7 +360,11 @@ export function AttendanceAdminPage() {
                             : 'bg-slate-100 dark:bg-white/5 text-slate-500 border-slate-200 dark:border-white/10'
                         )}
                       >
-                        {isActive ? '● نشطة وتقبل الحضور' : isPaused ? '⏸ موقوفة مؤقتاً' : 'مغلقة'}
+                        {isActive
+                          ? (language === 'en' ? '● Active & Accepting' : '● نشطة وتقبل الحضور')
+                          : isPaused
+                          ? (language === 'en' ? '⏸ Paused' : '⏸ موقوفة مؤقتاً')
+                          : (language === 'en' ? 'Closed' : 'مغلقة')}
                       </span>
 
                       <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white">
@@ -373,16 +383,18 @@ export function AttendanceAdminPage() {
                         {s.startTime} - {s.endTime}
                       </span>
                       <span>·</span>
-                      <span>أنشأها: {s.createdByName}</span>
+                      <span>{language === 'en' ? `Created by: ${s.createdByName}` : `أنشأها: ${s.createdByName}`}</span>
                     </div>
                   </div>
 
                   {/* Attendees Counter & Actions */}
                   <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
                     <div className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-[#181233] border border-slate-200 dark:border-[#281e4b] text-center">
-                      <span className="text-[10px] text-slate-400 block font-bold">عدد الحاضرين</span>
+                      <span className="text-[10px] text-slate-400 block font-bold">
+                        {language === 'en' ? 'Attendees' : 'عدد الحاضرين'}
+                      </span>
                       <span className="text-sm font-black text-slate-900 dark:text-white">
-                        {s.attendeesCount || 0} حاضر
+                        {s.attendeesCount || 0} {language === 'en' ? 'present' : 'حاضر'}
                       </span>
                     </div>
 
@@ -393,7 +405,7 @@ export function AttendanceAdminPage() {
                       className="btn-accent font-black text-xs gap-1.5 border-0 shadow-xs"
                     >
                       <QrCode className="h-4 w-4" />
-                      <span>عرض الـ QR</span>
+                      <span>{language === 'en' ? 'Show QR' : 'عرض الـ QR'}</span>
                     </Button>
 
                     {/* View Records Table */}
@@ -404,15 +416,15 @@ export function AttendanceAdminPage() {
                       className="text-xs font-bold gap-1.5"
                     >
                       <Users className="h-4 w-4" />
-                      <span>سجل الحضور</span>
+                      <span>{language === 'en' ? 'Attendance Log' : 'سجل الحضور'}</span>
                     </Button>
 
                     {/* Control Actions */}
                     {isActive && (
                       <button
                         onClick={() => handleUpdateStatus(s, 'paused')}
-                        title="إيقاف مؤقت"
-                        className="p-2 rounded-xl text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/20 border border-slate-200 dark:border-[#281e4b] transition-colors"
+                        title={language === 'en' ? 'Pause session' : 'إيقاف مؤقت'}
+                        className="p-2 rounded-xl text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/20 border border-slate-200 dark:border-[#281e4b] transition-colors cursor-pointer"
                       >
                         <Pause className="h-4 w-4" />
                       </button>
@@ -421,8 +433,8 @@ export function AttendanceAdminPage() {
                     {isPaused && (
                       <button
                         onClick={() => handleUpdateStatus(s, 'active')}
-                        title="استئناف الجلسة"
-                        className="p-2 rounded-xl text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 border border-slate-200 dark:border-[#281e4b] transition-colors"
+                        title={language === 'en' ? 'Resume session' : 'استئناف الجلسة'}
+                        className="p-2 rounded-xl text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 border border-slate-200 dark:border-[#281e4b] transition-colors cursor-pointer"
                       >
                         <Play className="h-4 w-4" />
                       </button>
@@ -431,8 +443,8 @@ export function AttendanceAdminPage() {
                     {s.status !== 'closed' && (
                       <button
                         onClick={() => handleUpdateStatus(s, 'closed')}
-                        title="إغلاق الجلسة نهائياً"
-                        className="p-2 rounded-xl text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 border border-slate-200 dark:border-[#281e4b] transition-colors"
+                        title={language === 'en' ? 'Close session' : 'إغلاق الجلسة نهائياً'}
+                        className="p-2 rounded-xl text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 border border-slate-200 dark:border-[#281e4b] transition-colors cursor-pointer"
                       >
                         <StopCircle className="h-4 w-4" />
                       </button>
@@ -441,8 +453,8 @@ export function AttendanceAdminPage() {
                     {/* Delete Session */}
                     <button
                       onClick={() => setDeleteTargetSession(s)}
-                      title="حذف الجلسة نهائياً"
-                      className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 border border-slate-200 dark:border-[#281e4b] transition-colors"
+                      title={language === 'en' ? 'Delete session' : 'حذف الجلسة نهائياً'}
+                      className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 border border-slate-200 dark:border-[#281e4b] transition-colors cursor-pointer"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -458,8 +470,12 @@ export function AttendanceAdminPage() {
       <Modal
         open={showCreateModal}
         onClose={() => setShowCreateModal(false)}
-        title="بدء جلسة حضور ذكية جديدة"
-        description="أنشئ جلسة جديدة لتوليد باركود QR ذكي ومؤمّن لتسجيل حضور الفريق فورياً."
+        title={language === 'en' ? 'Start New Smart Attendance Session' : 'بدء جلسة حضور ذكية جديدة'}
+        description={
+          language === 'en'
+            ? 'Create a new session to generate a secured QR code for instant team attendance check-in.'
+            : 'أنشئ جلسة جديدة لتوليد باركود QR ذكي ومؤمّن لتسجيل حضور الفريق فورياً.'
+        }
         size="md"
         footer={
           <>
@@ -470,7 +486,7 @@ export function AttendanceAdminPage() {
               disabled={creating}
               className="text-xs"
             >
-              إلغاء
+              {language === 'en' ? 'Cancel' : 'إلغاء'}
             </Button>
             <Button
               onClick={handleCreateSession as any}
@@ -479,19 +495,19 @@ export function AttendanceAdminPage() {
               disabled={!title.trim()}
               className="btn-primary text-xs font-bold"
             >
-              إنشاء وتوليد الـ QR
+              {language === 'en' ? 'Create & Generate QR' : 'إنشاء وتوليد الـ QR'}
             </Button>
           </>
         }
       >
-        <form onSubmit={handleCreateSession} className="space-y-4 text-right font-sans dir-rtl">
+        <form onSubmit={handleCreateSession} className={cn("space-y-4 font-sans", isRTL ? "text-right dir-rtl" : "text-left")}>
           <div>
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-              عنوان جلسة الحضور / الاجتماع *
+              {language === 'en' ? 'Session / Meeting Title *' : 'عنوان جلسة الحضور / الاجتماع *'}
             </label>
             <Input
               required
-              placeholder="مثال: الاجتماع الأسبوعي العام للجنة الإعلامية"
+              placeholder={language === 'en' ? 'e.g. Media Committee Weekly Meeting' : 'مثال: الاجتماع الأسبوعي العام للجنة الإعلامية'}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
             />
@@ -499,7 +515,7 @@ export function AttendanceAdminPage() {
 
           <div>
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-              تاريخ الجلسة *
+              {language === 'en' ? 'Session Date *' : 'تاريخ الجلسة *'}
             </label>
             <Input
               type="date"
@@ -512,7 +528,7 @@ export function AttendanceAdminPage() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                وقت البدء *
+                {language === 'en' ? 'Start Time *' : 'وقت البدء *'}
               </label>
               <Input
                 type="time"
@@ -523,7 +539,7 @@ export function AttendanceAdminPage() {
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                وقت الانتهاء *
+                {language === 'en' ? 'End Time *' : 'وقت الانتهاء *'}
               </label>
               <Input
                 type="time"
@@ -536,13 +552,13 @@ export function AttendanceAdminPage() {
 
           <div>
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-              ملاحظات أو وصف إضافي (اختياري)
+              {language === 'en' ? 'Description or Notes (Optional)' : 'ملاحظات أو وصف إضافي (اختياري)'}
             </label>
             <textarea
               rows={2}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="اكتب أي تعليمات للحاضرين..."
+              placeholder={language === 'en' ? 'Add any instructions for attendees...' : 'اكتب أي تعليمات للحاضرين...'}
               className="w-full p-3 rounded-xl text-xs bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] resize-none"
             />
           </div>
@@ -553,8 +569,12 @@ export function AttendanceAdminPage() {
       <Modal
         open={Boolean(activeSessionForQR)}
         onClose={() => setActiveSessionForQR(null)}
-        title={activeSessionForQR?.title || 'باركود الحضور الذكي'}
-        description="وجّه الشاشة لأعضاء الفريق لمسح الباركود بهواتفهم وتأكيد الحضور تلقائياً."
+        title={activeSessionForQR?.title || (language === 'en' ? 'Smart Attendance QR' : 'باركود الحضور الذكي')}
+        description={
+          language === 'en'
+            ? 'Display this QR to attendees to scan with their mobile devices and register attendance.'
+            : 'وجّه الشاشة لأعضاء الفريق لمسح الباركود بهواتفهم وتأكيد الحضور تلقائياً.'
+        }
         size="lg"
         footer={
           <div className="flex items-center justify-between w-full">
@@ -566,7 +586,7 @@ export function AttendanceAdminPage() {
                 className="text-xs gap-1.5"
               >
                 {copiedLink ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
-                <span>نسخ الرابط المباشر</span>
+                <span>{copiedLink ? (language === 'en' ? 'Copied' : 'تم النسخ') : (language === 'en' ? 'Copy Direct Link' : 'نسخ الرابط المباشر')}</span>
               </Button>
             </div>
             <Button
@@ -575,13 +595,13 @@ export function AttendanceAdminPage() {
               onClick={() => setActiveSessionForQR(null)}
               className="text-xs"
             >
-              إغلاق
+              {language === 'en' ? 'Close' : 'إغلاق'}
             </Button>
           </div>
         }
       >
         {activeSessionForQR && (
-          <div className="space-y-6 text-center font-sans dir-rtl py-2">
+          <div className={cn("space-y-6 text-center font-sans py-2", isRTL ? "dir-rtl" : "dir-ltr")}>
             {/* Live Status Badge */}
             <div className="flex items-center justify-center gap-3">
               <span
@@ -593,11 +613,13 @@ export function AttendanceAdminPage() {
                 )}
               >
                 <span className="w-2 h-2 rounded-full bg-current" />
-                {activeSessionForQR.status === 'active' ? 'الجلسة نشطة واستقبال الحضور متاح' : 'الجلسة متوقفة أو مغلقة'}
+                {activeSessionForQR.status === 'active'
+                  ? (language === 'en' ? 'Session is active and accepting check-ins' : 'الجلسة نشطة واستقبال الحضور متاح')
+                  : (language === 'en' ? 'Session is paused or closed' : 'الجلسة متوقفة أو مغلقة')}
               </span>
 
               <span className="px-3 py-1 rounded-full text-xs font-black bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] dark:text-[var(--brand-accent)] border border-[var(--brand-primary)]/20">
-                👥 {sessionRecords.length} مسجلين حتى الآن
+                👥 {language === 'en' ? `${sessionRecords.length} checked-in so far` : `${sessionRecords.length} مسجلين حتى الآن`}
               </span>
             </div>
 
@@ -624,10 +646,10 @@ export function AttendanceAdminPage() {
               <div className="flex items-center justify-between text-[11px] font-bold">
                 <span className="text-[var(--text-muted)] flex items-center gap-1">
                   <Clock className="h-3.5 w-3.5 text-[var(--brand-primary)]" />
-                  <span>تجديد الرمز التلقائي</span>
+                  <span>{language === 'en' ? 'Auto QR Refresh' : 'تجديد الرمز التلقائي'}</span>
                 </span>
                 <span className="text-[var(--brand-primary)] font-mono">
-                  {secondsLeft} ثانية
+                  {secondsLeft} {language === 'en' ? 'sec' : 'ثانية'}
                 </span>
               </div>
               <div className="w-full bg-[var(--surface)] h-2 rounded-full overflow-hidden border border-[var(--border-subtle)]">
@@ -637,13 +659,17 @@ export function AttendanceAdminPage() {
                 />
               </div>
               <p className="text-[10px] text-[var(--text-muted)]">
-                حماية أمنية: يتجدد الرمز تلقائياً كل دقيقة لمنع تصوير الشاشة وتناقلها خارج القاعة.
+                {language === 'en'
+                  ? 'Security protection: QR code auto-refreshes every 60s to prevent screenshots sharing.'
+                  : 'حماية أمنية: يتجدد الرمز تلقائياً كل دقيقة لمنع تصوير الشاشة وتناقلها خارج القاعة.'}
               </p>
             </div>
 
             <div className="max-w-md mx-auto space-y-1">
               <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                امسح الـ QR بكاميرا الهاتف للدخول المباشر إلى صفحة التحقق وتأكيد الحضور
+                {language === 'en'
+                  ? 'Scan with your camera to access the verification page and confirm presence'
+                  : 'امسح الـ QR بكاميرا الهاتف للدخول المباشر إلى صفحة التحقق وتأكيد الحضور'}
               </p>
               <p className="text-[11px] text-slate-400 font-mono">
                 {activeSessionForQR.startTime} ➜ {activeSessionForQR.endTime} · {activeSessionForQR.date}
@@ -657,8 +683,12 @@ export function AttendanceAdminPage() {
       <Modal
         open={Boolean(selectedSessionForDetails)}
         onClose={() => setSelectedSessionForDetails(null)}
-        title={`سجل حضور: ${selectedSessionForDetails?.title || ''}`}
-        description="قائمة بجميع أعضاء الفريق المسجلين في هذه الجلسة مع وقت تسجيل الدخول الدقيق."
+        title={language === 'en' ? `Attendance Log: ${selectedSessionForDetails?.title || ''}` : `سجل حضور: ${selectedSessionForDetails?.title || ''}`}
+        description={
+          language === 'en'
+            ? 'List of all team members checked into this session with exact timestamps.'
+            : 'قائمة بجميع أعضاء الفريق المسجلين في هذه الجلسة مع وقت تسجيل الدخول الدقيق.'
+        }
         size="xl"
         footer={
           <div className="flex items-center justify-between w-full">
@@ -670,7 +700,7 @@ export function AttendanceAdminPage() {
               className="text-xs gap-1.5 font-bold"
             >
               <Download className="h-3.5 w-3.5 text-[var(--brand-primary)]" />
-              <span>تصدير CSV ({filteredRecords.length})</span>
+              <span>{language === 'en' ? `Export CSV (${filteredRecords.length})` : `تصدير CSV (${filteredRecords.length})`}</span>
             </Button>
             <Button
               variant="outline"
@@ -678,31 +708,34 @@ export function AttendanceAdminPage() {
               onClick={() => setSelectedSessionForDetails(null)}
               className="text-xs"
             >
-              إغلاق
+              {language === 'en' ? 'Close' : 'إغلاق'}
             </Button>
           </div>
         }
       >
         {selectedSessionForDetails && (
-          <div className="space-y-4 font-sans text-right dir-rtl">
+          <div className={cn("space-y-4 font-sans", isRTL ? "text-right dir-rtl" : "text-left")}>
             {/* Toolbar */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="relative flex-1 max-w-xs">
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Search className={cn("absolute top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400", isRTL ? "right-3" : "left-3")} />
                 <input
                   type="text"
-                  placeholder="ابحث باسم الموظف أو الكود..."
+                  placeholder={language === 'en' ? 'Search member name or code...' : 'ابحث باسم الموظف أو الكود...'}
                   value={recordSearch}
                   onChange={(e) => setRecordSearch(e.target.value)}
-                  className="w-full pr-9 pl-4 py-2 rounded-xl text-xs bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]"
+                  className={cn(
+                    "w-full py-2 rounded-xl text-xs bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]",
+                    isRTL ? "pr-9 pl-4" : "pl-9 pr-4"
+                  )}
                 />
               </div>
 
               <div className="flex items-center gap-1.5">
                 {[
-                  { id: 'all', label: 'الكل' },
-                  { id: 'present', label: 'حاضر في الموعد' },
-                  { id: 'late', label: 'حاضر متأخر' },
+                  { id: 'all', label: language === 'en' ? 'All' : 'الكل' },
+                  { id: 'present', label: language === 'en' ? 'On Time' : 'حاضر في الموعد' },
+                  { id: 'late', label: language === 'en' ? 'Late' : 'حاضر متأخر' },
                 ].map((tab) => (
                   <button
                     key={tab.id}
@@ -724,16 +757,16 @@ export function AttendanceAdminPage() {
             <div className="border border-slate-200/90 dark:border-white/10 rounded-2xl overflow-hidden bg-white dark:bg-white/[0.02]">
               {filteredRecords.length === 0 ? (
                 <div className="p-8 text-center text-slate-400 text-xs">
-                  لا توجد سجلات حضور مطابقة حتى الآن.
+                  {language === 'en' ? 'No matching attendance records found.' : 'لا توجد سجلات حضور مطابقة حتى الآن.'}
                 </div>
               ) : (
-                <table className="w-full text-xs text-right">
+                <table className={cn("w-full text-xs", isRTL ? "text-right" : "text-left")}>
                   <thead className="bg-slate-50 dark:bg-white/5 border-b border-slate-200/90 dark:border-white/10 text-slate-500 dark:text-slate-400 font-bold">
                     <tr>
-                      <th className="p-3">الموظف / العضو</th>
-                      <th className="p-3">كود الموظف الفريد</th>
-                      <th className="p-3">وقت الحضور</th>
-                      <th className="p-3">الحالة</th>
+                      <th className="p-3">{language === 'en' ? 'Member' : 'الموظف / العضو'}</th>
+                      <th className="p-3">{language === 'en' ? 'Member Code' : 'كود الموظف الفريد'}</th>
+                      <th className="p-3">{language === 'en' ? 'Check-in Time' : 'وقت الحضور'}</th>
+                      <th className="p-3">{language === 'en' ? 'Status' : 'الحالة'}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-white/5">
@@ -758,7 +791,9 @@ export function AttendanceAdminPage() {
                                 : 'bg-amber-500/10 text-amber-600 border-amber-500/20'
                             )}
                           >
-                            {r.status === 'present' ? '✓ حاضر' : '⏱ متأخر'}
+                            {r.status === 'present'
+                              ? (language === 'en' ? '✓ Present' : '✓ حاضر')
+                              : (language === 'en' ? '⏱ Late' : '⏱ متأخر')}
                           </span>
                         </td>
                       </tr>
@@ -776,9 +811,13 @@ export function AttendanceAdminPage() {
         open={!!deleteTargetSession}
         onClose={() => setDeleteTargetSession(null)}
         onConfirm={handleDeleteSession}
-        title="حذف الجلسة"
-        description={`هل متأكد إنك عايز تحذف جلسة "${deleteTargetSession?.title}"؟ كل سجلات الحضور الخاصة بيها هتتمسح بشكل نهائي.`}
-        confirmLabel="نعم، احذف الجلسة"
+        title={language === 'en' ? 'Delete Session' : 'حذف الجلسة'}
+        description={
+          language === 'en'
+            ? `Are you sure you want to delete session "${deleteTargetSession?.title}"? All attendance records will be permanently removed.`
+            : `هل متأكد إنك عايز تحذف جلسة "${deleteTargetSession?.title}"؟ كل سجلات الحضور الخاصة بيها هتتمسح بشكل نهائي.`
+        }
+        confirmLabel={language === 'en' ? 'Yes, Delete Session' : 'نعم، احذف الجلسة'}
         variant="danger"
         loading={deletingSession}
       />

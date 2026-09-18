@@ -26,7 +26,7 @@ import type { Task, OCoinTransaction, ActivityLog, UserProfile } from '@/types';
 
 export function AdminDashboard() {
   const { userProfile } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [recentActivity, setRecentActivity] = useState<ActivityLog[]>([]);
   const [recentTransactions, setRecentTransactions] = useState<OCoinTransaction[]>([]);
@@ -532,7 +532,9 @@ export function AdminDashboard() {
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <h3 className="text-xs font-bold text-[var(--text-primary)]">{c.name}</h3>
-                    <p className="text-[10px] text-[var(--text-muted)] mt-0.5">{c.membersCount} أعضاء مسجلين</p>
+                    <p className="text-[10px] text-[var(--text-muted)] mt-0.5">
+                      {language === 'en' ? `${c.membersCount} Registered Members` : `${c.membersCount} أعضاء مسجلين`}
+                    </p>
                   </div>
                   <span className={cn(
                     "text-xs font-black px-2 py-0.5 rounded-lg",
@@ -561,8 +563,8 @@ export function AdminDashboard() {
                     />
                   </div>
                   <div className="flex justify-between text-[10px] text-[var(--text-muted)] font-medium">
-                    <span>{c.completedTasks} مهمة منجزة</span>
-                    <span>من أصل {c.totalTasks}</span>
+                    <span>{language === 'en' ? `${c.completedTasks} Tasks Completed` : `${c.completedTasks} مهمة منجزة`}</span>
+                    <span>{language === 'en' ? `Out of ${c.totalTasks}` : `من أصل ${c.totalTasks}`}</span>
                   </div>
                 </div>
               </div>
@@ -674,12 +676,12 @@ export function AdminDashboard() {
                         </span>
                       </div>
                       <div className="flex items-center gap-2.5 text-[11px] text-[var(--text-muted)]">
-                        <span>الموعد: {formatDate(task.deadline)}</span>
+                        <span>{language === 'en' ? 'Deadline: ' : 'الموعد: '}{formatDate(task.deadline, language)}</span>
                         <span>·</span>
                         <span className="truncate">
                           {task.assignedToNames?.length
                             ? `${task.assignedToNames[0]}${task.assignedToNames.length > 1 ? ` +${task.assignedToNames.length - 1}` : ''}`
-                            : 'غير محدد'}
+                            : (language === 'en' ? 'Unassigned' : 'غير محدد')}
                         </span>
                         <span>·</span>
                         <span className="text-[var(--brand-warm)] font-bold">🪙 {task.oCoinsReward} OC</span>

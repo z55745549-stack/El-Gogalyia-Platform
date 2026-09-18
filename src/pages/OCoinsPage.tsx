@@ -44,88 +44,90 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Avatar } from '@/components/ui/avatar';
 import { EmptyState } from '@/components/ui/empty-state';
 import { formatOCoins, formatDate, formatRelative, cn, formatFullName, hasUnlimitedCoins } from '@/utils';
+import { useLanguage } from '@/context/LanguageContext';
 import type { OCoinTransaction, OCoinTransactionType, UserProfile } from '@/types';
 
-const TRANSACTION_TYPE_CONFIG: Record<
+const getTxTypeConfig = (lang: string): Record<
   string,
   { label: string; badgeClass: string; icon: React.ReactNode; isPositive: boolean }
-> = {
+> => ({
   manual_reward: {
-    label: 'مكافأة تميز وأداء',
+    label: lang === 'en' ? 'Excellence Reward' : 'مكافأة تميز وأداء',
     badgeClass: 'bg-[var(--brand-accent)]/15 text-[var(--brand-accent-dark)] dark:text-[var(--brand-accent)] border-[var(--brand-accent)]/30',
     icon: <Gift className="h-3.5 w-3.5" />,
     isPositive: true,
   },
   manual_add: {
-    label: 'إيداع إداري',
+    label: lang === 'en' ? 'Admin Deposit' : 'إيداع إداري',
     badgeClass: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
     icon: <Plus className="h-3.5 w-3.5" />,
     isPositive: true,
   },
   task_reward: {
-    label: 'مكافأة إنجاز مهمة',
+    label: lang === 'en' ? 'Task Reward' : 'مكافأة إنجاز مهمة',
     badgeClass: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border-blue-200 dark:border-blue-800',
     icon: <Award className="h-3.5 w-3.5" />,
     isPositive: true,
   },
   task_approved: {
-    label: 'اعتماد تسليم مهمة',
+    label: lang === 'en' ? 'Task Approved' : 'اعتماد تسليم مهمة',
     badgeClass: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border-blue-200 dark:border-blue-800',
     icon: <Award className="h-3.5 w-3.5" />,
     isPositive: true,
   },
   meeting_reward: {
-    label: 'مكافأة حضور اجتماع',
+    label: lang === 'en' ? 'Meeting Attendance' : 'مكافأة حضور اجتماع',
     badgeClass: 'bg-purple-50 text-purple-700 dark:bg-purple-950/30 dark:text-purple-300 border-purple-200 dark:border-purple-800',
     icon: <Calendar className="h-3.5 w-3.5" />,
     isPositive: true,
   },
   achievement_reward: {
-    label: 'إنجاز استثنائي',
+    label: lang === 'en' ? 'Outstanding Achievement' : 'إنجاز استثنائي',
     badgeClass: 'bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300 border-amber-200 dark:border-amber-800',
     icon: <TrendingUp className="h-3.5 w-3.5" />,
     isPositive: true,
   },
   admin_adjustment: {
-    label: 'تعديل وتدقيق إداري',
+    label: lang === 'en' ? 'Admin Adjustment' : 'تعديل وتدقيق إداري',
     badgeClass: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-300 dark:border-slate-700',
     icon: <FileText className="h-3.5 w-3.5" />,
     isPositive: true,
   },
   penalty_deduction: {
-    label: 'خصم / جزاء إداري',
+    label: lang === 'en' ? 'Penalty / Deduction' : 'خصم / جزاء إداري',
     badgeClass: 'bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-300 border-rose-200 dark:border-rose-800',
     icon: <Minus className="h-3.5 w-3.5" />,
     isPositive: false,
   },
   manual_remove: {
-    label: 'خصم رصيد يدوي',
+    label: lang === 'en' ? 'Manual Deduction' : 'خصم رصيد يدوي',
     badgeClass: 'bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-300 border-rose-200 dark:border-rose-800',
     icon: <Minus className="h-3.5 w-3.5" />,
     isPositive: false,
   },
   ban_penalty: {
-    label: 'جزاء تعليق الحساب',
+    label: lang === 'en' ? 'Account Suspension Penalty' : 'جزاء تعليق الحساب',
     badgeClass: 'bg-rose-100 text-rose-800 dark:bg-rose-900/50 dark:text-rose-200 border-rose-300 dark:border-rose-700',
     icon: <AlertCircle className="h-3.5 w-3.5" />,
     isPositive: false,
   },
   shop_purchase: {
-    label: 'شراء من المتجر',
+    label: lang === 'en' ? 'Store Purchase' : 'شراء من المتجر',
     badgeClass: 'bg-orange-50 text-orange-700 dark:bg-orange-950/30 dark:text-orange-300 border-orange-200 dark:border-orange-800',
     icon: <Coins className="h-3.5 w-3.5" />,
     isPositive: false,
   },
   discount_purchase: {
-    label: 'شراء عرض / خصم',
+    label: lang === 'en' ? 'Discount Purchase' : 'شراء عرض / خصم',
     badgeClass: 'bg-purple-50 text-purple-700 dark:bg-purple-950/30 dark:text-purple-300 border-purple-200 dark:border-purple-800',
     icon: <ShoppingBag className="h-3.5 w-3.5" />,
     isPositive: false,
   },
-};
+});
 
 export function OCoinsPage() {
   const { userProfile } = useAuth();
+  const { t, isRTL, language } = useLanguage();
   const role = userProfile?.role;
   const isTopLeader = role === 'lead' || role === 'co_lead';
   const isHead = role === 'head';
@@ -447,7 +449,7 @@ export function OCoinsPage() {
   );
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto dir-rtl text-right font-sans pb-12">
+    <div className={cn("space-y-6 max-w-5xl mx-auto font-sans pb-12", isRTL ? "dir-rtl text-right" : "text-left")}>
       {/* Unified Rewards Hub Segmented Switcher */}
       <div className="flex items-center justify-between p-1.5 sm:p-2 rounded-2xl bg-[var(--surface-elevated)] border border-[var(--border-subtle)] overflow-hidden">
         <div className="flex flex-wrap items-center gap-1.5 w-full">
@@ -462,7 +464,7 @@ export function OCoinsPage() {
             )}
           >
             <Coins className="h-4 w-4 shrink-0" />
-            <span className="truncate">محفظة O Coins والمعاملات</span>
+            <span className="truncate">{t('ocoins.tab_wallet')}</span>
           </button>
 
           <button
@@ -476,7 +478,7 @@ export function OCoinsPage() {
             )}
           >
             <ShoppingBag className="h-4 w-4 shrink-0" />
-            <span className="truncate">متجر الخصومات والمكافآت</span>
+            <span className="truncate">{t('ocoins.tab_store')}</span>
           </button>
 
           <button
@@ -490,7 +492,7 @@ export function OCoinsPage() {
             )}
           >
             <Gift className="h-4 w-4 shrink-0" />
-            <span className="truncate">مشترياتي وقسائمي</span>
+            <span className="truncate">{t('ocoins.tab_purchases')}</span>
           </button>
 
           {canManage && (
@@ -505,7 +507,7 @@ export function OCoinsPage() {
               )}
             >
               <Tag className="h-4 w-4 shrink-0" />
-              <span className="truncate">إدارة العروض (مشرف)</span>
+              <span className="truncate">{t('ocoins.tab_admin_discounts')}</span>
             </button>
           )}
         </div>
@@ -513,7 +515,7 @@ export function OCoinsPage() {
         {canManage && (
           <div className="items-center gap-1.5 px-3 py-1 rounded-xl bg-purple-500/10 text-purple-400 text-[11px] font-black border border-purple-500/20 hidden lg:flex shrink-0">
             <ShieldCheck className="h-3.5 w-3.5" />
-            <span>صلاحيات الإشراف مفعّلة</span>
+            <span>{t('ocoins.admin_active')}</span>
           </div>
         )}
       </div>
@@ -531,16 +533,14 @@ export function OCoinsPage() {
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className="page-title text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
-              محفظة وسجل معاملات O Coins
+              {t('ocoins.hero_title')}
             </h1>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-[#FFCF00]/15 text-[#B28900] dark:text-[#FFCF00] border border-[#FFCF00]/30">
               🪙 Rewards Hub
             </span>
           </div>
           <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mt-1">
-            {canManage
-              ? 'سجل المعاملات المعتمدة، صرف المكافآت التقديرية، وتعديلات الأرصدة الإدارية الشاملة.'
-              : 'دفتر حساباتك الشفاف: كافة المكافآت المكتسبة، مكافآت المهام، والتعديلات الإدارية مع تفاصيلها.'}
+            {canManage ? t('ocoins.hero_desc_admin') : t('ocoins.hero_desc_member')}
           </p>
         </div>
 
@@ -552,7 +552,7 @@ export function OCoinsPage() {
             className="w-full sm:w-auto justify-center gap-2 shadow-xs shrink-0 font-black text-xs h-10 rounded-xl"
           >
             <Plus className="h-4 w-4" />
-            <span>صرف مكافأة / تعديل رصيد يدوي</span>
+            <span>{t('ocoins.btn_adjust')}</span>
           </Button>
         )}
       </div>
@@ -564,10 +564,12 @@ export function OCoinsPage() {
           <div>
             <p className="text-xs font-bold text-[var(--text-muted)]">
               {canManage && selectedUser
-                ? `رصيد (${selectedUser.displayName})`
+                ? (language === 'en' ? `Balance (${selectedUser.displayName})` : `رصيد (${selectedUser.displayName})`)
                 : hasUnlimitedCoins(role)
-                ? (isHead ? 'رصيد رئيس اللجنة (خزينة غير محدودة)' : 'رصيد القيادة العليا (خزينة المنظومة)')
-                : 'الرصيد الكلي المتاح'}
+                ? (isHead
+                    ? (language === 'en' ? 'Committee Head Balance (Unlimited Vault)' : 'رصيد رئيس اللجنة (خزينة غير محدودة)')
+                    : (language === 'en' ? 'Leadership Balance (System Vault)' : 'رصيد القيادة العليا (خزينة المنظومة)'))
+                : t('ocoins.stat_available')}
             </p>
             <div className="mt-1 flex items-baseline gap-2">
               {canManage && selectedUser ? (
@@ -575,7 +577,7 @@ export function OCoinsPage() {
                   <div className="flex items-center gap-2">
                     <span className="text-4xl font-black text-[var(--brand-warm)]">∞</span>
                     <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
-                      خزينة لا نهائية
+                      {t('ocoins.infinite_vault')}
                     </span>
                   </div>
                 ) : (
@@ -591,7 +593,7 @@ export function OCoinsPage() {
                 <div className="flex items-center gap-2">
                   <span className="text-4xl font-black text-[var(--brand-warm)]">∞</span>
                   <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
-                    خزينة لا نهائية
+                    {t('ocoins.infinite_vault')}
                   </span>
                 </div>
               ) : (
@@ -614,13 +616,15 @@ export function OCoinsPage() {
         <div className="card p-5 rounded-2xl flex items-center justify-between shadow-xs">
           <div>
             <p className="text-xs font-bold text-[var(--text-muted)]">
-              {viewingUnlimitedUser ? 'عمليات الإيداع المسجَّلة' : 'إجمالي العملات المكتسبة'}
+              {viewingUnlimitedUser
+                ? (language === 'en' ? 'Recorded Inflow Transactions' : 'عمليات الإيداع المسجَّلة')
+                : t('ocoins.stat_earned')}
             </p>
             {viewingUnlimitedUser ? (
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-4xl font-black text-[var(--brand-accent)]">∞</span>
                 <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
-                  خزينة لا نهائية
+                  {t('ocoins.infinite_vault')}
                 </span>
               </div>
             ) : (
@@ -639,13 +643,15 @@ export function OCoinsPage() {
         <div className="card p-5 rounded-2xl flex items-center justify-between shadow-xs">
           <div>
             <p className="text-xs font-bold text-[var(--text-muted)]">
-              {viewingUnlimitedUser ? 'عمليات الخصم المسجَّلة' : 'إجمالي الخصومات والمصروفات'}
+              {viewingUnlimitedUser
+                ? (language === 'en' ? 'Recorded Outflow Transactions' : 'عمليات الخصم المسجَّلة')
+                : t('ocoins.stat_deductions')}
             </p>
             {viewingUnlimitedUser ? (
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-4xl font-black text-[var(--brand-danger)]">—</span>
                 <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-slate-500/15 text-slate-600 dark:text-slate-300 border border-slate-500/30">
-                  لا تؤثر على الرصيد
+                  {language === 'en' ? 'Does not affect balance' : 'لا تؤثر على الرصيد'}
                 </span>
               </div>
             ) : (
@@ -666,14 +672,16 @@ export function OCoinsPage() {
         <div className="card p-4 rounded-2xl space-y-2.5 shadow-xs">
           <div className="flex items-center justify-between">
             <h2 className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
-              {isHead ? `تصفية حسب أعضاء لجنة ${userProfile?.committeeName || ''}:` : 'تصفية السجل المالي حسب عضو الفريق:'}
+              {isHead
+                ? (language === 'en' ? `Filter by Committee Members (${userProfile?.committeeName || ''}):` : `تصفية حسب أعضاء لجنة ${userProfile?.committeeName || ''}:`)
+                : (language === 'en' ? 'Filter Financial Record by Team Member:' : 'تصفية السجل المالي حسب عضو الفريق:')}
             </h2>
             {selectedUser && (
               <button
                 onClick={() => setSelectedUser(null)}
                 className="text-xs text-[var(--brand-primary)] hover:text-[var(--brand-accent)] font-bold hover:underline cursor-pointer"
               >
-                إلغاء التحديد وتصفح الكل
+                {language === 'en' ? 'Clear Selection & View All' : 'إلغاء التحديد وتصفح الكل'}
               </button>
             )}
           </div>
@@ -687,7 +695,9 @@ export function OCoinsPage() {
                   : 'bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               )}
             >
-              {isHead ? `كافة أعضاء اللجنة (${manageableUsers.length})` : `كافة أعضاء الفريق (${allUsers.length})`}
+              {isHead
+                ? (language === 'en' ? `All Committee Members (${manageableUsers.length})` : `كافة أعضاء اللجنة (${manageableUsers.length})`)
+                : (language === 'en' ? `All Team Members (${allUsers.length})` : `كافة أعضاء الفريق (${allUsers.length})`)}
             </button>
             {(isHead ? manageableUsers : allUsers).map((u) => (
               <button
@@ -718,10 +728,10 @@ export function OCoinsPage() {
           {/* Tabs */}
           <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
             {[
-              { id: 'all', label: 'كافة المعاملات' },
-              { id: 'rewards', label: 'المكافآت والإيداعات (+)' },
-              { id: 'deductions', label: 'الخصومات والمصروفات (-)' },
-              { id: 'tasks', label: 'مكافآت المهام 🎯' },
+              { id: 'all', label: language === 'en' ? 'All Transactions' : 'كافة المعاملات' },
+              { id: 'rewards', label: language === 'en' ? 'Rewards & Deposits (+)' : 'المكافآت والإيداعات (+)' },
+              { id: 'deductions', label: language === 'en' ? 'Deductions & Expenses (-)' : 'الخصومات والمصروفات (-)' },
+              { id: 'tasks', label: language === 'en' ? 'Task Rewards 🎯' : 'مكافآت المهام 🎯' },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -740,13 +750,13 @@ export function OCoinsPage() {
 
           {/* Search Input */}
           <div className="relative flex-1 md:max-w-xs">
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
+            <Search className={cn("absolute top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]", isRTL ? 'right-3' : 'left-3')} />
             <input
               type="text"
-              placeholder="ابحث بالسبب، الوصف، أو المسؤول..."
+              placeholder={language === 'en' ? 'Search by reason, description, or admin...' : 'ابحث بالسبب، الوصف، أو المسؤول...'}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pr-9 pl-4 py-2 rounded-xl text-xs bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]"
+              className={cn("w-full py-2 rounded-xl text-xs bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]", isRTL ? 'pr-9 pl-4' : 'pl-9 pr-4')}
             />
           </div>
         </div>
@@ -754,17 +764,18 @@ export function OCoinsPage() {
         {/* List of Transactions */}
         {loading ? (
           <div className="p-8 text-center text-slate-400 text-xs">
-            جاري تحميل سجل المعاملات المالية المعتمدة...
+            {language === 'en' ? 'Loading approved transaction records...' : 'جاري تحميل سجل المعاملات المالية المعتمدة...'}
           </div>
         ) : filteredTransactions.length === 0 ? (
           <EmptyState
             icon={<Coins className="h-10 w-10 text-[#FFCF00]" />}
-            title="لا توجد حركات أو معاملات مسجلة"
-            description="يتم تسجيل المعاملات في هذا الأرشيف فور اعتماد المهام وصرف المكافآت أو عند اتخاذ أي إجراء إداري معتمد."
+            title={language === 'en' ? 'No Transactions Found' : 'لا توجد حركات أو معاملات مسجلة'}
+            description={language === 'en' ? 'Transactions are recorded here once tasks are approved, rewards are issued, or any admin action is confirmed.' : 'يتم تسجيل المعاملات في هذا الأرشيف فور اعتماد المهام وصرف المكافآت أو عند اتخاذ أي إجراء إداري معتمد.'}
           />
         ) : (
           <div className="divide-y divide-slate-100 dark:divide-[#241a49] -mx-5 -mb-5">
             {filteredTransactions.map((tx) => {
+              const TRANSACTION_TYPE_CONFIG = getTxTypeConfig(language);
               const cfg =
                 TRANSACTION_TYPE_CONFIG[tx.type] ||
                 (tx.amount > 0
@@ -792,7 +803,7 @@ export function OCoinsPage() {
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate group-hover:text-[var(--brand-primary)] dark:group-hover:text-[var(--brand-accent)] transition-colors">
-                          {tx.reason || tx.taskTitle || 'معاملة رصيد'}
+                          {tx.reason || tx.taskTitle || (language === 'en' ? 'Balance Transaction' : 'معاملة رصيد')}
                         </p>
                         <span
                           className={cn(
@@ -808,17 +819,17 @@ export function OCoinsPage() {
                       <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-1 flex-wrap">
                         {canManage && (
                           <span className="font-bold text-slate-600 dark:text-slate-300">
-                            العضو: {tx.userDisplayName} ·
+                            {language === 'en' ? `Member: ${tx.userDisplayName} ·` : `العضو: ${tx.userDisplayName} ·`}
                           </span>
                         )}
-                        <span>بواسطة: {tx.createdByName || tx.createdBy || 'الإدارة'}</span>
+                        <span>{language === 'en' ? `By: ${tx.createdByName || tx.createdBy || 'Admin'}` : `بواسطة: ${tx.createdByName || tx.createdBy || 'الإدارة'}`}</span>
                         <span>·</span>
                         <span>
                           {tx.createdAt
                             ? typeof tx.createdAt === 'string'
                               ? formatDate(tx.createdAt)
                               : formatRelative(tx.createdAt)
-                            : 'الآن'}
+                            : (language === 'en' ? 'Just now' : 'الآن')}
                         </span>
                       </div>
                     </div>
@@ -839,7 +850,7 @@ export function OCoinsPage() {
                       </p>
                       {typeof tx.newBalance === 'number' && (
                         <p className="text-[10px] text-slate-400 font-mono mt-0.5">
-                          الرصيد: {tx.newBalance} OC
+                          {language === 'en' ? `Balance: ${tx.newBalance} OC` : `الرصيد: ${tx.newBalance} OC`}
                         </p>
                       )}
                     </div>
@@ -854,7 +865,7 @@ export function OCoinsPage() {
                           e.stopPropagation();
                           setDeleteTarget(tx);
                         }}
-                        title="حذف هذا السجل"
+                        title={language === 'en' ? 'Delete this record' : 'حذف هذا السجل'}
                         className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-colors cursor-pointer"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -872,8 +883,8 @@ export function OCoinsPage() {
       <Modal
         open={Boolean(selectedTxForDetail)}
         onClose={() => setSelectedTxForDetail(null)}
-        title="تفاصيل وبيانات المعاملة المالية"
-        description="سجل تدقيق كامل وموثق لعملية تحويل الـ O Coins."
+        title={language === 'en' ? 'Transaction Details' : 'تفاصيل وبيانات المعاملة المالية'}
+        description={language === 'en' ? 'A complete, verified audit log of this O Coins transfer.' : 'سجل تدقيق كامل وموثق لعملية تحويل الـ O Coins.'}
         size="md"
         footer={
           <Button
@@ -882,12 +893,12 @@ export function OCoinsPage() {
             onClick={() => setSelectedTxForDetail(null)}
             className="text-xs"
           >
-            إغلاق
+            {language === 'en' ? 'Close' : 'إغلاق'}
           </Button>
         }
       >
         {selectedTxForDetail && (
-          <div className="space-y-4 font-sans text-right dir-rtl">
+          <div className={cn("space-y-4 font-sans", isRTL ? 'text-right dir-rtl' : 'text-left')}>
             {/* Amount Banner */}
             <div
               className={cn(
@@ -899,7 +910,7 @@ export function OCoinsPage() {
             >
               <div>
                 <span className="text-xs font-bold uppercase tracking-wider block opacity-80">
-                  قيمة المعاملة
+                  {language === 'en' ? 'Transaction Amount' : 'قيمة المعاملة'}
                 </span>
                 <span className="text-3xl font-black">
                   {selectedTxForDetail.amount > 0 ? '+' : ''}
@@ -914,14 +925,14 @@ export function OCoinsPage() {
             {/* Information Grid */}
             <div className="space-y-3 text-xs bg-slate-50 dark:bg-[#181233] p-4 rounded-2xl border border-slate-200/80 dark:border-[#281e4b]">
               <div className="flex items-center justify-between border-b border-slate-200/60 dark:border-white/5 pb-2">
-                <span className="text-slate-400 font-bold">نوع المعاملة:</span>
+                <span className="text-slate-400 font-bold">{language === 'en' ? 'Transaction Type:' : 'نوع المعاملة:'}</span>
                 <span className="font-bold text-slate-800 dark:text-slate-200">
-                  {TRANSACTION_TYPE_CONFIG[selectedTxForDetail.type]?.label || selectedTxForDetail.type}
+                  {getTxTypeConfig(language)[selectedTxForDetail.type]?.label || selectedTxForDetail.type}
                 </span>
               </div>
 
               <div className="flex items-center justify-between border-b border-slate-200/60 dark:border-white/5 pb-2">
-                <span className="text-slate-400 font-bold">عنوان / سبب الإجراء:</span>
+                <span className="text-slate-400 font-bold">{language === 'en' ? 'Title / Reason:' : 'عنوان / سبب الإجراء:'}</span>
                 <span className="font-black text-slate-900 dark:text-white">
                   {selectedTxForDetail.reason || selectedTxForDetail.taskTitle || '—'}
                 </span>
@@ -929,7 +940,7 @@ export function OCoinsPage() {
 
               {selectedTxForDetail.description && (
                 <div className="border-b border-slate-200/60 dark:border-white/5 pb-2">
-                  <span className="text-slate-400 font-bold block mb-1">الشرح والتفاصيل:</span>
+                  <span className="text-slate-400 font-bold block mb-1">{language === 'en' ? 'Description & Details:' : 'الشرح والتفاصيل:'}</span>
                   <p className="text-slate-700 dark:text-slate-300 leading-relaxed font-medium bg-white dark:bg-[#130d29] p-2.5 rounded-xl border border-slate-200/60 dark:border-[#281e4b]">
                     {selectedTxForDetail.description}
                   </p>
@@ -937,14 +948,14 @@ export function OCoinsPage() {
               )}
 
               <div className="flex items-center justify-between border-b border-slate-200/60 dark:border-white/5 pb-2">
-                <span className="text-slate-400 font-bold">صاحب الحساب (المستفيد):</span>
+                <span className="text-slate-400 font-bold">{language === 'en' ? 'Account Holder (Beneficiary):' : 'صاحب الحساب (المستفيد):'}</span>
                 <span className="font-bold text-slate-800 dark:text-slate-200">
                   {selectedTxForDetail.userDisplayName} ({selectedTxForDetail.userEmail})
                 </span>
               </div>
 
               <div className="flex items-center justify-between border-b border-slate-200/60 dark:border-white/5 pb-2">
-                <span className="text-slate-400 font-bold">تم الإجراء والاعتماد بواسطة:</span>
+                <span className="text-slate-400 font-bold">{language === 'en' ? 'Approved & Executed By:' : 'تم الإجراء والاعتماد بواسطة:'}</span>
                 <span className="font-bold text-[var(--brand-primary)] dark:text-[var(--brand-accent)]">
                   {selectedTxForDetail.createdByName || selectedTxForDetail.createdBy}
                 </span>
@@ -953,7 +964,7 @@ export function OCoinsPage() {
               {typeof selectedTxForDetail.previousBalance === 'number' &&
                 typeof selectedTxForDetail.newBalance === 'number' && (
                   <div className="flex items-center justify-between border-b border-slate-200/60 dark:border-white/5 pb-2">
-                    <span className="text-slate-400 font-bold">تدرج الرصيد:</span>
+                    <span className="text-slate-400 font-bold">{language === 'en' ? 'Balance Progression:' : 'تدرج الرصيد:'}</span>
                     <span className="font-mono font-bold text-slate-900 dark:text-white">
                       {selectedTxForDetail.previousBalance} OC ➜ {selectedTxForDetail.newBalance} OC
                     </span>
@@ -961,7 +972,7 @@ export function OCoinsPage() {
                 )}
 
               <div className="flex items-center justify-between pt-1">
-                <span className="text-slate-400 font-bold">تاريخ ووقت المعاملة:</span>
+                <span className="text-slate-400 font-bold">{language === 'en' ? 'Transaction Date & Time:' : 'تاريخ ووقت المعاملة:'}</span>
                 <span className="font-mono text-slate-600 dark:text-slate-300">
                   {selectedTxForDetail.createdAt ? formatDate(selectedTxForDetail.createdAt) : '—'}
                 </span>
@@ -975,8 +986,8 @@ export function OCoinsPage() {
       <Modal
         open={showAdjustModal}
         onClose={() => setShowAdjustModal(false)}
-        title="صرف مكافأة / تعديل رصيد O Coins يدوياً"
-        description="يتطلب التعديل اليدوي سبباً واضحاً وشرحاً لتوثيقه في سجل المعاملات وإشعار الموظف به."
+        title={language === 'en' ? 'Issue Reward / Manual O Coins Adjustment' : 'صرف مكافأة / تعديل رصيد O Coins يدوياً'}
+        description={language === 'en' ? 'Manual adjustments require a clear reason and description to be logged in the transaction record and notified to the member.' : 'يتطلب التعديل اليدوي سبباً واضحاً وشرحاً لتوثيقه في سجل المعاملات وإشعار الموظف به.'}
         size="lg"
         footer={
           <>
@@ -987,7 +998,7 @@ export function OCoinsPage() {
               disabled={adjusting}
               className="text-xs"
             >
-              إلغاء
+              {language === 'en' ? 'Cancel' : 'إلغاء'}
             </Button>
             <Button
               onClick={handleAdjust}
@@ -1002,18 +1013,21 @@ export function OCoinsPage() {
               )}
             >
               {adjustType === 'penalty_deduction' || adjustType === 'manual_remove'
-                ? 'تأكيد خصم الرصيد'
-                : 'تأكيد صرف المكافأة'}
+                ? (language === 'en' ? 'Confirm Deduction' : 'تأكيد خصم الرصيد')
+                : (language === 'en' ? 'Confirm Reward' : 'تأكيد صرف المكافأة')}
             </Button>
           </>
         }
       >
-        <div className="space-y-4 text-right font-sans dir-rtl">
+        <div className={cn("space-y-4 font-sans", isRTL ? 'text-right dir-rtl' : 'text-left')}>
           {isHead && (
             <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-800 dark:text-amber-200 font-bold flex items-start gap-2.5">
               <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
               <div className="leading-relaxed">
-                <span>صلاحيتك كرئيس لجنة <strong>{userProfile?.committeeName || ''}</strong>: تقتصر حصراً على أعضاء ونائب رئيس لجنتك. محظور صرف كوينز لنفسك أو خارج لجنتك.</span>
+                {language === 'en'
+                  ? <span>Your authority as Head of <strong>{userProfile?.committeeName || ''}</strong> committee is limited exclusively to your committee members and vice-head. Issuing coins to yourself or outside your committee is prohibited.</span>
+                  : <span>صلاحيتك كرئيس لجنة <strong>{userProfile?.committeeName || ''}</strong>: تقتصر حصراً على أعضاء ونائب رئيس لجنتك. محظور صرف كوينز لنفسك أو خارج لجنتك.</span>
+                }
               </div>
             </div>
           )}
@@ -1021,12 +1035,14 @@ export function OCoinsPage() {
           {/* Target employee */}
           <div>
             <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1">
-              {isHead ? `اختر عضو لجنة ${userProfile?.committeeName || ''} المستهدف *` : 'اختر عضو الفريق المستهدف *'}
+              {isHead
+                ? (language === 'en' ? `Select target committee member (${userProfile?.committeeName || ''}) *` : `اختر عضو لجنة ${userProfile?.committeeName || ''} المستهدف *`)
+                : (language === 'en' ? 'Select target team member *' : 'اختر عضو الفريق المستهدف *')}
             </label>
             <div className="border border-[var(--border-subtle)] rounded-2xl overflow-hidden bg-[var(--bg-surface)]">
               <div className="p-2 border-b border-[var(--border-subtle)] bg-[var(--bg-elevated)]/40">
                 <Input
-                  placeholder="ابحث باسم العضو أو المعرف..."
+                  placeholder={language === 'en' ? 'Search by member name or ID...' : 'ابحث باسم العضو أو المعرف...'}
                   value={userSearch}
                   onChange={(e) => setUserSearch(e.target.value)}
                   leftIcon={<Search className="h-4 w-4 text-[var(--text-muted)]" />}
@@ -1064,7 +1080,7 @@ export function OCoinsPage() {
             </div>
             {adjustTarget && (
               <p className="text-xs text-[var(--brand-primary)] font-bold mt-1.5">
-                ✓ العضو المختار: {formatFullName(adjustTarget.displayName)} (@{adjustTarget.username || adjustTarget.email})
+                ✓ {language === 'en' ? `Selected Member: ${formatFullName(adjustTarget.displayName)} (@${adjustTarget.username || adjustTarget.email})` : `العضو المختار: ${formatFullName(adjustTarget.displayName)} (@${adjustTarget.username || adjustTarget.email})`}
               </p>
             )}
           </div>
@@ -1072,30 +1088,30 @@ export function OCoinsPage() {
           {/* Action Type */}
           <div>
             <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1">
-              تصنيف المعاملة والسبب الرئيسي *
+              {language === 'en' ? 'Transaction Category & Primary Reason *' : 'تصنيف المعاملة والسبب الرئيسي *'}
             </label>
             <select
               value={adjustType}
               onChange={(e) => setAdjustType(e.target.value as OCoinTransactionType)}
               className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]"
             >
-              <option value="manual_reward">🌟 مكافأة تميز وأداء استثنائي (+)</option>
-              <option value="meeting_reward">📅 مكافأة حضور اجتماع هام (+)</option>
-              <option value="achievement_reward">🏆 مكافأة إنجاز استثنائي (+)</option>
-              <option value="manual_add">➕ إيداع رصيد إداري عام (+)</option>
-              <option value="admin_adjustment">⚙️ تدقيق وتعديل إداري للرصيد</option>
-              <option value="penalty_deduction">⚠️ خصم / جزاء إداري (-)</option>
+              <option value="manual_reward">{language === 'en' ? '🌟 Excellence & Outstanding Performance Reward (+)' : '🌟 مكافأة تميز وأداء استثنائي (+)'}</option>
+              <option value="meeting_reward">{language === 'en' ? '📅 Important Meeting Attendance Reward (+)' : '📅 مكافأة حضور اجتماع هام (+)'}</option>
+              <option value="achievement_reward">{language === 'en' ? '🏆 Outstanding Achievement Reward (+)' : '🏆 مكافأة إنجاز استثنائي (+)'}</option>
+              <option value="manual_add">{language === 'en' ? '➕ General Admin Balance Deposit (+)' : '➕ إيداع رصيد إداري عام (+)'}</option>
+              <option value="admin_adjustment">{language === 'en' ? '⚙️ Administrative Balance Audit & Adjustment' : '⚙️ تدقيق وتعديل إداري للرصيد'}</option>
+              <option value="penalty_deduction">{language === 'en' ? '⚠️ Administrative Penalty / Deduction (-)' : '⚠️ خصم / جزاء إداري (-)'}</option>
             </select>
           </div>
 
           <div>
             <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1">
-              عدد عملات O Coins *
+              {language === 'en' ? 'Number of O Coins *' : 'عدد عملات O Coins *'}
             </label>
             <Input
               type="number"
               min="1"
-              placeholder="مثال: 100"
+              placeholder={language === 'en' ? 'e.g. 100' : 'مثال: 100'}
               value={adjustAmount}
               onChange={(e) => setAdjustAmount(e.target.value)}
               required
@@ -1104,25 +1120,25 @@ export function OCoinsPage() {
 
           <div>
             <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1">
-              عنوان السبب المسجل *
+              {language === 'en' ? 'Recorded Reason Title *' : 'عنوان السبب المسجل *'}
             </label>
             <Input
               value={adjustReason}
               onChange={(e) => setAdjustReason(e.target.value)}
-              placeholder="مثال: تميز استثنائي في إعداد التقرير النهائي"
+              placeholder={language === 'en' ? 'e.g. Outstanding performance in the final report' : 'مثال: تميز استثنائي في إعداد التقرير النهائي'}
               required
             />
           </div>
 
           <div>
             <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1">
-              شرح وتفاصيل إضافية (تظهر للموظف في الإشعار والأرشيف)
+              {language === 'en' ? 'Additional Details (shown to member in notification and archive)' : 'شرح وتفاصيل إضافية (تظهر للموظف في الإشعار والأرشيف)'}
             </label>
             <textarea
               rows={3}
               value={adjustDescription}
               onChange={(e) => setAdjustDescription(e.target.value)}
-              placeholder="اكتب توضيحاً يشرح للعضو سبب منحه هذه المكافأة لتعزيز التحفيز والشفافية..."
+              placeholder={language === 'en' ? 'Write a note explaining why this reward was granted to boost motivation and transparency...' : 'اكتب توضيحاً يشرح للعضو سبب منحه هذه المكافأة لتعزيز التحفيز والشفافية...'}
               className="w-full p-3 rounded-xl text-xs bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] resize-none"
             />
           </div>
@@ -1135,10 +1151,13 @@ export function OCoinsPage() {
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDeleteTx}
         loading={deletingTx}
-        title="حذف سجل المعاملة"
-        description={`هل أنت متأكد من حذف سجل معاملة "${deleteTarget?.taskTitle || deleteTarget?.reason}" (${deleteTarget?.amount && deleteTarget.amount > 0 ? '+' : ''}${deleteTarget?.amount} OC)؟`}
-        confirmLabel="حذف السجل"
-        cancelLabel="إلغاء"
+        title={language === 'en' ? 'Delete Transaction Record' : 'حذف سجل المعاملة'}
+        description={language === 'en'
+          ? `Are you sure you want to delete the transaction record "${deleteTarget?.taskTitle || deleteTarget?.reason}" (${deleteTarget?.amount && deleteTarget.amount > 0 ? '+' : ''}${deleteTarget?.amount} OC)?`
+          : `هل أنت متأكد من حذف سجل معاملة "${deleteTarget?.taskTitle || deleteTarget?.reason}" (${deleteTarget?.amount && deleteTarget.amount > 0 ? '+' : ''}${deleteTarget?.amount} OC)؟`
+        }
+        confirmLabel={language === 'en' ? 'Delete Record' : 'حذف السجل'}
+        cancelLabel={language === 'en' ? 'Cancel' : 'إلغاء'}
         variant="danger"
       />
 
@@ -1148,10 +1167,13 @@ export function OCoinsPage() {
         onClose={() => setShowClearAllModal(false)}
         onConfirm={handleClearAll}
         loading={clearingAll}
-        title="مسح جميع سجلات معاملات O Coins"
-        description="تحذير: هل أنت متأكد من رغبتك في مسح كافة سجلات وتاريخ معاملات O Coins بالكامل من النظام؟ لا يمكن التراجع عن هذا الإجراء."
-        confirmLabel="نعم، مسح كل السجلات"
-        cancelLabel="إلغاء"
+        title={language === 'en' ? 'Clear All O Coins Transaction Records' : 'مسح جميع سجلات معاملات O Coins'}
+        description={language === 'en'
+          ? 'Warning: Are you sure you want to permanently erase all O Coins transaction history from the system? This action cannot be undone.'
+          : 'تحذير: هل أنت متأكد من رغبتك في مسح كافة سجلات وتاريخ معاملات O Coins بالكامل من النظام؟ لا يمكن التراجع عن هذا الإجراء.'
+        }
+        confirmLabel={language === 'en' ? 'Yes, Clear All Records' : 'نعم، مسح كل السجلات'}
+        cancelLabel={language === 'en' ? 'Cancel' : 'إلغاء'}
         variant="danger"
       />
         </>

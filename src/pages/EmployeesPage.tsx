@@ -26,7 +26,7 @@ import { UserNameWithRole } from '@/components/ui/user-name-badge';
 
 export function EmployeesPage() {
   const { userProfile } = useAuth();
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, language } = useLanguage();
   const [employees, setEmployees] = useState<UserProfile[]>([]);
   const [committees, setCommittees] = useState<Committee[]>([]);
   const [committeeFilter, setCommitteeFilter] = useState<string>('');
@@ -1062,7 +1062,7 @@ export function EmployeesPage() {
                                 }}
                               >
                                 <span className="w-2 h-2 rounded-full" style={{ backgroundColor: commColor }} />
-                                {displayComm}
+                                {isNoComm ? (language === 'en' ? 'No Committee' : 'بدون لجنة') : displayComm}
                               </span>
                             );
                           }
@@ -1083,7 +1083,7 @@ export function EmployeesPage() {
                             : 'bg-rose-500/15 text-rose-500'
                         }`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${emp.status === 'active' ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-                          {emp.status === 'active' ? 'نشط (Active)' : emp.status === 'suspended' ? 'معطّل (Suspended)' : 'غير نشط (Inactive)'}
+                          {emp.status === 'active' ? (language === 'en' ? 'Active' : 'نشط') : emp.status === 'suspended' ? (language === 'en' ? 'Suspended' : 'معطّل') : (language === 'en' ? 'Inactive' : 'غير نشط')}
                         </span>
                       </td>
 
@@ -1111,7 +1111,7 @@ export function EmployeesPage() {
                           <div className="flex items-center justify-end">
                             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 shadow-sm">
                               <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                              حسابك الحالي (أنت)
+                              {language === 'en' ? 'Your Account (You)' : 'حسابك الحالي (أنت)'}
                             </span>
                           </div>
                         ) : canManageUser(userProfile, emp) ? (
@@ -1164,7 +1164,7 @@ export function EmployeesPage() {
                               borderColor: commColor + '40',
                             }}
                           >
-                            {displayComm}
+                            {isNoComm ? (language === 'en' ? 'No Committee' : 'بدون لجنة') : displayComm}
                           </span>
                         );
                       })()}
@@ -1193,12 +1193,14 @@ export function EmployeesPage() {
                 </div>
                 <div className="flex items-center gap-2 mt-3 flex-wrap">
                   <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${getRoleColor(emp.role)}`}>{getRoleLabel(emp.role)}</span>
-                  <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${emp.status === 'active' ? 'bg-emerald-500/15 text-emerald-500' : 'bg-rose-500/15 text-rose-500'}`}>{emp.status}</span>
+                  <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${emp.status === 'active' ? 'bg-emerald-500/15 text-emerald-500' : 'bg-rose-500/15 text-rose-500'}`}>
+                    {emp.status === 'active' ? (language === 'en' ? 'Active' : 'نشط') : emp.status === 'suspended' ? (language === 'en' ? 'Suspended' : 'معطّل') : (language === 'en' ? 'Inactive' : 'غير نشط')}
+                  </span>
                 </div>
                 {emp.uid === userProfile?.uid ? (
                   <div className="mt-3 p-2 text-center rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-xs font-bold text-blue-700 dark:text-blue-300 flex items-center justify-center gap-2 shadow-sm">
                     <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                    <span>حسابك الحالي (أنت)</span>
+                    <span>{language === 'en' ? 'Your Account (You)' : 'حسابك الحالي (أنت)'}</span>
                   </div>
                 ) : canManageUser(userProfile, emp) ? (
                   <div className="grid grid-cols-5 gap-1.5 mt-3">

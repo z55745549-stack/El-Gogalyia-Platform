@@ -22,40 +22,57 @@ export function safeDate(date: any): Date {
   return new Date();
 }
 
+function getCurrentLanguage(): 'ar' | 'en' {
+  if (typeof window !== 'undefined') {
+    try {
+      const saved = localStorage.getItem('elgogalyia_lang');
+      if (saved === 'en' || saved === 'ar') return saved;
+      if (document.documentElement.lang === 'en') return 'en';
+    } catch {
+      // ignore
+    }
+  }
+  return 'ar';
+}
+
 // ─── Date Formatting ──────────────────────────────────────────────────────────
 
-export function formatDate(date: any): string {
+export function formatDate(date: any, lang?: 'ar' | 'en'): string {
+  const l = lang || getCurrentLanguage();
   try {
-    return format(safeDate(date), 'd MMM yyyy', { locale: ar });
+    return format(safeDate(date), 'd MMM yyyy', l === 'ar' ? { locale: ar } : undefined);
   } catch {
-    return 'غير محدد';
+    return l === 'en' ? 'Not specified' : 'غير محدد';
   }
 }
 
-export function formatDateShort(date: any): string {
+export function formatDateShort(date: any, lang?: 'ar' | 'en'): string {
+  const l = lang || getCurrentLanguage();
   try {
-    return format(safeDate(date), 'd MMM', { locale: ar });
+    return format(safeDate(date), 'd MMM', l === 'ar' ? { locale: ar } : undefined);
   } catch {
-    return 'غير محدد';
+    return l === 'en' ? 'Not specified' : 'غير محدد';
   }
 }
 
-export function formatDateTime(date: any): string {
+export function formatDateTime(date: any, lang?: 'ar' | 'en'): string {
+  const l = lang || getCurrentLanguage();
   try {
-    return format(safeDate(date), 'd MMM yyyy · h:mm a', { locale: ar });
+    return format(safeDate(date), 'd MMM yyyy · h:mm a', l === 'ar' ? { locale: ar } : undefined);
   } catch {
-    return 'غير محدد';
+    return l === 'en' ? 'Not specified' : 'غير محدد';
   }
 }
 
-export function formatRelative(date: any): string {
+export function formatRelative(date: any, lang?: 'ar' | 'en'): string {
+  const l = lang || getCurrentLanguage();
   try {
     const d = safeDate(date);
-    if (isToday(d)) return formatDistanceToNow(d, { addSuffix: true, locale: ar });
-    if (isYesterday(d)) return 'أمس';
-    return format(d, 'd MMM yyyy', { locale: ar });
+    if (isToday(d)) return formatDistanceToNow(d, { addSuffix: true, ...(l === 'ar' ? { locale: ar } : {}) });
+    if (isYesterday(d)) return l === 'en' ? 'Yesterday' : 'أمس';
+    return format(d, 'd MMM yyyy', l === 'ar' ? { locale: ar } : undefined);
   } catch {
-    return 'غير محدد';
+    return l === 'en' ? 'Not specified' : 'غير محدد';
   }
 }
 
@@ -104,8 +121,14 @@ export function formatPercent(value: number): string {
 
 // ─── Greeting ─────────────────────────────────────────────────────────────────
 
-export function getGreeting(): string {
+export function getGreeting(lang?: 'ar' | 'en'): string {
+  const l = lang || getCurrentLanguage();
   const hour = new Date().getHours();
+  if (l === 'en') {
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  }
   if (hour < 12) return 'صباح الخير';
   if (hour < 17) return 'مساء الخير';
   return 'مساء الخير';
@@ -113,13 +136,29 @@ export function getGreeting(): string {
 
 // ─── First Name ───────────────────────────────────────────────────────────────
 
-export function getFirstName(displayName: string): string {
-  return (displayName || 'المستخدم').split(' ')[0] || displayName || 'المستخدم';
+export function getFirstName(displayName: string, lang?: 'ar' | 'en'): string {
+  const fallback = (lang || getCurrentLanguage()) === 'en' ? 'User' : 'المستخدم';
+  return (displayName || fallback).split(' ')[0] || displayName || fallback;
 }
 
 // ─── Task Status ──────────────────────────────────────────────────────────────
 
-export function getStatusLabel(status: string): string {
+export function getStatusLabel(status: string, lang?: 'ar' | 'en'): string {
+  const l = lang || getCurrentLanguage();
+  if (l === 'en') {
+    const enLabels: Record<string, string> = {
+      draft: 'Draft',
+      pending: 'Pending',
+      in_progress: 'In Progress',
+      submitted: 'Submitted',
+      approved: 'Approved',
+      completed: 'Completed',
+      expired: 'Expired',
+      archived: 'Archived',
+      rejected: 'Revision Requested',
+    };
+    return enLabels[status] || status || 'Pending';
+  }
   const labels: Record<string, string> = {
     draft: 'مسودة',
     pending: 'قيد الانتظار',
@@ -134,7 +173,17 @@ export function getStatusLabel(status: string): string {
   return labels[status] || status || 'قيد الانتظار';
 }
 
-export function getPriorityLabel(priority: string): string {
+export function getPriorityLabel(priority: string, lang?: 'ar' | 'en'): string {
+  const l = lang || getCurrentLanguage();
+  if (l === 'en') {
+    const enLabels: Record<string, string> = {
+      urgent: 'Urgent',
+      high: 'High Priority',
+      medium: 'Medium',
+      low: 'Low',
+    };
+    return enLabels[priority] || priority || 'Medium';
+  }
   const labels: Record<string, string> = {
     urgent: 'عاجل جداً',
     high: 'أولوية عالية',

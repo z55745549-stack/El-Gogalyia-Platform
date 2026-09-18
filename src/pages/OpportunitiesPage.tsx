@@ -39,38 +39,58 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SkeletonCard } from '@/components/ui/skeleton';
 import { formatDate, cn } from '@/utils';
+import { useLanguage } from '@/context/LanguageContext';
 import type { Opportunity, OpportunityCategory, OpportunityStatus } from '@/types';
 // 2-Step admin auth removed — Lead/Co-Lead/Head act directly
 
-const CATEGORIES: { value: string; label: string; icon: any }[] = [
-  { value: 'all', label: 'جميع الفرص والتدريبات', icon: GraduationCap },
-  { value: 'training', label: 'برامج تدريب وتأهيل', icon: BookOpen },
-  { value: 'job', label: 'فرص عمل وتوظيف', icon: Briefcase },
-  { value: 'scholarship', label: 'منح دراسية', icon: Award },
-  { value: 'workshop', label: 'ورش عمل ومعسكرات', icon: Sparkles },
-  { value: 'competition', label: 'مسابقات وهاكاثون', icon: Trophy },
-];
-
-const getCategoryBadge = (category: OpportunityCategory) => {
+const getCategoryBadge = (category: OpportunityCategory, lang: string = 'ar') => {
   switch (category) {
     case 'training':
-      return { label: 'برنامج تدريبي', classes: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20' };
+      return {
+        label: lang === 'en' ? 'Training Program' : 'برنامج تدريبي',
+        classes: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20'
+      };
     case 'job':
-      return { label: 'فرصة عمل', classes: 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20' };
+      return {
+        label: lang === 'en' ? 'Job Opportunity' : 'فرصة عمل',
+        classes: 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20'
+      };
     case 'scholarship':
-      return { label: 'منحة دراسية', classes: 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/20' };
+      return {
+        label: lang === 'en' ? 'Scholarship' : 'منحة دراسية',
+        classes: 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/20'
+      };
     case 'workshop':
-      return { label: 'ورشة عمل', classes: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20' };
+      return {
+        label: lang === 'en' ? 'Workshop' : 'ورشة عمل',
+        classes: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20'
+      };
     case 'competition':
-      return { label: 'مسابقة / هاكاثون', classes: 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/20' };
+      return {
+        label: lang === 'en' ? 'Competition / Hackathon' : 'مسابقة / هاكاثون',
+        classes: 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/20'
+      };
     default:
-      return { label: 'فرصة', classes: 'bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/20' };
+      return {
+        label: lang === 'en' ? 'Opportunity' : 'فرصة',
+        classes: 'bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/20'
+      };
   }
 };
 
 export function OpportunitiesPage() {
   const { userProfile } = useAuth();
+  const { t, isRTL, language } = useLanguage();
   const isAdmin = userProfile ? isAdminRole(userProfile.role) : false;
+
+  const CATEGORIES = [
+    { value: 'all', label: t('opportunities.cat_all'), icon: GraduationCap },
+    { value: 'training', label: t('opportunities.cat_training'), icon: BookOpen },
+    { value: 'job', label: t('opportunities.cat_job'), icon: Briefcase },
+    { value: 'scholarship', label: t('opportunities.cat_scholarship'), icon: Award },
+    { value: 'workshop', label: t('opportunities.cat_workshop'), icon: Sparkles },
+    { value: 'competition', label: t('opportunities.cat_competition'), icon: Trophy },
+  ];
 
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [loading, setLoading] = useState(true);
@@ -252,20 +272,20 @@ export function OpportunitiesPage() {
   }, [opportunities, search, selectedCategory, statusFilter]);
 
   return (
-    <div className="space-y-6 font-sans text-right dir-rtl">
+    <div className={cn("space-y-6 font-sans", isRTL ? "text-right dir-rtl" : "text-left")}>
       {/* Top Hero Banner */}
       <div className="card card-glass mesh-bg rounded-3xl p-6 sm:p-8 text-[var(--text-primary)] relative overflow-hidden shadow-lg border border-[var(--brand-primary)]/30">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-xl badge-accent font-black text-xs mb-2.5 backdrop-blur-xs">
               <Sparkles className="h-3.5 w-3.5" />
-              <span>محتوى حصري ومخصص لأعضاء فريق منصة الجوجالية</span>
+              <span>{t('opportunities.exclusive_badge')}</span>
             </div>
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-[var(--text-primary)]">
-              الفرص والتدريبات الحصرية (Opportunities & Internships)
+              {t('opportunities.hero_title')}
             </h1>
             <p className="text-[var(--text-secondary)] text-xs sm:text-sm mt-1.5 font-bold max-w-2xl leading-relaxed">
-              تصفح أحدث المنح التدريبية، وفرص العمل، والبرامج التطويرية المتاحة حصرياً لدعم وتطوير مهارات أعضاء الفريق.
+              {t('opportunities.hero_desc')}
             </p>
           </div>
 
@@ -275,7 +295,7 @@ export function OpportunitiesPage() {
               className="btn-primary border-none shadow-xl font-black text-xs sm:text-sm py-3 px-6 rounded-2xl gap-2 cursor-pointer shrink-0"
             >
               <Plus className="h-5 w-5" />
-              <span>نشر فرصة / تدريب جديد</span>
+              <span>{t('opportunities.post_new')}</span>
             </Button>
           )}
         </div>
@@ -286,18 +306,23 @@ export function OpportunitiesPage() {
       <div className="space-y-3 bg-white dark:bg-[#130d29] p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-[#291f4a] shadow-sm transition-colors">
         <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
           <div className="relative w-full sm:max-w-md">
-            <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Search className={cn("absolute top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400", isRTL ? "right-3.5" : "left-3.5")} />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="ابحث باسم الفرصة، الجهة المقدمة، أو الكلمات المفتاحية..."
-              className="form-input pr-10 pl-4 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-[#1a1336] border-slate-200 dark:border-[#2f2454] rounded-xl w-full"
+              placeholder={t('opportunities.search_placeholder')}
+              className={cn(
+                "form-input py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-[#1a1336] border-slate-200 dark:border-[#2f2454] rounded-xl w-full",
+                isRTL ? "pr-10 pl-4" : "pl-10 pr-4"
+              )}
             />
           </div>
 
           <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 hidden sm:inline">الحالة:</span>
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 hidden sm:inline">
+              {language === 'en' ? 'Status:' : 'الحالة:'}
+            </span>
             <div className="flex items-center gap-1 bg-slate-100 dark:bg-[#1a1336] p-1 rounded-xl border border-slate-200 dark:border-[#2f2454] w-full sm:w-auto">
               <button
                 onClick={() => setStatusFilter('all')}
@@ -308,7 +333,7 @@ export function OpportunitiesPage() {
                     : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
                 )}
               >
-                الكل
+                {t('opportunities.tab_all')}
               </button>
               <button
                 onClick={() => setStatusFilter('active')}
@@ -319,7 +344,7 @@ export function OpportunitiesPage() {
                     : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
                 )}
               >
-                النشطة
+                {t('opportunities.tab_active')}
               </button>
               <button
                 onClick={() => setStatusFilter('expired')}
@@ -330,7 +355,7 @@ export function OpportunitiesPage() {
                     : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
                 )}
               >
-                المنتهية
+                {t('opportunities.tab_expired')}
               </button>
             </div>
           </div>
@@ -371,12 +396,12 @@ export function OpportunitiesPage() {
         <div className="bg-white dark:bg-[#130d29] rounded-2xl border border-slate-200/80 dark:border-[#291f4a] p-12 text-center">
           <EmptyState
             icon={<GraduationCap className="h-10 w-10 text-[var(--brand-accent)]" />}
-            title="لا توجد فرص متاحة حالياً"
-            description="لم يتم العثور على فرص تطابق خيارات البحث المحددة. سيتم نشر تدريبات وفرص جديدة قريباً!"
+            title={t('opportunities.empty_title')}
+            description={t('opportunities.empty_desc')}
             action={
               isAdmin ? (
                 <Button onClick={openCreateModal} className="mt-4 gap-2">
-                  <Plus className="h-4 w-4" /> نشر أول فرصة تدريبية
+                  <Plus className="h-4 w-4" /> {t('opportunities.post_new')}
                 </Button>
               ) : undefined
             }
@@ -385,7 +410,7 @@ export function OpportunitiesPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filteredOpportunities.map((opp) => {
-            const categoryBadge = getCategoryBadge(opp.category);
+            const categoryBadge = getCategoryBadge(opp.category, language);
             const countdown = getOpportunityCountdown(opp.deadline);
 
             return (
@@ -432,10 +457,12 @@ export function OpportunitiesPage() {
                   <div className="p-3 rounded-xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent dark:from-amber-400/15 dark:via-amber-400/5 border border-amber-500/30 dark:border-amber-400/30 flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
                       <Sparkles className="h-4 w-4 text-amber-500 flex-shrink-0 animate-pulse" />
-                      <span className="text-xs font-black text-amber-800 dark:text-amber-300">مخصص لأعضاء الفريق فقط 🔒</span>
+                      <span className="text-xs font-black text-amber-800 dark:text-amber-300">
+                        {language === 'en' ? 'Team members only 🔒' : 'مخصص لأعضاء الفريق فقط 🔒'}
+                      </span>
                     </div>
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-900 dark:text-amber-200">
-                      فرصة حصرية
+                      {language === 'en' ? 'Exclusive' : 'فرصة حصرية'}
                     </span>
                   </div>
 
@@ -453,7 +480,7 @@ export function OpportunitiesPage() {
                     size="sm"
                     className="flex-1 text-xs font-bold py-2 border-slate-200 dark:border-white/10 hover:border-[var(--brand-accent)] hover:text-[var(--brand-accent)] rounded-xl"
                   >
-                    عرض التفاصيل الكاملة
+                    {language === 'en' ? 'View Full Details' : 'عرض التفاصيل الكاملة'}
                   </Button>
 
                   <a
@@ -507,7 +534,9 @@ export function OpportunitiesPage() {
                 className="w-full sm:w-auto gap-1.5 text-xs rounded-xl"
               >
                 {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
-                {copied ? 'تم النسخ!' : 'نسخ رابط التقديم'}
+                {copied
+                  ? (language === 'en' ? 'Copied!' : 'تم النسخ!')
+                  : (language === 'en' ? 'Copy Application Link' : 'نسخ رابط التقديم')}
               </Button>
 
               <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -517,7 +546,7 @@ export function OpportunitiesPage() {
                   onClick={() => setSelectedOpportunity(null)}
                   className="flex-1 sm:flex-initial text-xs rounded-xl"
                 >
-                  إغلاق
+                  {language === 'en' ? 'Close' : 'إغلاق'}
                 </Button>
                 <a
                   href={selectedOpportunity.applicationUrl}
@@ -526,18 +555,18 @@ export function OpportunitiesPage() {
                   className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-5 py-2 rounded-xl btn-primary font-black text-xs transition-all shadow-md"
                 >
                   <ExternalLink className="h-4 w-4" />
-                  <span>التقديم على الفرصة الآن 🚀</span>
+                  <span>{language === 'en' ? 'Apply for Opportunity Now 🚀' : 'التقديم على الفرصة الآن 🚀'}</span>
                 </a>
               </div>
             </div>
           }
         >
-          <div className="space-y-5 text-right font-sans">
+          <div className={cn("space-y-5 font-sans", isRTL ? "text-right dir-rtl" : "text-left")}>
             {/* Badges and Metas */}
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 dark:border-white/10 pb-4">
               <div className="flex items-center gap-2">
-                <span className={cn('badge text-xs font-black border px-3 py-1 rounded-xl', getCategoryBadge(selectedOpportunity.category).classes)}>
-                  {getCategoryBadge(selectedOpportunity.category).label}
+                <span className={cn('badge text-xs font-black border px-3 py-1 rounded-xl', getCategoryBadge(selectedOpportunity.category, language).classes)}>
+                  {getCategoryBadge(selectedOpportunity.category, language).label}
                 </span>
                 <span className="text-xs font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
                   <Building2 className="h-4 w-4 text-[var(--brand-accent)]" />
@@ -547,8 +576,8 @@ export function OpportunitiesPage() {
 
               <div className="flex items-center gap-2 text-xs">
                 <Calendar className="h-4 w-4 text-slate-400" />
-                <span className="text-slate-500 dark:text-slate-400 font-semibold">آخر موعد:</span>
-                <strong className="text-slate-900 dark:text-white font-bold">{formatDate(selectedOpportunity.deadline)}</strong>
+                <span className="text-slate-500 dark:text-slate-400 font-semibold">{language === 'en' ? 'Deadline:' : 'آخر موعد:'}</span>
+                <strong className="text-slate-900 dark:text-white font-bold">{formatDate(selectedOpportunity.deadline, language)}</strong>
               </div>
             </div>
 
@@ -560,15 +589,17 @@ export function OpportunitiesPage() {
                 </div>
                 <div>
                   <p className="text-xs sm:text-sm font-black text-amber-900 dark:text-amber-200">
-                    مخصص لأعضاء فريق منصة الجوجالية فقط 🔒
+                    {language === 'en' ? 'Exclusive to El-Gogalyia team members only 🔒' : 'مخصص لأعضاء فريق منصة الجوجالية فقط 🔒'}
                   </p>
                   <p className="text-[11px] text-amber-700 dark:text-amber-300/90 font-medium">
-                    هذه الفرصة تم جلبها ومراجعتها خصيصاً لدعم مسارك المهني والتقني مع الفريق.
+                    {language === 'en'
+                      ? 'This opportunity was curated to support your technical and career journey.'
+                      : 'هذه الفرصة تم جلبها ومراجعتها خصيصاً لدعم مسارك المهني والتقني مع الفريق.'}
                   </p>
                 </div>
               </div>
               <span className="hidden sm:inline-block text-[11px] font-extrabold px-2.5 py-1 rounded-lg bg-amber-500/25 text-amber-900 dark:text-amber-100">
-                أولوية قبول
+                {language === 'en' ? 'Priority Admission' : 'أولوية قبول'}
               </span>
             </div>
 

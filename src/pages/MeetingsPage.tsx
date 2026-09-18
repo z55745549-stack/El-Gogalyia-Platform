@@ -37,6 +37,7 @@ import { formatDate, cn } from '@/utils';
 import type { Meeting, MeetingType, MeetingStatus } from '@/types';
 import { Timestamp } from '@/lib/supabase';
 import { isAdminRole } from '@/utils/permissions';
+import { useLanguage } from '@/context/LanguageContext';
 
 const TYPE_OPTIONS: { value: MeetingType; label: string }[] = [
   { value: 'general', label: 'اجتماع عام (General)' },
@@ -86,6 +87,7 @@ function MeetingCard({
   onDelete: (m: Meeting) => void;
   index: number;
 }) {
+  const { t, language } = useLanguage();
   const typeConf = TYPE_CONFIG[meeting.type] || TYPE_CONFIG.general;
   const statusConf = STATUS_CONFIG[meeting.status] || STATUS_CONFIG.scheduled;
   const countdown = getCountdown(meeting.date, meeting.startTime);
@@ -93,6 +95,14 @@ function MeetingCard({
   const isCompleted = meeting.status === 'completed';
   const isCancelled = meeting.status === 'cancelled';
   const isInProgress = meeting.status === 'in_progress';
+
+  const typeLabel = language === 'en'
+    ? (meeting.type === 'general' ? 'General Meeting' : meeting.type === 'training' ? 'Training Workshop' : meeting.type === 'committee' ? 'Committee Meeting' : 'Review & Evaluation')
+    : typeConf.label;
+
+  const statusLabel = language === 'en'
+    ? (meeting.status === 'scheduled' ? 'Scheduled' : meeting.status === 'in_progress' ? 'In Progress' : meeting.status === 'completed' ? 'Completed' : 'Cancelled')
+    : statusConf.label;
 
   return (
     <motion.div
@@ -130,12 +140,12 @@ function MeetingCard({
               )}
             >
               <span>{typeConf.icon}</span>
-              {typeConf.label}
+              {typeLabel}
             </span>
 
             <span className={cn('flex items-center gap-1.5 text-xs font-bold', statusConf.color)}>
               <span className={cn('w-2 h-2 rounded-full', statusConf.dot)} />
-              {statusConf.label}
+              {statusLabel}
             </span>
           </div>
 
@@ -156,7 +166,7 @@ function MeetingCard({
             {/* Date & Countdown */}
             <div className="flex items-center gap-2">
               <CalendarDays className="h-4 w-4 text-indigo-500 shrink-0" />
-              <span className="font-bold text-[var(--text-primary)]">{formatDate(meeting.date)}</span>
+              <span className="font-bold text-[var(--text-primary)]">{formatDate(meeting.date, language)}</span>
               {countdown && !isCompleted && !isCancelled && (
                 <span className="mr-auto px-2 py-0.5 rounded-lg bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 text-[11px] font-black flex items-center gap-1">
                   <Timer className="h-3 w-3" /> {countdown}
@@ -168,7 +178,9 @@ function MeetingCard({
             <div className="flex items-center gap-2 text-[var(--text-secondary)]">
               <Clock className="h-4 w-4 text-[var(--brand-primary)] shrink-0" />
               <span>
-                الساعة <strong className="text-[var(--text-primary)] font-bold">{meeting.startTime}</strong> · المدة {meeting.durationMinutes} دقيقة
+                {language === 'en' ? 'Time ' : 'الساعة '}
+                <strong className="text-[var(--text-primary)] font-bold">{meeting.startTime}</strong>
+                {language === 'en' ? ` · Duration ${meeting.durationMinutes} mins` : ` · المدة ${meeting.durationMinutes} دقيقة`}
               </span>
             </div>
 
@@ -187,7 +199,7 @@ function MeetingCard({
             {/* Organizer */}
             <div className="flex items-center gap-2 text-[11px] text-[var(--text-muted)] pt-0.5">
               <Users className="h-3.5 w-3.5 shrink-0" />
-              <span>منظَّم بواسطة: {meeting.createdByName || 'إدارة المنصة'}</span>
+              <span>{t('meetings.organized_by', 'منظَّم بواسطة:')} {meeting.createdByName || (language === 'en' ? 'Platform Management' : 'إدارة المنصة')}</span>
             </div>
           </div>
         </div>
@@ -198,7 +210,7 @@ function MeetingCard({
             onClick={() => onView(meeting)}
             className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3.5 rounded-xl bg-[var(--surface-elevated)] hover:bg-[var(--border-subtle)] text-[var(--text-primary)] text-xs font-black transition-colors cursor-pointer border border-[var(--border-subtle)]/70"
           >
-            <span>عرض التفاصيل</span>
+            <span>{t('meetings.view_details', 'عرض التفاصيل')}</span>
             <ChevronRight className="h-3.5 w-3.5 opacity-60" />
           </button>
 
@@ -210,7 +222,7 @@ function MeetingCard({
               className="flex items-center gap-1.5 py-2 px-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black transition-all shadow-xs cursor-pointer"
             >
               <Video className="h-3.5 w-3.5" />
-              <span>دخول</span>
+              <span>{t('meetings.join', 'دخول')}</span>
             </a>
           )}
 
@@ -218,7 +230,7 @@ function MeetingCard({
             <button
               onClick={() => onDelete(meeting)}
               className="p-2 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 border border-rose-500/20 transition-colors cursor-pointer"
-              title="حذف الاجتماع"
+              title={t('meetings.delete', 'حذف الاجتماع')}
             >
               <Trash2 className="h-4 w-4" />
             </button>
@@ -234,6 +246,7 @@ function MeetingCard({
 // ────────────────────────────────────────────────────────────────────────────────
 export function MeetingsPage() {
   const { userProfile } = useAuth();
+  const { t, isRTL, language } = useLanguage();
   const isAdmin = userProfile ? isAdminRole(userProfile.role) : false;
 
   const [meetings, setMeetings] = useState<Meeting[]>([]);
@@ -367,16 +380,16 @@ export function MeetingsPage() {
   const hasActiveFilters = search || filterStatus !== 'all' || filterType !== 'all';
 
   return (
-    <div className="space-y-6 font-sans text-right" dir="rtl">
+    <div className={cn("space-y-6 font-sans", isRTL ? "text-right dir-rtl" : "text-left")}>
       {/* ─── Platform Header ─────────────────────────────────────────────── */}
       <div className="card p-6 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-[var(--border-subtle)] bg-[var(--surface)] shadow-xs">
         <div>
           <h1 className="text-xl sm:text-2xl font-black text-[var(--text-primary)] flex items-center gap-2.5">
             <Calendar className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
-            <span>{isAdmin ? 'إدارة وجدولة الاجتماعات واللقاءات' : 'الاجتماعات واللقاءات الرسمية'}</span>
+            <span>{isAdmin ? t('meetings.title_admin') : t('meetings.title_member')}</span>
           </h1>
           <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-1">
-            متابعة وتنسيق مواعيد اللقاءات العامة وورش العمل واجتماعات اللجان التابعة لمنصة الجوجالية
+            {t('meetings.subtitle')}
           </p>
         </div>
 
@@ -386,7 +399,7 @@ export function MeetingsPage() {
             className="gap-2 font-black text-xs py-2.5 px-4 rounded-xl shadow-sm cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white shrink-0"
           >
             <Plus className="h-4 w-4" />
-            <span>جدولة اجتماع جديد</span>
+            <span>{t('meetings.schedule_new')}</span>
           </Button>
         )}
       </div>
@@ -396,7 +409,7 @@ export function MeetingsPage() {
         {/* Total */}
         <div className="card p-4 rounded-2xl flex items-center justify-between border border-[var(--border-subtle)] bg-[var(--surface)] shadow-xs">
           <div>
-            <p className="text-xs font-bold text-[var(--text-muted)]">إجمالي الاجتماعات</p>
+            <p className="text-xs font-bold text-[var(--text-muted)]">{t('meetings.stat_total')}</p>
             <p className="text-2xl font-black text-[var(--text-primary)] mt-1">{stats.total}</p>
           </div>
           <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-500/20 shrink-0">
@@ -407,7 +420,7 @@ export function MeetingsPage() {
         {/* Upcoming */}
         <div className="card p-4 rounded-2xl flex items-center justify-between border border-[var(--border-subtle)] bg-[var(--surface)] shadow-xs">
           <div>
-            <p className="text-xs font-bold text-[var(--text-muted)]">مجدولة وقادمة</p>
+            <p className="text-xs font-bold text-[var(--text-muted)]">{t('meetings.stat_upcoming')}</p>
             <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">{stats.upcoming}</p>
           </div>
           <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20 shrink-0">
@@ -418,7 +431,7 @@ export function MeetingsPage() {
         {/* In Progress */}
         <div className="card p-4 rounded-2xl flex items-center justify-between border border-[var(--border-subtle)] bg-[var(--surface)] shadow-xs">
           <div>
-            <p className="text-xs font-bold text-[var(--text-muted)]">جارٍ الآن</p>
+            <p className="text-xs font-bold text-[var(--text-muted)]">{t('meetings.stat_in_progress')}</p>
             <p className="text-2xl font-black text-amber-600 dark:text-amber-400 mt-1">{stats.inProgress}</p>
           </div>
           <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center border border-amber-500/20 shrink-0">
@@ -429,7 +442,7 @@ export function MeetingsPage() {
         {/* Completed */}
         <div className="card p-4 rounded-2xl flex items-center justify-between border border-[var(--border-subtle)] bg-[var(--surface)] shadow-xs">
           <div>
-            <p className="text-xs font-bold text-[var(--text-muted)]">منتهية ومكتملة</p>
+            <p className="text-xs font-bold text-[var(--text-muted)]">{t('meetings.stat_completed')}</p>
             <p className="text-2xl font-black text-blue-600 dark:text-blue-400 mt-1">{stats.completed}</p>
           </div>
           <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-500/20 shrink-0">
@@ -441,10 +454,13 @@ export function MeetingsPage() {
       {/* ─── Search & Filters Bar ─────────────────────────────────────────── */}
       <div className="card p-3.5 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] flex flex-col sm:flex-row gap-3 shadow-xs">
         <div className="relative flex-1">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)] pointer-events-none" />
+          <Search className={cn("absolute top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)] pointer-events-none", isRTL ? "right-3" : "left-3")} />
           <input
-            className="w-full bg-[var(--surface-elevated)] border border-[var(--border-subtle)] rounded-xl py-2.5 pr-10 pl-4 text-xs sm:text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 transition-all"
-            placeholder="البحث في مواضيع ومحاور الاجتماعات..."
+            className={cn(
+              "w-full bg-[var(--surface-elevated)] border border-[var(--border-subtle)] rounded-xl py-2.5 text-xs sm:text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 transition-all",
+              isRTL ? "pr-10 pl-4" : "pl-10 pr-4"
+            )}
+            placeholder={t('meetings.search_placeholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -455,11 +471,11 @@ export function MeetingsPage() {
           onChange={(e) => setFilterStatus(e.target.value as any)}
           className="bg-[var(--surface-elevated)] border border-[var(--border-subtle)] rounded-xl py-2.5 px-3.5 text-xs sm:text-sm text-[var(--text-primary)] focus:outline-none focus:border-indigo-500 cursor-pointer font-bold"
         >
-          <option value="all">كل الحالات</option>
-          <option value="scheduled">مجدول</option>
-          <option value="in_progress">جارٍ الآن</option>
-          <option value="completed">منتهي</option>
-          <option value="cancelled">ملغي</option>
+          <option value="all">{t('meetings.filter_all_status')}</option>
+          <option value="scheduled">{t('meetings.filter_scheduled')}</option>
+          <option value="in_progress">{t('meetings.filter_in_progress')}</option>
+          <option value="completed">{t('meetings.filter_completed')}</option>
+          <option value="cancelled">{t('meetings.filter_cancelled')}</option>
         </select>
 
         <select
@@ -467,11 +483,11 @@ export function MeetingsPage() {
           onChange={(e) => setFilterType(e.target.value as any)}
           className="bg-[var(--surface-elevated)] border border-[var(--border-subtle)] rounded-xl py-2.5 px-3.5 text-xs sm:text-sm text-[var(--text-primary)] focus:outline-none focus:border-indigo-500 cursor-pointer font-bold"
         >
-          <option value="all">كل الأنواع</option>
-          <option value="general">اجتماع عام</option>
-          <option value="committee">اجتماع لجنة</option>
-          <option value="training">تدريب وورشة</option>
-          <option value="review">مراجعة وتقييم</option>
+          <option value="all">{t('meetings.filter_all_types')}</option>
+          <option value="general">{t('meetings.filter_general')}</option>
+          <option value="committee">{t('meetings.filter_committee')}</option>
+          <option value="training">{t('meetings.filter_training')}</option>
+          <option value="review">{t('meetings.filter_review')}</option>
         </select>
 
         {hasActiveFilters && (
@@ -480,7 +496,7 @@ export function MeetingsPage() {
             className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs font-bold border border-rose-500/20 hover:bg-rose-500/20 transition-colors shrink-0 cursor-pointer"
           >
             <X className="h-4 w-4" />
-            <span>مسح التصفية</span>
+            <span>{t('meetings.reset_filters')}</span>
           </button>
         )}
       </div>
@@ -495,22 +511,26 @@ export function MeetingsPage() {
       ) : filteredMeetings.length === 0 ? (
         <EmptyState
           icon={<Calendar className="h-10 w-10 text-[var(--text-muted)]" />}
-          title={hasActiveFilters ? 'لا توجد اجتماعات تطابق معايير البحث' : 'لا توجد اجتماعات معلنة حالياً'}
+          title={
+            hasActiveFilters
+              ? (language === 'en' ? 'No meetings match your search' : 'لا توجد اجتماعات تطابق معايير البحث')
+              : (language === 'en' ? 'No meetings scheduled currently' : 'لا توجد اجتماعات معلنة حالياً')
+          }
           description={
             hasActiveFilters
-              ? 'جرّب تعديل كلمات البحث أو مسح فلاتر الحالة والتصنيف.'
+              ? (language === 'en' ? 'Try adjusting search terms or resetting filters.' : 'جرّب تعديل كلمات البحث أو مسح فلاتر الحالة والتصنيف.')
               : isAdmin
-              ? 'ابدأ بجدولة أول اجتماع للفريق ونشر الرابط والموعد.'
-              : 'تفقد الصفحة لاحقاً للاطلاع على المواعيد واللقاءات القادمة.'
+              ? (language === 'en' ? 'Start scheduling the first meeting for the team.' : 'ابدأ بجدولة أول اجتماع للفريق ونشر الرابط والموعد.')
+              : (language === 'en' ? 'Check back later for upcoming meetings and sessions.' : 'تفقد الصفحة لاحقاً للاطلاع على المواعيد واللقاءات القادمة.')
           }
           action={
             isAdmin && !hasActiveFilters ? (
               <Button onClick={() => setShowCreate(true)} className="font-black gap-2">
-                <Plus className="h-4 w-4" /> جدولة اجتماع
+                <Plus className="h-4 w-4" /> {t('meetings.schedule_new')}
               </Button>
             ) : hasActiveFilters ? (
               <Button variant="outline" onClick={resetFilters} className="font-bold gap-2">
-                <X className="h-4 w-4" /> مسح الفلاتر
+                <X className="h-4 w-4" /> {t('meetings.reset_filters')}
               </Button>
             ) : undefined
           }
@@ -519,7 +539,9 @@ export function MeetingsPage() {
         <>
           {filteredMeetings.length !== meetings.length && (
             <p className="text-xs text-[var(--text-muted)] font-bold">
-              يُعرض <span className="font-black text-indigo-600 dark:text-indigo-400">{filteredMeetings.length}</span> من أصل {meetings.length} اجتماع
+              {language === 'en'
+                ? `Showing ${filteredMeetings.length} of ${meetings.length} meetings`
+                : `يُعرض ${filteredMeetings.length} من أصل ${meetings.length} اجتماع`}
             </p>
           )}
 
@@ -542,7 +564,7 @@ export function MeetingsPage() {
       <Modal
         open={Boolean(selectedMeeting)}
         onClose={() => setSelectedMeeting(null)}
-        title="تفاصيل الاجتماع"
+        title={language === 'en' ? 'Meeting Details' : 'تفاصيل الاجتماع'}
         size="lg"
         footer={
           <div className="flex items-center justify-between w-full gap-2 flex-wrap">
@@ -553,12 +575,12 @@ export function MeetingsPage() {
               className="gap-1.5 text-xs font-bold"
             >
               {copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
-              <span>{copied ? 'تم النسخ' : 'نسخ التفاصيل'}</span>
+              <span>{copied ? (language === 'en' ? 'Copied' : 'تم النسخ') : (language === 'en' ? 'Copy Details' : 'نسخ التفاصيل')}</span>
             </Button>
 
             <div className="flex items-center gap-2">
               <Button variant="outline" onClick={() => setSelectedMeeting(null)}>
-                إغلاق
+                {language === 'en' ? 'Close' : 'إغلاق'}
               </Button>
               {selectedMeeting && isUrl(selectedMeeting.location) && (
                 <a
@@ -572,7 +594,7 @@ export function MeetingsPage() {
                 >
                   <Button className="font-black gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white">
                     <Video className="h-4 w-4" />
-                    <span>الانضمام الآن</span>
+                    <span>{language === 'en' ? 'Join Now' : 'الانضمام الآن'}</span>
                   </Button>
                 </a>
               )}
