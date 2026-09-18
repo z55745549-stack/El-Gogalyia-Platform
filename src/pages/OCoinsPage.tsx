@@ -579,9 +579,12 @@ export function OCoinsPage() {
                     </span>
                   </div>
                 ) : (
-                  <p className="text-3xl font-black text-[var(--text-primary)]">
-                    {formatOCoins(effectiveSelectedUserBalance)}
-                    <span className="text-sm font-bold text-[var(--brand-warm)] mr-1.5">OC</span>
+                  <p className={cn(
+                    "text-3xl font-black",
+                    effectiveSelectedUserBalance < 0 ? "text-rose-500 dark:text-rose-400" : "text-[var(--text-primary)]"
+                  )}>
+                    <span dir="ltr">{formatOCoins(effectiveSelectedUserBalance)}</span>
+                    <span className={cn("text-sm font-bold mr-1.5", effectiveSelectedUserBalance < 0 ? "text-rose-400" : "text-[var(--brand-warm)]")}>OC</span>
                   </p>
                 )
               ) : hasUnlimitedCoins(role) ? (
@@ -592,9 +595,12 @@ export function OCoinsPage() {
                   </span>
                 </div>
               ) : (
-                <p className="text-3xl font-black text-[var(--text-primary)]">
-                  {formatOCoins(effectiveUserBalance)}
-                  <span className="text-sm font-bold text-[var(--brand-warm)] mr-1.5">OC</span>
+                <p className={cn(
+                  "text-3xl font-black",
+                  effectiveUserBalance < 0 ? "text-rose-500 dark:text-rose-400" : "text-[var(--text-primary)]"
+                )}>
+                  <span dir="ltr">{formatOCoins(effectiveUserBalance)}</span>
+                  <span className={cn("text-sm font-bold mr-1.5", effectiveUserBalance < 0 ? "text-rose-400" : "text-[var(--brand-warm)]")}>OC</span>
                 </p>
               )}
             </div>

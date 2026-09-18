@@ -1087,8 +1087,23 @@ export function EmployeesPage() {
                         </span>
                       </td>
 
-                      <td className="p-4 font-bold text-[var(--text-primary)]">
-                        🪙 {hasUnlimitedCoins(emp.role) ? '∞' : (emp.oCoinsBalance ?? 0)}
+                      <td className="p-4 font-bold">
+                        {hasUnlimitedCoins(emp.role) ? (
+                          <span className="text-[var(--text-primary)]">🪙 ∞</span>
+                        ) : (
+                          <span
+                            dir="ltr"
+                            className={cn(
+                              "inline-flex items-center gap-1 font-mono text-xs px-2.5 py-1 rounded-lg border font-black",
+                              (emp.oCoinsBalance ?? 0) < 0
+                                ? "bg-rose-500/15 text-rose-500 dark:text-rose-400 border-rose-500/30 shadow-xs"
+                                : "text-[var(--text-primary)] bg-[var(--surface-elevated)] border-[var(--border-subtle)]"
+                            )}
+                          >
+                            <span>🪙</span>
+                            <span>{formatOCoins(emp.oCoinsBalance ?? 0)}</span>
+                          </span>
+                        )}
                       </td>
 
                       <td className="p-4 text-left">
@@ -1161,7 +1176,20 @@ export function EmployeesPage() {
                       )}
                     </div>
                   </div>
-                  <span className="text-xs font-black px-2 py-1 rounded-lg bg-amber-500/15 text-amber-500 border border-amber-500/20 shrink-0">🪙 {hasUnlimitedCoins(emp.role) ? '∞' : (emp.oCoinsBalance ?? 0)}</span>
+                  <span
+                    dir="ltr"
+                    className={cn(
+                      "text-xs font-black px-2.5 py-1 rounded-lg border shrink-0 inline-flex items-center gap-1 font-mono",
+                      hasUnlimitedCoins(emp.role)
+                        ? "bg-amber-500/15 text-amber-500 border-amber-500/20"
+                        : (emp.oCoinsBalance ?? 0) < 0
+                        ? "bg-rose-500/15 text-rose-500 dark:text-rose-400 border-rose-500/30 shadow-xs"
+                        : "bg-amber-500/15 text-amber-500 border-amber-500/20"
+                    )}
+                  >
+                    <span>🪙</span>
+                    <span>{hasUnlimitedCoins(emp.role) ? '∞' : formatOCoins(emp.oCoinsBalance ?? 0)}</span>
+                  </span>
                 </div>
                 <div className="flex items-center gap-2 mt-3 flex-wrap">
                   <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${getRoleColor(emp.role)}`}>{getRoleLabel(emp.role)}</span>

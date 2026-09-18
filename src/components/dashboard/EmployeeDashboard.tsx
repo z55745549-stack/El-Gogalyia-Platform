@@ -348,12 +348,22 @@ export function EmployeeDashboard() {
                   {t('employeeDashboard.ocoins_balance')}
                 </p>
               </div>
-              <p className="text-3xl sm:text-4xl font-black text-[var(--text-primary)] tracking-tight">
+              <p className={cn(
+                "text-3xl sm:text-4xl font-black tracking-tight",
+                !hasUnlimitedCoins(userProfile?.role) && (userProfile?.oCoinsBalance ?? 0) < 0
+                  ? "text-rose-500 dark:text-rose-400"
+                  : "text-[var(--text-primary)]"
+              )}>
                 {hasUnlimitedCoins(userProfile?.role)
                   ? <span className="text-[var(--brand-warm)]">∞</span>
-                  : formatOCoins(userProfile?.oCoinsBalance ?? 0)
+                  : <span dir="ltr">{formatOCoins(userProfile?.oCoinsBalance ?? 0)}</span>
                 }
-                <span className="text-xs font-bold text-[var(--brand-warm)] mr-2">
+                <span className={cn(
+                  "text-xs font-bold mr-2",
+                  !hasUnlimitedCoins(userProfile?.role) && (userProfile?.oCoinsBalance ?? 0) < 0
+                    ? "text-rose-400"
+                    : "text-[var(--brand-warm)]"
+                )}>
                   {hasUnlimitedCoins(userProfile?.role) ? t('employeeDashboard.unlimited_vault') : t('employeeDashboard.oc_label')}
                 </span>
               </p>

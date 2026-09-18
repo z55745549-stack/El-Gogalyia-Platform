@@ -368,11 +368,16 @@ export function AdminDashboard() {
               {/* O-Coins Chip */}
               <Link
                 to="/ocoins"
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-[var(--brand-warm)]/15 text-[var(--brand-warm)] border border-[var(--brand-warm)]/30 hover:bg-[var(--brand-warm)]/25 transition-colors"
+                className={cn(
+                  "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black border transition-colors",
+                  !hasUnlimitedCoins(userProfile?.role) && (userProfile?.oCoinsBalance ?? 0) < 0
+                    ? "bg-rose-500/15 text-rose-500 border-rose-500/30 hover:bg-rose-500/25"
+                    : "bg-[var(--brand-warm)]/15 text-[var(--brand-warm)] border-[var(--brand-warm)]/30 hover:bg-[var(--brand-warm)]/25"
+                )}
                 title={t('common.ocoins_wallet')}
               >
                 <span>🪙</span>
-                <span>
+                <span dir="ltr">
                   {hasUnlimitedCoins(userProfile?.role)
                     ? (isHead ? t('adminDashboard.committee_head_vault_unlimited_label') : t('adminDashboard.system_vault_unlimited'))
                     : t('adminDashboard.your_balance').replace('{amount}', formatOCoins(userProfile?.oCoinsBalance ?? 0))}
@@ -1056,7 +1061,17 @@ export function AdminDashboard() {
                     </div>
                     <div>
                       <span className="text-[9px] uppercase font-bold text-[var(--text-muted)] block">O Coins</span>
-                      <strong className="text-xs font-extrabold text-amber-500">
+                      <strong
+                        dir="ltr"
+                        className={cn(
+                          "text-xs font-extrabold font-mono",
+                          hasUnlimitedCoins(user.role)
+                            ? "text-amber-500"
+                            : coins < 0
+                            ? "text-rose-500 dark:text-rose-400"
+                            : "text-amber-500"
+                        )}
+                      >
                         {hasUnlimitedCoins(user.role) ? '∞' : formatOCoins(coins)}
                       </strong>
                     </div>
