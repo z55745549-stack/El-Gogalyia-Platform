@@ -523,6 +523,19 @@ export function TaskDetailPage() {
     allSubmissions.push(task.latestSubmission);
   }
 
+  // Count approved submissions only (ignoring rejected modifications or cancelled ones)
+  const approvedSubmissions = allSubmissions.filter((sub) => sub.status === 'approved');
+  const uniqueApprovedSubmitters = new Set<string>();
+  const deduplicatedApproved = approvedSubmissions.filter((sub) => {
+    const key = (sub.submittedBy || sub.submittedByName || sub.id).toLowerCase().trim();
+    if (uniqueApprovedSubmitters.has(key)) return false;
+    uniqueApprovedSubmitters.add(key);
+    return true;
+  });
+  const approvedCount = deduplicatedApproved.length > 0
+    ? deduplicatedApproved.length
+    : (task.assignedTo || []).filter((uid) => task.userStatuses?.[uid]?.status === 'approved').length;
+
   return (
     <div className="space-y-6 max-w-4xl mx-auto font-sans text-right dir-rtl pb-10">
       {/* Back Button */}
@@ -841,8 +854,8 @@ export function TaskDetailPage() {
               <FileCheck className="h-5 w-5 text-[var(--brand-accent)]" />
               <span>{isViceHead ? 'تسليمات أعضاء اللجنة ومراجعة الاعتماد' : 'تسليمات الأعضاء ومراجعة الاعتماد'}</span>
             </h2>
-            <span className="text-xs font-bold text-[var(--text-muted)]">
-              إجمالي {allSubmissions.length} تسليم
+            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">
+              إجمالي {approvedCount} تسليم معتمد
             </span>
           </div>
 
