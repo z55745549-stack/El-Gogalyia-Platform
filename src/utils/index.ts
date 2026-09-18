@@ -14,6 +14,8 @@ export function safeDate(date: any): Date {
   if (date instanceof Date) return date;
   if (typeof date.toDate === 'function') return date.toDate();
   if (typeof date.toMillis === 'function') return new Date(date.toMillis());
+  if (typeof date.seconds === 'number') return new Date(date.seconds * 1000);
+  if (typeof date._seconds === 'number') return new Date(date._seconds * 1000);
   if (typeof date === 'number') return new Date(date);
   if (typeof date === 'string') {
     const parsed = new Date(date);
@@ -65,14 +67,26 @@ export function formatDateTime(date: any, lang?: 'ar' | 'en'): string {
 }
 
 export function formatRelative(date: any, lang?: 'ar' | 'en'): string {
+  if (!date) return lang === 'en' ? 'Just now' : 'الآن';
   const l = lang || getCurrentLanguage();
   try {
     const d = safeDate(date);
-    if (isToday(d)) return formatDistanceToNow(d, { addSuffix: true, ...(l === 'ar' ? { locale: ar } : {}) });
-    if (isYesterday(d)) return l === 'en' ? 'Yesterday' : 'أمس';
-    return format(d, 'd MMM yyyy', l === 'ar' ? { locale: ar } : undefined);
+    const now = new Date();
+    const diffMs = Math.abs(now.getTime() - d.getTime());
+    // If under 45 seconds, display "الآن" or "Just now"
+    if (diffMs < 45 * 1000) {
+      return l === 'en' ? 'Just now' : 'الآن';
+    }
+    if (isToday(d)) {
+      return formatDistanceToNow(d, { addSuffix: true, ...(l === 'ar' ? { locale: ar } : {}) });
+    }
+    if (isYesterday(d)) {
+      const timeStr = format(d, 'h:mm a', l === 'ar' ? { locale: ar } : undefined);
+      return l === 'en' ? `Yesterday at ${timeStr}` : `أمس ${timeStr}`;
+    }
+    return format(d, 'd MMM yyyy · h:mm a', l === 'ar' ? { locale: ar } : undefined);
   } catch {
-    return l === 'en' ? 'Not specified' : 'غير محدد';
+    return l === 'en' ? 'Just now' : 'الآن';
   }
 }
 

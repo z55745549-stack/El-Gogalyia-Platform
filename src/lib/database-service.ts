@@ -73,6 +73,7 @@ export async function logActivity(logData: {
     details: logData.details || '',
     metadata: logData.metadata || {},
     createdAt: new Date().toISOString(),
+    timestamp: new Date().toISOString(),
   };
 
   // 1. Local real-time cache so operations show up immediately
@@ -90,6 +91,7 @@ export async function logActivity(logData: {
     await addDoc(collection(db, 'activityLogs'), {
       ...newLog,
       createdAt: serverTimestamp(),
+      timestamp: serverTimestamp(),
     });
   } catch (err) {
     console.warn('Supabase logActivity notice:', err);

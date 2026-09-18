@@ -34,30 +34,6 @@ export function AdminDashboard() {
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Live System Clock & Command Status
-  const [currentDateTime, setCurrentDateTime] = useState('');
-  useEffect(() => {
-    const updateTime = () => {
-      const now = new Date();
-      const formatted =
-        now.toLocaleDateString('ar-EG', {
-          weekday: 'long',
-          day: 'numeric',
-          month: 'long',
-        }) +
-        ' · ' +
-        now.toLocaleTimeString('ar-EG', {
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true,
-        });
-      setCurrentDateTime(formatted);
-    };
-    updateTime();
-    const timer = setInterval(updateTime, 1000);
-    return () => clearInterval(timer);
-  }, []);
-
   // Quick Task Filter Tabs inside Recent Tasks Card
   const [taskTabFilter, setTaskTabFilter] = useState<'all' | 'high' | 'in_progress' | 'pending_review'>('all');
 
@@ -513,17 +489,37 @@ export function AdminDashboard() {
 
   // Activity log action translation
   const getActivityArabicAction = (action: string): string => {
-    const clean = (action || '').toLowerCase().trim();
-    if (clean.includes('user_approved') || clean.includes('user approved')) return 'اعتماد تسليم مهمة لعضو';
-    if (clean.includes('user_rejected') || clean.includes('user rejected')) return 'رفض تسليم مهمة';
-    if (clean.includes('status_changed') || clean.includes('status changed')) return 'تحديث حالة تكليف';
-    if (clean.includes('task_created') || clean.includes('task created')) return 'إنشاء مهمة جديدة';
-    if (clean.includes('task_updated') || clean.includes('task updated')) return 'تعديل تفاصيل المهمة';
-    if (clean.includes('task_completed') || clean.includes('task completed')) return 'إكمال مهمة';
-    if (clean.includes('reward') || clean.includes('coin')) return 'منح مكافأة O-Coins';
+    const raw = (action || '').toLowerCase().trim();
+    const clean = raw.replace(/[._-]/g, ' ');
+
+    if (clean.includes('user approved') || clean.includes('submission approved') || clean.includes('submission accepted')) return 'اعتماد تسليم مهمة';
+    if (clean.includes('user rejected') || clean.includes('submission rejected')) return 'طلب تعديل تسليم مهمة';
+    if (clean.includes('user created') || clean.includes('user added')) return 'إضافة عضو جديد';
+    if (clean.includes('user updated') || clean.includes('profile updated')) return 'تحديث بيانات عضو';
+    if (clean.includes('user deleted') || clean.includes('user removed')) return 'حذف حساب عضو';
+    if (clean.includes('user suspended') || clean.includes('user banned')) return 'تعليق حساب عضو';
+
+    if (clean.includes('task created')) return 'إنشاء مهمة وتكليف جديد';
+    if (clean.includes('task updated')) return 'تعديل تفاصيل المهمة';
+    if (clean.includes('task deleted')) return 'حذف مهمة';
+    if (clean.includes('task completed')) return 'إكمال مهمة معتمدة';
+    if (clean.includes('task submitted')) return 'رفع تسليم مهمة';
+    if (clean.includes('task assigned')) return 'إسناد مهمة لعضو';
+    if (clean.includes('status changed')) return 'تحديث حالة تكليف';
+
+    if (clean.includes('meeting created')) return 'جدولة اجتماع جديد';
+    if (clean.includes('meeting updated')) return 'تعديل موعد اجتماع';
+    if (clean.includes('meeting deleted')) return 'إلغاء اجتماع';
+
+    if (clean.includes('broadcast')) return 'إرسال تعميم عام للمنظومة';
+    if (clean.includes('reward') || clean.includes('coin') || clean.includes('ocoin')) return 'منح مكافأة O-Coins';
+    if (clean.includes('deduct') || clean.includes('penalty')) return 'خصم O-Coins';
+    if (clean.includes('ticket')) return 'تحديث تذكرة دعم فني';
+    if (clean.includes('course')) return 'تحديث دورة تدريبية';
+    if (clean.includes('attendance')) return 'تسجيل حضور وانضباط';
     if (clean.includes('login')) return 'تسجيل دخول للمنصة';
-    if (clean.includes('user updated') || clean.includes('user_updated')) return 'تحديث بيانات مستخدم';
-    return action.replace(/\./g, ' ').replace(/_/g, ' ');
+
+    return clean || 'إجراء في النظام';
   };
 
   // Role-specific badge and subtitle
@@ -591,17 +587,6 @@ export function AdminDashboard() {
                     : t('adminDashboard.your_balance').replace('{amount}', formatOCoins(userProfile?.oCoinsBalance ?? 0))}
                 </span>
               </Link>
-
-              {/* Live Status & Clock Ticker */}
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-semibold bg-[var(--bg-elevated)]/80 border border-[var(--border-subtle)] text-[var(--text-muted)]">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
-                <span className="font-mono text-[var(--text-secondary)]">{currentDateTime || 'متصل الآن'}</span>
-                <span className="text-[var(--border-strong)]">|</span>
-                <span className="text-emerald-400 font-bold text-[10px]">مزامنة لحظية</span>
-              </div>
             </div>
 
             <h1 className="page-title text-xl sm:text-2xl font-extrabold text-[var(--text-primary)] glow-text">
@@ -1168,7 +1153,7 @@ export function AdminDashboard() {
                         <span className="text-[var(--text-secondary)] font-medium">{getActivityArabicAction(log.action)}</span>
                       </p>
                       <p className="text-[10px] text-[var(--text-muted)] mt-0.5 font-medium font-mono">
-                        {log.timestamp ? formatRelative(log.timestamp) : 'الآن'}
+                        {formatRelative((log as any).timestamp || (log as any).createdAt || (log as any).created_at)}
                       </p>
                     </div>
                   </div>
