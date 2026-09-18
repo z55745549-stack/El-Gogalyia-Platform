@@ -1646,36 +1646,66 @@ export function subscribeAuthorizedAdmins(callback: (admins: AuthorizedAdmin[]) 
 /**
  * Toggle user Meta Verified Badge status (leadership action)
  */
-export async function toggleUserVerification(params: {
-  targetUid: string;
-  targetName: string;
-  isVerified: boolean;
-  actor: { uid?: string; displayName?: string; email?: string; role?: string };
-}) {
+export async function toggleUserVerification(
+  targetUidOrParams: string | {
+    targetUid: string;
+    targetName?: string;
+    isVerified: boolean;
+    actor: { uid?: string; displayName?: string; email?: string; role?: string } | string;
+  },
+  isVerifiedParam?: boolean,
+  actorParam?: { uid?: string; displayName?: string; email?: string; role?: string } | string,
+  targetNameParam?: string
+) {
+  let targetUid: string;
+  let targetName: string;
+  let isVerified: boolean;
+  let actorObj: { uid?: string; displayName?: string; email?: string; role?: string };
+
+  if (typeof targetUidOrParams === 'object') {
+    targetUid = targetUidOrParams.targetUid;
+    targetName = targetUidOrParams.targetName || 'User';
+    isVerified = Boolean(targetUidOrParams.isVerified);
+    if (typeof targetUidOrParams.actor === 'string') {
+      actorObj = { displayName: targetUidOrParams.actor, email: targetUidOrParams.actor };
+    } else {
+      actorObj = targetUidOrParams.actor || { displayName: 'القيادة العامة' };
+    }
+  } else {
+    targetUid = targetUidOrParams;
+    isVerified = Boolean(isVerifiedParam);
+    targetName = targetNameParam || 'User';
+    if (typeof actorParam === 'string') {
+      actorObj = { displayName: actorParam, email: actorParam };
+    } else {
+      actorObj = actorParam || { displayName: 'القيادة العامة' };
+    }
+  }
+
   const updates = {
-    isVerified: params.isVerified,
-    verifiedAt: params.isVerified ? serverTimestamp() : null,
-    verifiedBy: params.isVerified ? (params.actor.displayName || params.actor.email || 'القيادة العامة') : null,
+    isVerified,
+    verifiedAt: isVerified ? serverTimestamp() : null,
+    verifiedBy: isVerified ? (actorObj.displayName || actorObj.email || 'القيادة العامة') : null,
     updatedAt: serverTimestamp(),
   };
 
-  await updateDoc(doc(db, 'users', params.targetUid), updates);
+  await updateDoc(doc(db, 'users', targetUid), updates);
 
   // Sync with local cache if present
   try {
     const local = JSON.parse(localStorage.getItem('elgogalyia_local_users') || '[]');
-    const updated = local.map((u: any) => u.uid === params.targetUid ? { ...u, ...updates } : u);
+    const updated = local.map((u: any) => u.uid === targetUid ? { ...u, ...updates } : u);
     localStorage.setItem('elgogalyia_local_users', JSON.stringify(updated));
   } catch {}
 
   // Log activity
   logActivity({
-    actor: params.actor.email || params.actor.uid || 'system',
-    actorName: params.actor.displayName || 'القيادة',
-    action: params.isVerified ? 'user.verified' as any : 'user.unverified' as any,
+    actor: actorObj.email || actorObj.uid || 'system',
+    actorName: actorObj.displayName || 'القيادة',
+    action: isVerified ? 'user.verified' as any : 'user.unverified' as any,
     targetType: 'user',
-    targetId: params.targetUid,
-    targetName: params.targetName,
-    details: params.isVerified ? 'منح علامة التوثيق الرسمية للمستخدم' : 'إلغاء علامة التوثيق الرسمية للمستخدم',
+    targetId: targetUid,
+    targetName: targetName,
+    details: isVerified ? 'منح علامة التوثيق الرسمية للمستخدم' : 'إلغاء علامة التوثيق الرسمية للمستخدم',
   }).catch(() => {});
 }

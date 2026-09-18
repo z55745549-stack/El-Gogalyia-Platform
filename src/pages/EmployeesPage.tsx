@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { collection, onSnapshot, doc, setDoc, updateDoc, deleteDoc, getDocs, query, where, serverTimestamp, db } from '@/lib/supabase';
 import { motion } from 'framer-motion';
 import {
@@ -28,11 +28,29 @@ import { VerifiedBadge } from '@/components/ui/VerifiedBadge';
 export function EmployeesPage() {
   const { userProfile } = useAuth();
   const { t, isRTL, language } = useLanguage();
-  const [employees, setEmployees] = useState<UserProfile[]>([]);
-  const [committees, setCommittees] = useState<Committee[]>([]);
+  const [employees, setEmployees] = useState<UserProfile[]>(() => {
+    try {
+      const raw = JSON.parse(localStorage.getItem('elgogalyia_local_users') || '[]');
+      if (Array.isArray(raw) && raw.length > 0) {
+        return raw.map((u: any) => ({
+          ...u,
+          committeeName: u.committeeName || (u.role === 'lead' || u.role === 'co_lead' ? 'بدون لجنة' : undefined),
+        }));
+      }
+    } catch {}
+    return [];
+  });
+  const [committees, setCommittees] = useState<Committee[]>(DEFAULT_COMMITTEES as Committee[]);
   const [committeeFilter, setCommitteeFilter] = useState<string>('');
   const [bans, setBans] = useState<BanRecord[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(() => {
+    try {
+      const raw = JSON.parse(localStorage.getItem('elgogalyia_local_users') || '[]');
+      return !(Array.isArray(raw) && raw.length > 0);
+    } catch {
+      return true;
+    }
+  });
   const [search, setSearch] = useState('');
   const [viewTab, setViewTab] = useState<'approved' | 'pending'>('approved');
   const [pendingRoles, setPendingRoles] = useState<Record<string, UserRole>>({});
@@ -100,6 +118,9 @@ export function EmployeesPage() {
         }) as UserProfile[];
         setEmployees(list);
         setLoading(false);
+        try {
+          localStorage.setItem('elgogalyia_local_users', JSON.stringify(list));
+        } catch {}
       },
       (err) => {
         console.warn('Supabase users snapshot notice:', err);
@@ -663,11 +684,16 @@ export function EmployeesPage() {
     }
     const willBeVerified = !isUserVerified(emp);
     try {
-      await toggleUserVerification(
-        emp.uid,
-        willBeVerified,
-        userProfile?.displayName || userProfile?.username || 'الإدارة'
-      );
+      await toggleUserVerification({
+        targetUid: emp.uid,
+        targetName: emp.displayName || emp.username || 'User',
+        isVerified: willBeVerified,
+        actor: {
+          uid: userProfile?.uid,
+          displayName: userProfile?.displayName || userProfile?.username || 'الإدارة',
+          email: userProfile?.email,
+        },
+      });
       toast.success(
         willBeVerified
           ? `تم منح شارة التوثيق الرسمية Meta Verified لـ ${emp.displayName} بنجاح! 🌟`
@@ -678,13 +704,13 @@ export function EmployeesPage() {
     }
   };
 
+  const myCommId = userProfile?.committeeId;
+  const myCommName = (userProfile?.committeeName || '').trim().toLowerCase();
+
   // Scoped pending requests: ONLY Lead & Co-Lead have access to all committees.
-  // Heads, HR, and any other roles ONLY see requests from candidates who chose their committee!
-  const pendingMembers = employees.filter((e) => {
+  const pendingMembers = useMemo(() => employees.filter((e) => {
     if (e.status !== 'pending') return false;
     if (!isTopTier) {
-      const myCommId = userProfile?.committeeId;
-      const myCommName = (userProfile?.committeeName || '').trim().toLowerCase();
       const empCommId = e.committeeId;
       const empCommName = (e.committeeName || '').trim().toLowerCase();
       const matchId = Boolean(myCommId && empCommId === myCommId);
@@ -692,14 +718,12 @@ export function EmployeesPage() {
       return matchId || matchName;
     }
     return true;
-  });
-  // Strictly filter approved members: exclude 'pending' join requests so both active and suspended members remain visible and manageable
-  // For non-top tier (Heads/Vice-Heads/Members), ONLY show members of their own committee!
-  const approvedMembers = employees.filter((e) => {
+  }), [employees, isTopTier, myCommId, myCommName]);
+
+  // Strictly filter approved members
+  const approvedMembers = useMemo(() => employees.filter((e) => {
     if (e.status === 'pending') return false;
     if (!isTopTier) {
-      const myCommId = userProfile?.committeeId;
-      const myCommName = (userProfile?.committeeName || '').trim().toLowerCase();
       const empCommId = e.committeeId;
       const empCommName = (e.committeeName || '').trim().toLowerCase();
       const matchId = Boolean(myCommId && empCommId === myCommId);
@@ -707,17 +731,22 @@ export function EmployeesPage() {
       return matchId || matchName;
     }
     return true;
-  });
+  }), [employees, isTopTier, myCommId, myCommName]);
 
   const currentList = viewTab === 'pending' ? pendingMembers : approvedMembers;
 
-  const rawFilteredEmployees = currentList.filter((e) => {
-    const matchSearch = !search || (e.displayName || '').toLowerCase().includes(search.toLowerCase()) || (e.username || '').toLowerCase().includes(search.toLowerCase()) || (e.committeeName || '').toLowerCase().includes(search.toLowerCase());
-    const matchCommittee = !committeeFilter || e.committeeId === committeeFilter;
-    return matchSearch && matchCommittee;
-  });
-
-  const filteredEmployees = sortUsersWithLeadershipPinned(rawFilteredEmployees, userProfile);
+  const filteredEmployees = useMemo(() => {
+    const searchLower = search.toLowerCase();
+    const raw = currentList.filter((e) => {
+      const matchSearch = !search
+        || (e.displayName || '').toLowerCase().includes(searchLower)
+        || (e.username || '').toLowerCase().includes(searchLower)
+        || (e.committeeName || '').toLowerCase().includes(searchLower);
+      const matchCommittee = !committeeFilter || e.committeeId === committeeFilter;
+      return matchSearch && matchCommittee;
+    });
+    return sortUsersWithLeadershipPinned(raw, userProfile);
+  }, [currentList, search, committeeFilter, userProfile]);
 
   return (
     <div className="space-y-6 font-sans dir-rtl text-right">

@@ -82,9 +82,10 @@ export function isUserVerified(user: { role?: UserRole | string; isVerified?: bo
  * - Head can verify subordinates in their own committee
  */
 export function canGrantVerification(
-  actorRole: UserRole,
-  targetRole: UserRole
+  actorRole?: UserRole | string | null,
+  targetRole?: UserRole | string | null
 ): boolean {
+  if (!actorRole || !targetRole) return false;
   if (actorRole === 'lead' || actorRole === 'co_lead') return true;
   if (actorRole === 'head') {
     return targetRole === 'member' || targetRole === 'vice_head';
