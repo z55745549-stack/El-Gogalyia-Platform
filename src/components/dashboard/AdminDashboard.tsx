@@ -91,9 +91,15 @@ export function AdminDashboard() {
       try {
         const local = JSON.parse(localStorage.getItem('elgogalyia_local_users') || '[]');
         if (local && local.length > 0) {
-          const active = local.filter((u: any) => u.status === 'active');
-          setTotalEmployees(active.length);
-          setAllUsers(active);
+          setAllUsers((prev) => {
+            return prev.map((u) => {
+              const matched = local.find((l: any) => l.uid === u.uid);
+              if (matched && typeof matched.oCoinsBalance === 'number') {
+                return { ...u, oCoinsBalance: matched.oCoinsBalance, ocoins_balance: matched.oCoinsBalance };
+              }
+              return u;
+            });
+          });
         }
       } catch {}
     };
@@ -200,7 +206,7 @@ export function AdminDashboard() {
       const completed = userTasks.filter((t) => t.status === 'approved' || t.status === 'completed').length;
       const overdue = userTasks.filter((t) => isOverdue(t.deadline, t.status)).length;
       const rate = userTasks.length > 0 ? (completed / userTasks.length) * 100 : 0;
-      const userCoins = u.oCoinsBalance ?? 0;
+      const userCoins = typeof u.oCoinsBalance === 'number' ? u.oCoinsBalance : (typeof u.ocoins_balance === 'number' ? u.ocoins_balance : 0);
       return { user: u, total: userTasks.length, completed, overdue, rate, coins: userCoins };
     })
     .sort((a, b) => b.completed - a.completed || b.coins - a.coins);
@@ -870,7 +876,9 @@ export function AdminDashboard() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-black">{medal.rank}</span>
-                        <span className="text-xs font-black text-amber-500 font-mono">+{formatOCoins(item.coins)} OC</span>
+                        <span className="text-xs font-black text-amber-500 font-mono">
+                          {item.coins > 0 ? `+${formatOCoins(item.coins)}` : formatOCoins(item.coins)} OC
+                        </span>
                       </div>
                       <p className="text-xs font-bold text-[var(--text-primary)] truncate mt-0.5">
                         {formatFullName(item.user.displayName || 'عضو')}
@@ -1156,7 +1164,7 @@ export function AdminDashboard() {
                 <option value="">-- اختر عضو اللجنة --</option>
                 {myCommitteeSubordinates.map(u => (
                   <option key={u.uid} value={u.uid}>
-                    {formatFullName(u.displayName)} (@{u.username || u.email}) — رصيده: {hasUnlimitedCoins(u.role) ? '∞' : (u.oCoinsBalance ?? 0)} OC
+                    {formatFullName(u.displayName)} (@{u.username || u.email}) — رصيده: {hasUnlimitedCoins(u.role) ? '∞' : `${formatOCoins(typeof u.oCoinsBalance === 'number' ? u.oCoinsBalance : (u.ocoins_balance ?? 0))} OC`}
                   </option>
                 ))}
               </select>

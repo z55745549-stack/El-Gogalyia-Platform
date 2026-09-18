@@ -314,15 +314,24 @@ function mapRow(row: any): any {
     }
   }
 
-  // ── OCoins Balance: الأولوية للعمود الفعلي في قاعدة البيانات ────────────
-  // يجب أن يُستخدم العمود الفعلي `ocoins_balance` دائماً وليس raw_data
-  // لأن raw_data قد يكون قديماً بعد التحديثات
-  const actualBalance =
-    row.ocoins_balance !== undefined ? row.ocoins_balance   // ✅ العمود الفعلي أولاً
-    : raw.ocoins_balance !== undefined ? raw.ocoins_balance
-    : raw.oCoinsBalance !== undefined ? raw.oCoinsBalance
-    : row.o_coins_balance !== undefined ? row.o_coins_balance
-    : undefined;
+  // ── OCoins Balance: الأولوية للعمود الفعلي والقيم المخزنة ────────────
+  let actualBalance: number | undefined = undefined;
+  const balanceCandidates = [
+    row.ocoins_balance,
+    row.o_coins_balance,
+    raw.ocoins_balance,
+    raw.oCoinsBalance,
+  ];
+  // إذا وجد أي رصيد رقمي غير صفري (موجب أو سالب) نأخذه بأولوية لتجنب الصفر الافتراضي غير المحدّث
+  const nonZero = balanceCandidates.find((c) => typeof c === 'number' && c !== 0);
+  if (nonZero !== undefined) {
+    actualBalance = nonZero;
+  } else {
+    const anyNum = balanceCandidates.find((c) => typeof c === 'number');
+    if (anyNum !== undefined) {
+      actualBalance = anyNum;
+    }
+  }
 
   if (actualBalance !== undefined) {
     res.oCoinsBalance = actualBalance;   // camelCase للـ UI
@@ -707,7 +716,7 @@ export async function updateDoc(docRef: DocRef, data: any): Promise<void> {
       const currentFromCol = existing?.[columnAlias] ?? existing?.[snake] ?? existing?.[k];
       const currentFromRaw = existingRaw[k] ?? existingRaw[snake] ?? existingRaw[columnAlias];
       const current = currentFromCol !== undefined ? currentFromCol : (currentFromRaw ?? 0);
-      resolvedData[k] = Math.max(0, Number(current) + (v as any).value);
+      resolvedData[k] = Number(current) + (v as any).value;
     } else {
       resolvedData[k] = v;
     }
@@ -730,15 +739,18 @@ export async function updateDoc(docRef: DocRef, data: any): Promise<void> {
     }
   }
 
-  // ── تحديث raw_data.oCoinsBalance و raw_data.ocoins_balance معاً لضمان التزامن ──
-  if (resolvedData.oCoinsBalance !== undefined || resolvedData.ocoinsBalance !== undefined) {
-    const newBal = resolvedData.oCoinsBalance ?? resolvedData.ocoinsBalance;
-    payload.raw_data = { ...mergedRaw, oCoinsBalance: newBal, ocoins_balance: newBal };
-  }
-  if (resolvedData.ocoins_balance !== undefined) {
-    const newBal = resolvedData.ocoins_balance;
-    payload.raw_data = { ...(payload.raw_data || mergedRaw), oCoinsBalance: newBal, ocoins_balance: newBal };
-    payload.ocoins_balance = newBal; // تأكيد الكتابة للعمود الفعلي
+  // ── تحديث raw_data.oCoinsBalance و raw_data.ocoins_balance والعمود الفعلي معاً لضمان التزامن التام ──
+  if (resolvedData.oCoinsBalance !== undefined || resolvedData.ocoinsBalance !== undefined || resolvedData.ocoins_balance !== undefined) {
+    const newBal = resolvedData.oCoinsBalance ?? resolvedData.ocoinsBalance ?? resolvedData.ocoins_balance;
+    if (allowedCols?.has('ocoins_balance')) {
+      payload.ocoins_balance = newBal; // تأكيد الكتابة للعمود الفعلي دائماً
+    }
+    payload.raw_data = {
+      ...(payload.raw_data || mergedRaw),
+      oCoinsBalance: newBal,
+      ocoins_balance: newBal,
+      ocoinsBalance: newBal,
+    };
   }
 
   const { error } = await supabase.from(table).update(payload).eq(idCol, docRef.id);

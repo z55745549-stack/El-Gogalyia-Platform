@@ -1106,14 +1106,18 @@ export async function manualOCoinAdjustment(params: {
   const delta = isDeduction ? -Math.abs(amount) : Math.abs(amount);
 
   // 1. Fetch fresh balance from Supabase to prevent race conditions
-  let currentBalance = Number(targetUser.oCoinsBalance) || 0;
+  let currentBalance = 0;
+  if (typeof targetUser.oCoinsBalance === 'number') {
+    currentBalance = targetUser.oCoinsBalance;
+  }
   if (targetUser.uid) {
     try {
       const userSnap = await getDoc(doc(db, 'users', targetUser.uid));
       if (userSnap.exists()) {
         const udata = userSnap.data();
-        if (typeof udata.oCoinsBalance === 'number') {
-          currentBalance = udata.oCoinsBalance;
+        const candidate = udata.oCoinsBalance ?? udata.ocoins_balance ?? udata.ocoinsBalance;
+        if (typeof candidate === 'number') {
+          currentBalance = candidate;
         }
       }
     } catch (err) {
@@ -1122,7 +1126,8 @@ export async function manualOCoinAdjustment(params: {
   }
 
   const previousBalance = currentBalance;
-  const newBalance = Math.max(0, previousBalance + delta);
+  // Allows both positive and negative balances (e.g. -5 is valid)
+  const newBalance = previousBalance + delta;
 
   const batch = writeBatch(db);
   const ocoinRef = doc(collection(db, 'oCoins'));
@@ -1169,6 +1174,7 @@ export async function manualOCoinAdjustment(params: {
     const uIdx = localUsers.findIndex((u: any) => u.uid === targetUser.uid);
     if (uIdx !== -1) {
       localUsers[uIdx].oCoinsBalance = newBalance;
+      localUsers[uIdx].ocoins_balance = newBalance;
       localStorage.setItem('elgogalyia_local_users', JSON.stringify(localUsers));
     }
     const sessRaw = localStorage.getItem('elgogalyia_user_session');
@@ -1176,6 +1182,7 @@ export async function manualOCoinAdjustment(params: {
       const sess: any = JSON.parse(sessRaw);
       if (sess.uid === targetUser.uid) {
         sess.oCoinsBalance = newBalance;
+        sess.ocoins_balance = newBalance;
         localStorage.setItem('elgogalyia_user_session', JSON.stringify(sess));
       }
     }
@@ -1251,8 +1258,8 @@ export async function deleteOCoinTransaction(
             const uSnap = await getDoc(uRef);
             if (uSnap.exists()) {
               const currentBal = Number((uSnap.data() as any).oCoinsBalance ?? 0);
-              const newBal = Math.max(0, currentBal + reversal);
-              await updateDoc(uRef, { oCoinsBalance: newBal });
+              const newBal = currentBal + reversal;
+              await updateDoc(uRef, { oCoinsBalance: newBal, ocoins_balance: newBal });
 
               // Update local cache
               try {

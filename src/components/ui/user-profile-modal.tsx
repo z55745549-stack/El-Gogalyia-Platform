@@ -212,7 +212,7 @@ export function UserProfileModal({ user, open, onClose }: UserProfileModalProps)
                         {t('common.coins', 'O-Coins')}
                       </p>
                       <p className="text-xs font-bold text-amber-600 dark:text-amber-300">
-                        {isUnlimited ? '∞ ' + t('common.unlimited', 'غير محدود') : `${user.oCoinsBalance ?? 0} OC`}
+                        {isUnlimited ? '∞ ' + t('common.unlimited', 'غير محدود') : `${user.oCoinsBalance ?? (user as any).ocoins_balance ?? 0} OC`}
                       </p>
                     </div>
                   </div>

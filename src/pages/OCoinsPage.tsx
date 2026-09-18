@@ -282,12 +282,12 @@ export function OCoinsPage() {
         .filter((t) => t.amount < 0)
         .reduce((sum, t) => sum + Math.abs(Number(t.amount || 0)), 0);
 
-  // Realtime balance resolution: if transactions exist, available balance must equal earned minus spent
-  const ledgerBalance = Math.max(0, (totalEarned || 0) - (totalSpent || 0));
+  // Realtime balance resolution: if transactions exist, available balance must equal earned minus spent (allows negative values)
+  const ledgerBalance = (totalEarned || 0) - (totalSpent || 0);
   const effectiveUserBalance = liveBalanceFromDb !== null
-    ? Math.max(liveBalanceFromDb, ledgerBalance)
-    : (typeof userProfile?.oCoinsBalance === 'number' && userProfile.oCoinsBalance > 0)
-    ? Math.max(userProfile.oCoinsBalance, ledgerBalance)
+    ? liveBalanceFromDb
+    : typeof userProfile?.oCoinsBalance === 'number'
+    ? userProfile.oCoinsBalance
     : ledgerBalance;
 
   const selectedUserEarned = selectedUser
@@ -296,10 +296,10 @@ export function OCoinsPage() {
   const selectedUserSpent = selectedUser
     ? userTransactions.filter((t) => t.amount < 0).reduce((sum, t) => sum + Math.abs(Number(t.amount) || 0), 0)
     : 0;
-  const selectedUserLedgerBalance = Math.max(0, selectedUserEarned - selectedUserSpent);
+  const selectedUserLedgerBalance = selectedUserEarned - selectedUserSpent;
   const effectiveSelectedUserBalance = selectedUser
-    ? (typeof selectedUser.oCoinsBalance === 'number' && selectedUser.oCoinsBalance > 0
-        ? Math.max(selectedUser.oCoinsBalance, selectedUserLedgerBalance)
+    ? (typeof selectedUser.oCoinsBalance === 'number'
+        ? selectedUser.oCoinsBalance
         : selectedUserLedgerBalance)
     : 0;
 
