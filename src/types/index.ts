@@ -395,11 +395,13 @@ export type ActivityAction =
   | 'task.approved'
   | 'task.rejected'
   | 'task.status_changed'
+  | 'task.deadline_extended'
   | 'ocoin.awarded'
   | 'ocoin.manual_add'
   | 'ocoin.manual_remove'
   | 'ocoin.ban_penalty'
   | 'ocoin.discount_purchase'
+  | 'ocoin.deleted'
   | 'discount.created'
   | 'discount.updated'
   | 'discount.deleted'
@@ -415,6 +417,7 @@ export type ActivityAction =
   | 'category.updated'
   | 'category.deleted'
   | 'user.created'
+  | 'user.updated'
   | 'user.role_changed'
   | 'user.status_changed'
   | 'user.removed'
@@ -432,7 +435,17 @@ export type ActivityAction =
   | 'ticket.created'
   | 'ticket.replied'
   | 'ticket.status_changed'
-  | 'ticket.assigned';
+  | 'ticket.assigned'
+  | 'auth.login'
+  | 'auth.logout'
+  | 'auth.join_request'
+  | 'notification.broadcast'
+  | 'broadcast.sent'
+  | 'user.approved'
+  | 'user.rejected'
+  | 'attendance.session_created'
+  | 'attendance.check_in'
+  | 'ticket.closed';
 
 export interface ActivityLog {
   id: string;
@@ -440,7 +453,7 @@ export interface ActivityLog {
   actorName: string;
   actorPhoto: string;
   action: ActivityAction;
-  targetType: 'task' | 'user' | 'ocoin' | 'system' | 'ban' | 'meeting' | 'committee' | 'opportunity' | 'ticket' | 'discount' | 'course' | 'course_category';
+  targetType: 'task' | 'user' | 'ocoin' | 'system' | 'ban' | 'meeting' | 'committee' | 'opportunity' | 'ticket' | 'discount' | 'course' | 'course_category' | 'auth';
   targetId: string;
   targetName: string;
   metadata: Record<string, unknown>;

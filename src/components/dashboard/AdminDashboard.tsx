@@ -73,17 +73,39 @@ export function AdminDashboard() {
       (err) => console.error('Transactions error:', err)
     );
 
-    getDocs(collection(db, 'users'))
-      .then((s) => {
-        const activeUsers = s.docs
+    // Realtime listener for users to immediately sync balances and changes
+    const usersUnsub = onSnapshot(
+      collection(db, 'users'),
+      (snapshot) => {
+        const activeUsers = snapshot.docs
           .map((d) => ({ uid: d.id, ...d.data() } as UserProfile))
           .filter((u) => u.status === 'active');
         setTotalEmployees(activeUsers.length);
         setAllUsers(activeUsers);
-      })
-      .catch((err) => console.error('Employees count error:', err));
+      },
+      (err) => console.error('Employees snapshot error:', err)
+    );
 
-    return () => { taskUnsub(); actUnsub(); txUnsub(); };
+    // Same-tab instant sync listener
+    const handleDataChange = () => {
+      try {
+        const local = JSON.parse(localStorage.getItem('elgogalyia_local_users') || '[]');
+        if (local && local.length > 0) {
+          const active = local.filter((u: any) => u.status === 'active');
+          setTotalEmployees(active.length);
+          setAllUsers(active);
+        }
+      } catch {}
+    };
+    window.addEventListener('elgogalyia_data_change', handleDataChange);
+
+    return () => {
+      taskUnsub();
+      actUnsub();
+      txUnsub();
+      usersUnsub();
+      window.removeEventListener('elgogalyia_data_change', handleDataChange);
+    };
   }, []);
 
   const stats = {

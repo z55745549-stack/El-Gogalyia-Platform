@@ -1475,7 +1475,7 @@ export async function removeAuthorizedUser(
   const docRef = doc(db, 'authorizedUsers', emailKey);
 
   try {
-    await updateDoc(docRef, { status: 'disabled' });
+    await updateDoc(docRef, { status: 'inactive' });
   } catch (err) {
     console.warn('Supabase removeAuthorizedUser notice:', err);
   }
@@ -1483,13 +1483,13 @@ export async function removeAuthorizedUser(
   try {
     const localAuth = JSON.parse(localStorage.getItem('elgogalyia_local_authorized') || '[]');
     const updatedAuth = localAuth.map((u: any) =>
-      (u.email || '').trim().toLowerCase() === emailKey ? { ...u, status: 'disabled' } : u
+      (u.email || '').trim().toLowerCase() === emailKey ? { ...u, status: 'inactive' } : u
     );
     localStorage.setItem('elgogalyia_local_authorized', JSON.stringify(updatedAuth));
 
     const localUsers = JSON.parse(localStorage.getItem('elgogalyia_local_users') || '[]');
     const updatedUsers = localUsers.map((u: any) =>
-      (u.email || '').trim().toLowerCase() === emailKey ? { ...u, status: 'disabled' } : u
+      (u.email || '').trim().toLowerCase() === emailKey ? { ...u, status: 'inactive' } : u
     );
     localStorage.setItem('elgogalyia_local_users', JSON.stringify(updatedUsers));
     window.dispatchEvent(new Event('elgogalyia_data_change'));

@@ -314,11 +314,20 @@ function mapRow(row: any): any {
     }
   }
 
-  // Explicit aliases for oCoinsBalance <-> ocoins_balance
-  if (row.ocoins_balance !== undefined || raw.ocoins_balance !== undefined || row.o_coins_balance !== undefined || raw.oCoinsBalance !== undefined) {
-    const bal = row.ocoins_balance ?? raw.oCoinsBalance ?? raw.ocoins_balance ?? row.o_coins_balance;
-    res.oCoinsBalance = bal;
-    res.ocoinsBalance = bal;
+  // ── OCoins Balance: الأولوية للعمود الفعلي في قاعدة البيانات ────────────
+  // يجب أن يُستخدم العمود الفعلي `ocoins_balance` دائماً وليس raw_data
+  // لأن raw_data قد يكون قديماً بعد التحديثات
+  const actualBalance =
+    row.ocoins_balance !== undefined ? row.ocoins_balance   // ✅ العمود الفعلي أولاً
+    : raw.ocoins_balance !== undefined ? raw.ocoins_balance
+    : raw.oCoinsBalance !== undefined ? raw.oCoinsBalance
+    : row.o_coins_balance !== undefined ? row.o_coins_balance
+    : undefined;
+
+  if (actualBalance !== undefined) {
+    res.oCoinsBalance = actualBalance;   // camelCase للـ UI
+    res.ocoins_balance = actualBalance;  // snake_case للتوافق
+    res.ocoinsBalance = actualBalance;   // alias إضافي
   }
 
   // Ensure id is defined
@@ -342,6 +351,7 @@ function mapRow(row: any): any {
 
   return res;
 }
+
 
 export interface DocumentData {
   [field: string]: any;
@@ -683,19 +693,27 @@ export async function updateDoc(docRef: DocRef, data: any): Promise<void> {
   const isSettings = table === 'system_settings';
   const idCol = isSettings ? 'key' : 'id';
 
+  // جلب السجل الحالي كاملاً لحل increment() بشكل صحيح
   const { data: existing } = await supabase.from(table).select('*').eq(idCol, docRef.id).maybeSingle();
-  const existingRaw = existing?.raw_data || existing || {};
+  const existingRaw = existing?.raw_data || {};
 
   const resolvedData: Record<string, any> = {};
   for (const [k, v] of Object.entries(data)) {
     if (v && typeof v === 'object' && (v as any).__type === 'increment') {
-      const current = existingRaw[k] ?? existing?.[toSnakeCase(k)] ?? 0;
-      resolvedData[k] = Number(current) + (v as any).value;
+      // ── إصلاح حرج: قراءة القيمة الفعلية من العمود مباشرةً وليس raw_data ──
+      // الأولوية: العمود الفعلي > raw_data
+      const snake = toSnakeCase(k);
+      const columnAlias = (k === 'oCoinsBalance' || k === 'ocoinsBalance') ? 'ocoins_balance' : snake;
+      const currentFromCol = existing?.[columnAlias] ?? existing?.[snake] ?? existing?.[k];
+      const currentFromRaw = existingRaw[k] ?? existingRaw[snake] ?? existingRaw[columnAlias];
+      const current = currentFromCol !== undefined ? currentFromCol : (currentFromRaw ?? 0);
+      resolvedData[k] = Math.max(0, Number(current) + (v as any).value);
     } else {
       resolvedData[k] = v;
     }
   }
 
+  // تحديث raw_data ليعكس القيم الجديدة (مهم لصحة البيانات المُخزَّنة)
   const mergedRaw = { ...existingRaw, ...resolvedData, [idCol]: docRef.id };
   const payload: Record<string, any> = {
     raw_data: mergedRaw,
@@ -712,6 +730,17 @@ export async function updateDoc(docRef: DocRef, data: any): Promise<void> {
     }
   }
 
+  // ── تحديث raw_data.oCoinsBalance و raw_data.ocoins_balance معاً لضمان التزامن ──
+  if (resolvedData.oCoinsBalance !== undefined || resolvedData.ocoinsBalance !== undefined) {
+    const newBal = resolvedData.oCoinsBalance ?? resolvedData.ocoinsBalance;
+    payload.raw_data = { ...mergedRaw, oCoinsBalance: newBal, ocoins_balance: newBal };
+  }
+  if (resolvedData.ocoins_balance !== undefined) {
+    const newBal = resolvedData.ocoins_balance;
+    payload.raw_data = { ...(payload.raw_data || mergedRaw), oCoinsBalance: newBal, ocoins_balance: newBal };
+    payload.ocoins_balance = newBal; // تأكيد الكتابة للعمود الفعلي
+  }
+
   const { error } = await supabase.from(table).update(payload).eq(idCol, docRef.id);
   if (error) {
     console.warn(`Supabase updateDoc error on ${table}:`, error.message);
@@ -719,6 +748,7 @@ export async function updateDoc(docRef: DocRef, data: any): Promise<void> {
     notifyTableChange(table);
   }
 }
+
 
 export async function addDoc(colRef: CollectionRef, data: any): Promise<DocRef> {
   const table = colRef.table;

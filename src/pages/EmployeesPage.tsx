@@ -102,7 +102,7 @@ export function EmployeesPage() {
       },
       (err) => {
         console.warn('Supabase users snapshot notice:', err);
-        // Local storage fallback listener
+        // Local storage fallback loader
         const loadLocal = () => {
           const raw = JSON.parse(localStorage.getItem('elgogalyia_local_users') || '[]');
           const localList: UserProfile[] = raw.map((u: any) => ({
@@ -113,11 +113,30 @@ export function EmployeesPage() {
           setLoading(false);
         };
         loadLocal();
-        window.addEventListener('elgogalyia_data_change', loadLocal);
-        return () => window.removeEventListener('elgogalyia_data_change', loadLocal);
       }
     );
-    return () => { unsubscribe(); unsubCommittees(); unsubBans(); };
+
+    // Same-tab instant sync listener (e.g., when coins are awarded or balance is adjusted)
+    const handleDataChange = () => {
+      try {
+        const raw = JSON.parse(localStorage.getItem('elgogalyia_local_users') || '[]');
+        if (raw && raw.length > 0) {
+          const localList: UserProfile[] = raw.map((u: any) => ({
+            ...u,
+            committeeName: u.committeeName || (u.role === 'lead' || u.role === 'co_lead' ? 'بدون لجنة' : undefined),
+          }));
+          setEmployees(localList);
+        }
+      } catch {}
+    };
+    window.addEventListener('elgogalyia_data_change', handleDataChange);
+
+    return () => {
+      unsubscribe();
+      unsubCommittees();
+      unsubBans();
+      window.removeEventListener('elgogalyia_data_change', handleDataChange);
+    };
   }, []);
 
   const resetForm = () => {

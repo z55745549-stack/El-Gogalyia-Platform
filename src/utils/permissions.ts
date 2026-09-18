@@ -101,7 +101,7 @@ export function canAccessPage(role: UserRole, page: string): boolean {
   return true;
 }
 
-export function getDefaultRoute(role: UserRole): string {
+export function getDefaultRoute(_role: UserRole): string {
   return '/dashboard';
 }
 
