@@ -50,6 +50,8 @@ export interface UserProfile {
   googleLinkedUid?: string;
   employeeCode?: string; // Unique permanent attendance code e.g. GOGA-33001
   oCoinsBalance?: number | null;
+  ocoins_balance?: number | null;
+  ocoinsBalance?: number | null;
   createdAt: Timestamp | string;
   updatedAt?: Timestamp | string;
 }
