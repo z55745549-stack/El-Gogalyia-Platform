@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Menu, Sun, Moon, Bell, Languages } from 'lucide-react';
+import { Menu, Sun, Moon, Bell } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useNotificationCount } from '@/hooks/useNotifications';
@@ -10,10 +10,10 @@ interface HeaderProps {
 
 export function Header({ onMobileMenuClick }: HeaderProps) {
   const { theme, toggleTheme } = useTheme();
-  const { language, isRTL, toggleLanguage, t } = useLanguage();
+  const { isRTL, t } = useLanguage();
   const unreadCount = useNotificationCount();
 
-  const formattedDate = new Date().toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US', {
+  const formattedDate = new Date().toLocaleDateString('ar-EG', {
     weekday: 'long',
     month: 'long',
     day: 'numeric',
@@ -62,26 +62,8 @@ export function Header({ onMobileMenuClick }: HeaderProps) {
         </div>
       </div>
 
-      {/* Right side: Language Switcher + Notifications Bell + Theme Toggle */}
+      {/* Right side: Notifications Bell + Theme Toggle */}
       <div className="flex items-center gap-2">
-        {/* Language Switcher (AR / EN) */}
-        <button
-          onClick={toggleLanguage}
-          title={t('header.lang.switch', language === 'ar' ? 'Switch to English' : 'التبديل إلى العربية')}
-          className="p-2 px-2.5 rounded-xl transition-all cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-1.5 text-xs font-black"
-          style={{
-            color: 'var(--text-secondary)',
-            background: 'var(--surface-elevated)',
-            border: '1px solid var(--border-subtle)',
-          }}
-          aria-label={t('header.lang.switch', language === 'ar' ? 'Switch to English' : 'Switch to Arabic')}
-        >
-          <Languages className="h-4 w-4 text-indigo-500" />
-          <span className="uppercase font-mono text-[11px] font-black tracking-wider text-[var(--text-primary)]">
-            {language === 'ar' ? 'EN' : 'عربي'}
-          </span>
-        </button>
-
         {/* Notification Bell */}
         <Link
           to="/notifications"

@@ -4,12 +4,10 @@ import { join } from 'node:path';
 const workspaceRoot = process.cwd();
 const translationSource = await readFile(join(workspaceRoot, 'src/context/translations.ts'), 'utf8');
 
-function keysFor(language) {
-  const start = translationSource.indexOf(`  ${language}: {`);
-  const end = language === 'ar'
-    ? translationSource.indexOf('\n  en: {', start)
-    : translationSource.lastIndexOf('\n  },');
-  if (start < 0 || end < 0) throw new Error(`Unable to read ${language} translations.`);
+function keysForArabic() {
+  const start = translationSource.indexOf('  ar: {');
+  const end = translationSource.lastIndexOf('\n  },');
+  if (start < 0 || end < 0) throw new Error('Unable to read Arabic translations.');
   return new Set([...translationSource.slice(start, end).matchAll(/^\s*'([^']+)':/gm)].map((match) => match[1]));
 }
 
@@ -23,10 +21,7 @@ async function sourceFiles(directory) {
   return nested.flat();
 }
 
-const arabicKeys = keysFor('ar');
-const englishKeys = keysFor('en');
-const onlyArabic = [...arabicKeys].filter((key) => !englishKeys.has(key));
-const onlyEnglish = [...englishKeys].filter((key) => !arabicKeys.has(key));
+const arabicKeys = keysForArabic();
 const usedKeys = new Set();
 
 for (const file of await sourceFiles(join(workspaceRoot, 'src'))) {
@@ -35,13 +30,9 @@ for (const file of await sourceFiles(join(workspaceRoot, 'src'))) {
   for (const match of source.matchAll(/\bt\(\s*['"]([^'"]+)['"]/g)) usedKeys.add(match[1]);
 }
 
-const missing = [...usedKeys].filter((key) => !key.endsWith('.') && !key.endsWith('_') && (!arabicKeys.has(key) || !englishKeys.has(key)));
-if (onlyArabic.length || onlyEnglish.length) {
-  console.error('Translation validation failed.');
-  if (onlyArabic.length) console.error(`Only Arabic: ${onlyArabic.join(', ')}`);
-  if (onlyEnglish.length) console.error(`Only English: ${onlyEnglish.join(', ')}`);
-  process.exit(1);
-}
+const missing = [...usedKeys].filter((key) => !key.endsWith('.') && !key.endsWith('_') && !arabicKeys.has(key));
 
-console.log(`Translation validation passed: ${arabicKeys.size} keys in Arabic and English.`);
-if (missing.length) console.warn(`Translation coverage warning: ${missing.length} referenced keys still rely on their local fallback text.`);
+console.log(`Translation validation passed: ${arabicKeys.size} Arabic keys registered.`);
+if (missing.length) {
+  console.warn(`Translation coverage warning: ${missing.length} referenced keys without Arabic mapping:`, missing);
+}
