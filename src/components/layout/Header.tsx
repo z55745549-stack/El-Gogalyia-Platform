@@ -29,7 +29,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/activity-logs': 'سجل العمليات المباشر',
   '/notifications': 'مركز التنبيهات والإشعارات',
   '/profile': 'الملف الشخصي',
-  '/settings': 'إعدادات المنصة',
+  '/settings': 'إعدادات الحساب والملف الشخصي',
 };
 
 export function Header({ onMobileMenuClick }: HeaderProps) {
@@ -163,18 +163,21 @@ export function Header({ onMobileMenuClick }: HeaderProps) {
           <Link
             to="/settings"
             title="إعدادات الحساب والملف الشخصي"
-            className="flex items-center gap-2 p-1 pl-2 sm:pl-3 rounded-xl bg-[var(--surface-elevated)] border border-[var(--border-subtle)] hover:border-[var(--brand-primary)]/50 transition-all shadow-2xs group cursor-pointer"
+            className="flex items-center gap-2.5 p-1 pl-2 sm:pl-3.5 rounded-2xl bg-[var(--surface-elevated)] border border-[var(--border-subtle)] hover:border-[var(--brand-primary)]/60 transition-all shadow-2xs group cursor-pointer"
           >
-            <Avatar
-              src={userProfile.photoURL}
-              name={formatFullName(userProfile.displayName || userProfile.username || 'User')}
-              size="xs"
-            />
+            <div className="relative">
+              <Avatar
+                src={userProfile.photoURL}
+                name={formatFullName(userProfile.displayName || userProfile.username || 'User')}
+                size="xs"
+              />
+              <span className="absolute -bottom-0.5 -left-0.5 w-2 h-2 rounded-full bg-emerald-500 border border-[var(--surface)] ring-1 ring-emerald-400/50" />
+            </div>
             <div className="hidden lg:flex flex-col text-right leading-none">
               <span className="text-[11px] font-black text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] transition-colors truncate max-w-[110px]">
                 {formatFullName(userProfile.displayName || 'المستخدم').split(' ')[0]}
               </span>
-              <span className="text-[9px] text-[var(--text-muted)] font-semibold mt-0.5">
+              <span className="text-[9px] text-[var(--text-muted)] font-bold mt-0.5">
                 {getRoleLabel(userProfile.role as UserRole)}
               </span>
             </div>

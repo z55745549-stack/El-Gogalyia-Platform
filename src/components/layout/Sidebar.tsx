@@ -187,10 +187,9 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
 
           return (
             <div key={cat} className="space-y-1">
-              <div
-                className="text-[10px] font-black uppercase tracking-wider px-2 mb-1 text-[var(--text-muted)] flex items-center justify-between"
-              >
-                <span>{t('nav.cat.' + cat, categoryLabels[cat] || cat)}</span>
+              <div className="flex items-center gap-2 px-2.5 mb-1.5 text-[10px] font-black uppercase tracking-wider text-[var(--text-muted)]">
+                <span className="shrink-0">{t('nav.cat.' + cat, categoryLabels[cat] || cat)}</span>
+                <span className="flex-1 h-[1px] bg-[var(--border-subtle)]/70" />
               </div>
 
               {itemsInCat.map((item) => (
