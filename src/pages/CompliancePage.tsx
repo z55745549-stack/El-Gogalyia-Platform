@@ -3,14 +3,16 @@ import { useSearchParams } from 'react-router-dom';
 import { QrCode, Ban, ShieldCheck } from 'lucide-react';
 import { AttendanceAdminPage } from '@/pages/AttendanceAdminPage';
 import { BansPage } from '@/pages/BansPage';
+import { useLanguage } from '@/context/LanguageContext';
 import { cn } from '@/utils';
 
 export function CompliancePage() {
+  const { t, isRTL } = useLanguage();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') === 'bans' ? 'bans' : 'attendance';
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto dir-rtl text-right font-sans pb-12 animate-fadeIn">
+    <div className={cn("space-y-6 max-w-7xl mx-auto font-sans pb-12 animate-fadeIn", isRTL ? "dir-rtl text-right" : "text-left")}>
       {/* Top Management Switcher Bar (Courses & Opportunities Style) */}
       <div className="flex items-center justify-between p-2 rounded-2xl bg-[var(--surface-elevated)] border border-[var(--border-subtle)] flex-wrap gap-2">
         <div className="flex items-center gap-1.5 flex-wrap">
@@ -25,7 +27,7 @@ export function CompliancePage() {
             )}
           >
             <QrCode className="h-4 w-4" />
-            <span>جلسات الحضور و QR</span>
+            <span>{t('compliance.tab_attendance', 'جلسات الحضور و QR')}</span>
           </button>
 
           <button
@@ -39,13 +41,13 @@ export function CompliancePage() {
             )}
           >
             <Ban className="h-4 w-4" />
-            <span>سجل الانضباط والحظر</span>
+            <span>{t('compliance.tab_bans', 'سجل الانضباط والحظر')}</span>
           </button>
         </div>
 
         <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-500/10 text-emerald-500 text-[11px] font-black border border-emerald-500/20">
           <ShieldCheck className="h-3.5 w-3.5" />
-          <span>صلاحيات الإشراف مفعّلة</span>
+          <span>{t('compliance.management_active', 'صلاحيات الإشراف مفعّلة')}</span>
         </div>
       </div>
 

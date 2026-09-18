@@ -30,6 +30,7 @@ function YoutubeIcon({ className = 'h-4 w-4' }: { className?: string }) {
   );
 }
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
 import {
   subscribeCourses,
   subscribeCourseCategories,
@@ -59,6 +60,7 @@ import type { Course, CourseCategory, CourseStatus, CourseLevel, CourseLesson } 
 
 export function AdminCoursesPage() {
   const { userProfile } = useAuth();
+  const { t, isRTL } = useLanguage();
   const [courses, setCourses] = useState<Course[]>([]);
   const [categories, setCategories] = useState<CourseCategory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -366,16 +368,16 @@ export function AdminCoursesPage() {
   });
 
   return (
-    <div className="space-y-6 font-sans dir-rtl text-right">
+    <div className={cn("space-y-6 font-sans", isRTL ? "dir-rtl text-right" : "text-left")}>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-white/[0.03] p-6 rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-xs">
         <div>
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-slate-100 flex items-center gap-2.5">
             <GraduationCap className="h-6 w-6 text-[var(--brand-primary)] dark:text-[var(--brand-accent)]" />
-            <span>إدارة الدورات والتصنيفات (Courses & Categories)</span>
+            <span>{t('admin_courses.title', 'إدارة الدورات والتصنيفات (Courses & Categories)')}</span>
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            إضافة وإدارة المسارات التعليمية المجانية، ربط قوائم تشغيل YouTube، وإدارة التصنيفات الديناميكية
+            {t('courses.hero_desc', 'إضافة وإدارة المسارات التعليمية المجانية، ربط قوائم تشغيل YouTube، وإدارة التصنيفات الديناميكية')}
           </p>
         </div>
 
@@ -389,7 +391,7 @@ export function AdminCoursesPage() {
               className="gap-2 btn-primary font-bold text-xs py-2.5 px-4 cursor-pointer"
             >
               <Plus className="h-4 w-4" />
-              <span>إضافة دورة جديدة</span>
+              <span>{t('admin_courses.add_course', 'إضافة دورة جديدة')}</span>
             </Button>
           ) : (
             <Button
@@ -400,7 +402,7 @@ export function AdminCoursesPage() {
               className="gap-2 btn-primary font-bold text-xs py-2.5 px-4 cursor-pointer"
             >
               <FolderPlus className="h-4 w-4" />
-              <span>إضافة تصنيف جديد</span>
+              <span>{t('admin_courses.add_category', 'إضافة تصنيف جديد')}</span>
             </Button>
           )}
         </div>
@@ -409,10 +411,10 @@ export function AdminCoursesPage() {
       {/* Metrics Bar */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'إجمالي الدورات', val: totalCourses, icon: BookOpen, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-950/30' },
-          { label: 'الدورات المنشورة', val: publishedCourses, icon: Sparkles, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-950/30' },
-          { label: 'المسودات والمؤجلة', val: draftCourses, icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-950/30' },
-          { label: 'التصنيفات المتاحة', val: totalCats, icon: FolderTree, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-950/30' },
+          { label: t('courses.available', 'إجمالي الدورات'), val: totalCourses, icon: BookOpen, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-950/30' },
+          { label: t('admin_courses.published', 'الدورات المنشورة'), val: publishedCourses, icon: Sparkles, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-950/30' },
+          { label: t('admin_courses.draft', 'المسودات والمؤجلة'), val: draftCourses, icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-950/30' },
+          { label: t('admin_courses.tab_categories', 'التصنيفات المتاحة'), val: totalCats, icon: FolderTree, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-950/30' },
         ].map((m, i) => (
           <div
             key={i}
@@ -441,7 +443,7 @@ export function AdminCoursesPage() {
           )}
         >
           <BookOpen className="h-4 w-4" />
-          <span>الدورات التعليمية ({totalCourses})</span>
+          <span>{t('admin_courses.tab_courses', 'الدورات التعليمية')} ({totalCourses})</span>
         </button>
 
         <button
@@ -454,7 +456,7 @@ export function AdminCoursesPage() {
           )}
         >
           <FolderTree className="h-4 w-4" />
-          <span>إدارة التصنيفات ({totalCats})</span>
+          <span>{t('admin_courses.tab_categories', 'إدارة التصنيفات')} ({totalCats})</span>
         </button>
       </div>
 
@@ -464,13 +466,16 @@ export function AdminCoursesPage() {
           {/* Search & Filters */}
           <div className="bg-white dark:bg-white/[0.03] p-4 rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="relative w-full sm:max-w-md">
-              <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Search className={cn("absolute top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400", isRTL ? "right-3.5" : "left-3.5")} />
               <input
                 type="text"
-                placeholder="البحث باسم الدورة أو المدرب..."
+                placeholder={t('admin_courses.search_placeholder', 'البحث باسم الدورة أو المدرب...')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pr-10 pl-4 py-2 text-xs sm:text-sm rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-slate-800 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-[var(--brand-primary)]"
+                className={cn(
+                  "w-full py-2 text-xs sm:text-sm rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-slate-800 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-[var(--brand-primary)]",
+                  isRTL ? "pr-10 pl-4" : "pl-10 pr-4"
+                )}
               />
             </div>
 
@@ -480,7 +485,7 @@ export function AdminCoursesPage() {
                 onChange={(e) => setCategoryFilter(e.target.value)}
                 className="px-3 py-2 text-xs font-bold rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--foreground)] cursor-pointer"
               >
-                <option value="all">جميع التصنيفات</option>
+                <option value="all">{t('admin_courses.all_categories', 'جميع التصنيفات')}</option>
                 {categories.map((c) => (
                   <option key={c.id} value={c.name}>{c.name}</option>
                 ))}
@@ -491,10 +496,10 @@ export function AdminCoursesPage() {
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="px-3 py-2 text-xs font-bold rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--foreground)] cursor-pointer"
               >
-                <option value="all">جميع الحالات</option>
-                <option value="published">منشورة (Published)</option>
-                <option value="draft">مسودة (Draft)</option>
-                <option value="unpublished">غير منشورة</option>
+                <option value="all">{t('admin_courses.all_statuses', 'جميع الحالات')}</option>
+                <option value="published">{t('admin_courses.published', 'منشورة')}</option>
+                <option value="draft">{t('admin_courses.draft', 'مسودة')}</option>
+                <option value="unpublished">{t('admin_courses.archived', 'غير منشورة')}</option>
               </select>
             </div>
           </div>
@@ -502,16 +507,16 @@ export function AdminCoursesPage() {
           {/* Courses Table (Desktop) */}
           <div className="card rounded-2xl shadow-xs overflow-hidden hidden lg:block">
             <div className="overflow-x-auto">
-              <table className="w-full text-right text-xs">
+              <table className={cn("w-full text-xs", isRTL ? "text-right" : "text-left")}>
                 <thead className="bg-[var(--surface-elevated)] border-b border-[var(--border-subtle)] text-[var(--muted-foreground)] font-bold">
                   <tr>
-                    <th className="p-4">الدورة التعليمية</th>
-                    <th className="p-4">التصنيف</th>
-                    <th className="p-4">الدروس وقائمة YouTube</th>
-                    <th className="p-4">المستوى</th>
-                    <th className="p-4">المدرب</th>
-                    <th className="p-4">الحالة</th>
-                    <th className="p-4 text-left">الإجراءات</th>
+                    <th className="p-4">{t('courses.available', 'الدورة التعليمية')}</th>
+                    <th className="p-4">{t('admin_courses.form_category', 'التصنيف')}</th>
+                    <th className="p-4">{t('admin_courses.view_lessons', 'الدروس وقائمة YouTube')}</th>
+                    <th className="p-4">{t('admin_courses.form_level', 'المستوى')}</th>
+                    <th className="p-4">{t('admin_courses.form_instructor', 'المدرب')}</th>
+                    <th className="p-4">{t('admin_courses.form_status', 'الحالة')}</th>
+                    <th className={cn("p-4", isRTL ? "text-left" : "text-right")}>{t('employees.col_actions', 'الإجراءات')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--border-subtle)] font-medium">

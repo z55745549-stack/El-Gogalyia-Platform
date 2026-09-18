@@ -23,6 +23,7 @@ function YoutubeIcon({ className = 'h-4 w-4' }: { className?: string }) {
 }
 
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
 import {
   subscribeCourses,
   subscribeCourseCategories,
@@ -37,19 +38,23 @@ import type { Course, CourseCategory, CourseLevel, CourseProgress } from '@/type
 
 type SortOption = 'newest' | 'oldest' | 'az' | 'za';
 
-const LEVEL_LABELS: Record<CourseLevel, { label: string; color: string }> = {
-  all: { label: 'جميع المستويات', color: 'bg-slate-500/10 text-slate-400' },
-  beginner: { label: 'مبتدئ (Beginner)', color: 'bg-emerald-500/10 text-emerald-400' },
-  intermediate: { label: 'متوسط (Intermediate)', color: 'bg-blue-500/10 text-blue-400' },
-  advanced: { label: 'متقدم (Advanced)', color: 'bg-purple-500/10 text-purple-400' },
-};
-
 export function CoursesPage() {
   const { userProfile } = useAuth();
+  const { t, isRTL } = useLanguage();
   const [courses, setCourses] = useState<Course[]>([]);
   const [categories, setCategories] = useState<CourseCategory[]>([]);
   const [userProgressMap, setUserProgressMap] = useState<Record<string, CourseProgress>>({});
   const [loading, setLoading] = useState(true);
+
+  const getLevelInfo = (level: CourseLevel = 'all') => {
+    const map: Record<CourseLevel, { label: string; color: string }> = {
+      all: { label: t('courses.level_all', 'جميع المستويات'), color: 'bg-slate-500/10 text-slate-400' },
+      beginner: { label: t('courses.level_beginner', 'مبتدئ (Beginner)'), color: 'bg-emerald-500/10 text-emerald-400' },
+      intermediate: { label: t('courses.level_intermediate', 'متوسط (Intermediate)'), color: 'bg-blue-500/10 text-blue-400' },
+      advanced: { label: t('courses.level_advanced', 'متقدم (Advanced)'), color: 'bg-purple-500/10 text-purple-400' },
+    };
+    return map[level] || map.all;
+  };
 
   // Filters & Sorting
   const [search, setSearch] = useState('');
@@ -132,7 +137,7 @@ export function CoursesPage() {
   });
 
   return (
-    <div className="space-y-6 font-sans dir-rtl text-right animate-fadeIn">
+    <div className={cn("space-y-6 font-sans animate-fadeIn", isRTL ? "dir-rtl text-right" : "text-left")}>
       {/* Management / Student Tab Switcher for Admin Roles */}
       {canManageCourses && (
         <div className="flex items-center justify-between p-2 rounded-2xl bg-[var(--surface-elevated)] border border-[var(--border-subtle)]">
@@ -148,7 +153,7 @@ export function CoursesPage() {
               )}
             >
               <BookOpen className="h-4 w-4" />
-              <span>استعراض وتصفح الدورات</span>
+              <span>{t('courses.browse_tab', 'استعراض وتصفح الدورات')}</span>
             </button>
 
             <button
@@ -162,12 +167,12 @@ export function CoursesPage() {
               )}
             >
               <GraduationCap className="h-4 w-4" />
-              <span>إدارة وتنظيم الدورات (مشرف)</span>
+              <span>{t('courses.manage_tab', 'إدارة وتنظيم الدورات (مشرف)')}</span>
             </button>
           </div>
 
           <span className="text-[11px] font-bold text-[var(--text-muted)] hidden sm:inline px-3">
-            صلاحيات الإشراف مفعّلة
+            {t('courses.management_active', 'صلاحيات الإشراف مفعّلة')}
           </span>
         </div>
       )}
@@ -182,13 +187,13 @@ export function CoursesPage() {
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--brand-accent)]/20 backdrop-blur-md text-xs font-black border border-[var(--brand-accent)]/30 text-[var(--brand-accent)]">
               <Sparkles className="h-3.5 w-3.5" />
-              <span>مجانية 100% لأعضاء منصة الجوجالية</span>
+              <span>{t('courses.hero_badge', 'مجانية 100% لأعضاء منصة الجوجالية')}</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
-              الدورات والمسارات التعليمية
+              {t('courses.hero_title', 'الدورات والمسارات التعليمية')}
             </h1>
             <p className="text-slate-300 text-xs sm:text-sm max-w-2xl leading-relaxed">
-              طور مهاراتك التقنية والإدارية مع باقة مختارة من الدورات المعتمدة، قوائم تشغيل YouTube، والمصادر التعليمية التخصصية.
+              {t('courses.hero_desc', 'طور مهاراتك التقنية والإدارية مع باقة مختارة من الدورات المعتمدة، قوائم تشغيل YouTube، والمصادر التعليمية التخصصية.')}
             </p>
           </div>
 
@@ -197,8 +202,8 @@ export function CoursesPage() {
               <BookOpen className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-[11px] text-slate-400">الدورات المتاحة</p>
-              <p className="text-xl font-black text-white">{courses.length} دورة</p>
+              <p className="text-[11px] text-slate-400">{t('courses.available', 'الدورات المتاحة')}</p>
+              <p className="text-xl font-black text-white">{courses.length} {t('courses.lessons', 'دورة')}</p>
             </div>
           </div>
         </div>
@@ -217,7 +222,7 @@ export function CoursesPage() {
                   : 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-white/10'
               )}
             >
-              <span>جميع التصنيفات</span>
+              <span>{t('courses.all_categories', 'جميع التصنيفات')}</span>
               <span className="text-[10px] opacity-80">({courses.length})</span>
             </button>
 
@@ -249,28 +254,31 @@ export function CoursesPage() {
         {/* Search, Level & Sort Bar */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-100 dark:border-white/5">
           <div className="relative w-full sm:max-w-md">
-            <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Search className={cn("absolute top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400", isRTL ? "right-3.5" : "left-3.5")} />
             <input
               type="text"
-              placeholder="ابحث باسم الدورة، الموضوع، أو المدرب..."
+              placeholder={t('courses.search_placeholder', 'ابحث عن دورة...')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pr-10 pl-4 py-2.5 text-xs sm:text-sm rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-slate-800 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-[var(--brand-primary)]"
+              className={cn(
+                "w-full py-2.5 text-xs sm:text-sm rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-slate-800 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-[var(--brand-primary)]",
+                isRTL ? "pr-10 pl-4" : "pl-10 pr-4"
+              )}
             />
           </div>
 
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <div className="flex items-center gap-1.5 w-full sm:w-auto">
-              <span className="text-xs text-slate-400 shrink-0 hidden sm:inline">الترتيب:</span>
+              <span className="text-xs text-slate-400 shrink-0 hidden sm:inline">{t('courses.sort_by', 'ترتيب حسب')}:</span>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as SortOption)}
                 className="px-3 py-2 text-xs font-bold rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-slate-700 dark:text-slate-300 cursor-pointer focus:outline-hidden"
               >
-                <option value="newest">الأحدث إضافة</option>
-                <option value="oldest">الأقدم</option>
-                <option value="az">أبجدياً (أ - ي)</option>
-                <option value="za">أبجدياً (ي - أ)</option>
+                <option value="newest">{t('courses.sort_newest', 'الأحدث أولاً')}</option>
+                <option value="oldest">{t('courses.sort_oldest', 'الأقدم أولاً')}</option>
+                <option value="az">{t('courses.sort_az', 'أ - ي')}</option>
+                <option value="za">{t('courses.sort_za', 'ي - أ')}</option>
               </select>
             </div>
 
@@ -279,10 +287,10 @@ export function CoursesPage() {
               onChange={(e) => setSelectedLevel(e.target.value)}
               className="px-3 py-2 text-xs font-bold rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-slate-700 dark:text-slate-300 cursor-pointer focus:outline-hidden"
             >
-              <option value="all">جميع المستويات</option>
-              <option value="beginner">مبتدئ</option>
-              <option value="intermediate">متوسط</option>
-              <option value="advanced">متقدم</option>
+              <option value="all">{t('courses.level_all', 'جميع المستويات')}</option>
+              <option value="beginner">{t('courses.level_beginner', 'مبتدئ')}</option>
+              <option value="intermediate">{t('courses.level_intermediate', 'متوسط')}</option>
+              <option value="advanced">{t('courses.level_advanced', 'متقدم')}</option>
             </select>
           </div>
         </div>
@@ -307,11 +315,11 @@ export function CoursesPage() {
         <div className="card rounded-2xl p-12 text-center">
           <EmptyState
             icon={<GraduationCap className="h-10 w-10 text-slate-400" />}
-            title="لم يتم العثور على دورات تعليمية"
+            title={t('courses.empty_title', 'لم يتم العثور على دورات تعليمية')}
             description={
               search || selectedCategory !== 'all' || selectedLevel !== 'all'
-                ? 'لا توجد دورات تطابق معايير البحث أو التصفية الحالية. جرب تغيير التصنيف أو البحث بكلمات أخرى.'
-                : 'سيتم نشر دورات ومسارات تعليمية جديدة قريباً من قِبل إدارة منصة الجوجالية.'
+                ? t('courses.no_results', 'لا توجد دورات تطابق معايير البحث أو التصفية الحالية.')
+                : t('courses.empty_desc', 'سيتم نشر دورات ومسارات تعليمية جديدة قريباً من قِبل إدارة منصة الجوجالية.')
             }
           />
         </div>
@@ -321,7 +329,7 @@ export function CoursesPage() {
             const ytUrl = getCourseYoutubeUrl(course);
             const directYtWatchLink = getCourseDirectYoutubeWatchLink(course);
             const hasYoutube = Boolean(ytUrl);
-            const levelInfo = LEVEL_LABELS[course.level || 'all'] || LEVEL_LABELS.all;
+            const levelInfo = getLevelInfo(course.level || 'all');
             const courseProg = userProgressMap[course.id];
             const isStarted = Boolean(
               courseProg &&
@@ -360,27 +368,27 @@ export function CoursesPage() {
                   />
 
                   {/* Status Badge */}
-                  <div className="absolute top-3 right-3 flex items-center gap-1.5 px-3 py-1 rounded-xl shadow-md text-xs font-black backdrop-blur-md">
+                  <div className={cn("absolute top-3 flex items-center gap-1.5 px-3 py-1 rounded-xl shadow-md text-xs font-black backdrop-blur-md", isRTL ? "right-3" : "left-3")}>
                     {isDone ? (
                       <span className="bg-emerald-600/90 text-white px-2.5 py-0.5 rounded-lg flex items-center gap-1">
                         <CheckCircle2 className="h-3.5 w-3.5" />
-                        <span>مكتملة 🎉</span>
+                        <span>{t('courses.completed_badge', 'مكتملة')} 🎉</span>
                       </span>
                     ) : isStarted ? (
                       <span className="bg-[var(--brand-primary)]/90 text-white px-2.5 py-0.5 rounded-lg flex items-center gap-1">
                         <Sparkles className="h-3.5 w-3.5 text-[var(--brand-accent)]" />
-                        <span>{percent}% مكتمل</span>
+                        <span>{percent}% {t('courses.completed_badge', 'مكتمل')}</span>
                       </span>
                     ) : (
                       <span className="bg-emerald-600/90 text-white px-2.5 py-0.5 rounded-lg flex items-center gap-1">
                         <Sparkles className="h-3.5 w-3.5" />
-                        <span>مجاناً FREE</span>
+                        <span>FREE</span>
                       </span>
                     )}
                   </div>
 
                   {/* Category Badge */}
-                  <div className="absolute top-3 left-3">
+                  <div className={cn("absolute top-3", isRTL ? "left-3" : "right-3")}>
                     <span className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-slate-900/80 backdrop-blur-md text-white border border-white/10">
                       {course.categoryName}
                     </span>
@@ -388,9 +396,9 @@ export function CoursesPage() {
 
                   {/* Play icon overlay if youtube */}
                   {hasYoutube && (
-                    <div className="absolute bottom-3 left-3 flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-600/90 text-white text-[10px] font-bold shadow-md">
+                    <div className={cn("absolute bottom-3 flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-600/90 text-white text-[10px] font-bold shadow-md", isRTL ? "left-3" : "right-3")}>
                       <YoutubeIcon className="h-3.5 w-3.5" />
-                      <span>{course.totalLessons ? `${course.totalLessons} درس` : 'YouTube'}</span>
+                      <span>{course.totalLessons ? `${course.totalLessons} ${t('courses.lessons', 'درس')}` : 'YouTube'}</span>
                     </div>
                   )}
                 </Link>
@@ -424,9 +432,9 @@ export function CoursesPage() {
                   {isStarted && (
                     <div className="space-y-1 pt-1">
                       <div className="flex justify-between items-center text-[10px] text-slate-400 font-bold">
-                        <span>التقدم في المشاهدة</span>
+                        <span>{t('courseplayer.progress', 'التقدم في المشاهدة')}</span>
                         <span className="text-[var(--brand-primary)] dark:text-[var(--brand-accent)]">
-                          {completedCount} / {totalCount} درس ({percent}%)
+                          {completedCount} / {totalCount} {t('courses.lessons', 'درس')} ({percent}%)
                         </span>
                       </div>
                       <div className="w-full h-1.5 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden">
@@ -459,7 +467,7 @@ export function CoursesPage() {
                     >
                       <PlayCircle className="h-4 w-4 shrink-0" />
                       <span className="truncate">
-                        {isDone ? 'مراجعة على المنصة' : isStarted ? 'متابعة على المنصة' : 'التعلم على المنصة'}
+                        {isDone ? t('courses.review', 'مراجعة على المنصة') : isStarted ? t('courses.continue', 'متابعة على المنصة') : t('courses.start_learning', 'التعلم على المنصة')}
                       </span>
                     </Link>
 
@@ -469,7 +477,7 @@ export function CoursesPage() {
                         target="_blank"
                         rel="noreferrer"
                         className="w-full sm:w-auto px-3 py-2.5 rounded-xl border border-red-500/20 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-colors shrink-0"
-                        title="مشاهدة مباشرة على يوتيوب في صفحة خارجية"
+                        title="YouTube"
                       >
                         <YoutubeIcon className="h-3.5 w-3.5 text-red-500 shrink-0" />
                         <span className="text-[11px] whitespace-nowrap">YouTube</span>

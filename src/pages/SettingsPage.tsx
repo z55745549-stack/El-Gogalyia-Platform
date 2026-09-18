@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { toast } from 'sonner';
 import { doc, updateDoc, query, collection, where, getDocs, serverTimestamp, db } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +19,7 @@ import { ImageCropperModal } from '@/components/ui/ImageCropperModal';
 
 export function SettingsPage() {
   const { userProfile, updateCurrentUserProfile } = useAuth();
+  const { t, isRTL } = useLanguage();
 
   // Profile Edit State
   const [displayName, setDisplayName] = useState(userProfile?.displayName || '');
@@ -227,7 +229,7 @@ export function SettingsPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto font-sans text-right dir-rtl pb-16">
+    <div className={cn("space-y-6 max-w-4xl mx-auto font-sans pb-16", isRTL ? "text-right dir-rtl" : "text-left")}>
       {/* ── Page Header ──────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between">
         <div>
@@ -235,10 +237,10 @@ export function SettingsPage() {
             <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[var(--brand-primary)] via-indigo-600 to-cyan-500 text-white flex items-center justify-center shadow-lg shadow-indigo-500/20">
               <Shield className="h-5 w-5" />
             </div>
-            <span>إعدادات الحساب والأمان</span>
+            <span>{t('settings.title', 'إعدادات الحساب والأمان')}</span>
           </h1>
           <p className="text-xs sm:text-sm text-[var(--text-muted)] mt-1">
-            إدارة الهوية الرقمية، الصورة الشخصية، وبيانات المصادقة الخاصة بحسابك في منصة الجوجالية.
+            {t('settings.profile_desc', 'إدارة الهوية الرقمية، الصورة الشخصية، وبيانات المصادقة الخاصة بحسابك في منصة الجوجالية.')}
           </p>
         </div>
       </div>
@@ -265,9 +267,9 @@ export function SettingsPage() {
             ) : (
               <Coins className="h-4 w-4 text-amber-400 shrink-0" />
             )}
-            <div className="text-right">
+            <div className={isRTL ? "text-right" : "text-left"}>
               <span className="text-[11px] font-black text-amber-300 font-mono">
-                {isUnlimited ? '∞ لا محدود' : `${formatOCoins(userProfile.oCoinsBalance ?? 0)} OC`}
+                {isUnlimited ? '∞ ' + t('common.unlimited', 'لا محدود') : `${formatOCoins(userProfile.oCoinsBalance ?? 0)} OC`}
               </span>
             </div>
           </div>
@@ -291,10 +293,10 @@ export function SettingsPage() {
                   <label
                     htmlFor="avatar-file-input"
                     className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer text-white gap-1"
-                    title="تغيير الصورة الشخصية"
+                    title={t('settings.upload_photo', 'رفع صورة')}
                   >
                     <Camera className="h-6 w-6" />
-                    <span className="text-[10px] font-bold">رفع صورة</span>
+                    <span className="text-[10px] font-bold">{t('settings.upload_photo', 'رفع صورة')}</span>
                   </label>
                 </div>
 
@@ -303,8 +305,11 @@ export function SettingsPage() {
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploadingAvatar}
-                  className="absolute -bottom-1 -left-1 p-2 rounded-xl bg-[var(--brand-primary)] text-white shadow-lg hover:scale-105 active:scale-95 transition-transform cursor-pointer border-2 border-[var(--surface)]"
-                  title="رفع صورة جديدة"
+                  className={cn(
+                    "absolute -bottom-1 p-2 rounded-xl bg-[var(--brand-primary)] text-white shadow-lg hover:scale-105 active:scale-95 transition-transform cursor-pointer border-2 border-[var(--surface)]",
+                    isRTL ? "-left-1" : "-right-1"
+                  )}
+                  title={t('settings.upload_photo', 'رفع صورة جديدة')}
                 >
                   {uploadingAvatar ? (
                     <RefreshCw className="h-3.5 w-3.5 animate-spin" />
@@ -328,9 +333,9 @@ export function SettingsPage() {
               <div className="space-y-1 pb-1">
                 <div className="flex items-center gap-2">
                   <h2 className="text-xl sm:text-2xl font-black text-[var(--text-primary)]">
-                    {userProfile.displayName || 'عضو الفريق'}
+                    {userProfile.displayName || t('common.team_member', 'عضو الفريق')}
                   </h2>
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm" title="متصل الآن" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm" title="Online" />
                 </div>
                 <p className="text-xs font-mono font-bold text-[var(--text-muted)]">
                   @{userProfile.username || userProfile.email}
@@ -340,7 +345,7 @@ export function SettingsPage() {
                     {getRoleLabel(userProfile.role)}
                   </span>
                   <span className="badge text-xs font-bold bg-[var(--surface-elevated)] border border-[var(--border-subtle)] text-[var(--text-secondary)]">
-                    {userProfile.committeeName || 'عضو عام بالمنصة'}
+                    {userProfile.committeeName || t('common.general_member', 'عضو عام بالمنصة')}
                   </span>
                 </div>
               </div>
@@ -357,7 +362,7 @@ export function SettingsPage() {
                 className="text-xs text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 border-rose-500/30 gap-1.5 self-start sm:self-auto cursor-pointer"
               >
                 <Trash2 className="h-3.5 w-3.5" />
-                <span>حذف الصورة</span>
+                <span>{t('settings.remove_photo', 'حذف الصورة')}</span>
               </Button>
             )}
           </div>
@@ -367,22 +372,22 @@ export function SettingsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5">
-                  الاسم الكامل (الظاهر في المنصة والتكليفات)
+                  {t('settings.display_name', 'الاسم الكامل')}
                 </label>
                 <Input
                   value={displayName}
                   onChange={(e) => setDisplayName(formatTitleCaseLive(e.target.value))}
-                  placeholder="الاسم الكامل..."
+                  placeholder={t('settings.display_name', 'الاسم الكامل...')}
                   leftIcon={<User className="h-4 w-4" />}
                   required
                 />
               </div>
               <div>
                 <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5">
-                  اللجنة أو المسار المعتمد
+                  {t('common.committee', 'اللجنة')}
                 </label>
                 <Input
-                  value={userProfile.committeeName || 'لا تنتمي للجنة محددة حالياً'}
+                  value={userProfile.committeeName || t('common.no_committee', 'لا تنتمي للجنة محددة حالياً')}
                   disabled
                   className="opacity-70 cursor-not-allowed bg-[var(--surface-elevated)]"
                   leftIcon={<Users className="h-4 w-4" />}
@@ -392,17 +397,14 @@ export function SettingsPage() {
 
             <div>
               <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5">
-                الوسم التخصصي / مجالك في المنصة (لتوجيه المهام والمحتوى المناسب لك)
+                {t('settings.specialty_tag', 'الوسم التخصصي / مجال الاهتمام')}
               </label>
               <Input
                 value={specialtyTag}
                 onChange={(e) => setSpecialtyTag(e.target.value)}
-                placeholder="مثال: Flutter, UI/UX, Python, تدريس برمجيات..."
+                placeholder={t('settings.specialty_placeholder', 'مثال: Flutter, UI/UX, Python, إدارة مشاريع...')}
                 leftIcon={<Tag className="h-4 w-4 text-indigo-500" />}
               />
-              <p className="text-[11px] text-[var(--text-muted)] mt-1">
-                يظهر هذا الوسم لرؤساء لجانك وللإدارة لتسهيل تكليفك بالمهام والأنشطة المناسبة لخبرتك.
-              </p>
             </div>
 
             <div className="flex justify-end pt-1">
@@ -413,7 +415,7 @@ export function SettingsPage() {
                 className="font-black text-xs px-6 gap-2 cursor-pointer shadow-md bg-gradient-to-r from-[var(--brand-primary)] to-indigo-600"
               >
                 <Check className="h-4 w-4" />
-                <span>حفظ التعديلات على الملف الشخصي</span>
+                <span>{t('settings.save_profile', 'حفظ الملف الشخصي')}</span>
               </Button>
             </div>
           </form>
@@ -428,10 +430,10 @@ export function SettingsPage() {
           </div>
           <div>
             <h2 className="text-base font-extrabold text-[var(--text-primary)]">
-              بيانات الدخول وكلمة المرور المشفرة
+              {t('settings.security_section', 'بيانات الدخول وكلمة المرور المشفرة')}
             </h2>
             <p className="text-xs text-[var(--text-muted)] mt-0.5">
-              تحديث المعرف الرقمي أو تعيين كلمة مرور قوية جديدة لحسابك.
+              {t('settings.security_desc', 'تحديث المعرف الرقمي أو تعيين كلمة مرور قوية جديدة لحسابك.')}
             </p>
           </div>
         </div>
@@ -439,7 +441,7 @@ export function SettingsPage() {
         <form onSubmit={handleSaveCredentials} className="space-y-4">
           <div>
             <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5">
-              اسم المستخدم (Username)
+              {t('settings.username_label', 'اسم المستخدم (Username)')}
             </label>
             <Input
               value={newUsername}
@@ -448,51 +450,34 @@ export function SettingsPage() {
               leftIcon={<AtSign className="h-4 w-4" />}
               required
             />
-            <p className="text-[11px] text-[var(--text-muted)] mt-1 font-mono">
-              هذا المعرف يُستخدم لتسجيل الدخول إلى النظام.
-            </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5">
-                كلمة المرور الجديدة
+                {t('settings.new_password', 'كلمة المرور الجديدة')}
               </label>
               <Input
                 type={showPassword ? 'text' : 'password'}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="اتركها فارغة إذا لا تريد تغييرها"
+                placeholder="******"
                 leftIcon={<Lock className="h-4 w-4" />}
               />
             </div>
             <div>
               <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5">
-                تأكيد كلمة المرور الجديدة
+                {t('settings.confirm_password', 'تأكيد كلمة المرور')}
               </label>
               <Input
                 type={showPassword ? 'text' : 'password'}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="أعد كتابة كلمة المرور للتأكيد"
+                placeholder="******"
                 leftIcon={<Lock className="h-4 w-4" />}
               />
             </div>
           </div>
-
-          {newPassword && (
-            <div className="flex items-center justify-between text-xs pt-1">
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="font-semibold flex items-center gap-1.5 cursor-pointer text-[var(--brand-primary)] hover:underline"
-              >
-                {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                <span>{showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}</span>
-              </button>
-              <span className="text-[11px] text-[var(--text-muted)]">الحد الأدنى 6 أحرف أو أرقام</span>
-            </div>
-          )}
 
           <div className="flex justify-end pt-2">
             <Button
@@ -502,7 +487,7 @@ export function SettingsPage() {
               className="font-black text-xs px-6 gap-2 cursor-pointer shadow-md bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white"
             >
               <Check className="h-4 w-4" />
-              <span>تأكيد وتحديث بيانات الأمان</span>
+              <span>{t('settings.save_credentials', 'حفظ بيانات الدخول')}</span>
             </Button>
           </div>
         </form>

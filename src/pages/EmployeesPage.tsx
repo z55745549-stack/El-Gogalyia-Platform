@@ -22,12 +22,11 @@ import { generateEmployeeCode } from '@/lib/attendance';
 import { canManageRole, canManageUser, isTopTierRole, getRoleLabel, getRoleColor, isAdminRole } from '@/utils/permissions';
 import { formatFullName, hasArabic, hasUnlimitedCoins, cn, sortUsersWithLeadershipPinned } from '@/utils';
 import { logActivity } from '@/lib/database-service';
-
-
+import { UserNameWithRole } from '@/components/ui/user-name-badge';
 
 export function EmployeesPage() {
   const { userProfile } = useAuth();
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const [employees, setEmployees] = useState<UserProfile[]>([]);
   const [committees, setCommittees] = useState<Committee[]>([]);
   const [committeeFilter, setCommitteeFilter] = useState<string>('');
@@ -1006,16 +1005,16 @@ export function EmployeesPage() {
         <>
           <div className="bg-[var(--surface)] rounded-2xl border border-[var(--border-subtle)] shadow-sm overflow-hidden hidden lg:block">
             <div className="overflow-x-auto">
-              <table className="w-full text-right text-xs sm:text-sm">
+              <table className={cn("w-full text-xs sm:text-sm", isRTL ? "text-right" : "text-left")}>
                 <thead className="bg-[var(--surface-elevated)] border-b border-[var(--border-subtle)] text-[var(--text-muted)] font-bold">
                   <tr>
-                    <th className="p-4">العضو</th>
-                    <th className="p-4">اسم المستخدم (Username)</th>
-                    <th className="p-4 hidden md:table-cell">اللجنة (Committee)</th>
-                    <th className="p-4">الرتبة (Role)</th>
-                    <th className="p-4">الحالة (Status)</th>
-                    <th className="p-4">رصيد O Coins</th>
-                    <th className="p-4 text-left">الإجراءات</th>
+                    <th className="p-4">{t('employees.col_member', 'الموظف / العضو')}</th>
+                    <th className="p-4">{t('employees.col_username', 'اسم المستخدم')}</th>
+                    <th className="p-4 hidden md:table-cell">{t('employees.col_committee', 'اللجنة')}</th>
+                    <th className="p-4">{t('employees.col_role', 'الرتبة')}</th>
+                    <th className="p-4">{t('employees.col_status', 'الحالة')}</th>
+                    <th className="p-4">{t('employees.col_balance', 'رصيد O Coins')}</th>
+                    <th className={cn("p-4", isRTL ? "text-left" : "text-right")}>{t('employees.col_actions', 'إجراءات')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--border-subtle)] font-medium">
@@ -1026,7 +1025,7 @@ export function EmployeesPage() {
                           <Avatar name={formatFullName(emp.displayName)} src={emp.photoURL} size="sm" />
                           <div>
                             <div className="flex items-center gap-2">
-                              <p className="font-bold text-[var(--text-primary)]">{formatFullName(emp.displayName)}</p>
+                              <UserNameWithRole user={emp} showAvatar={false} showRoleBadge={false} clickable={true} />
                               <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-500 border border-purple-500/20">
                                 {emp.employeeCode || generateEmployeeCode(emp.username || emp.uid)}
                               </span>
@@ -1124,13 +1123,13 @@ export function EmployeesPage() {
           {/* Approved Members Cards (Mobile) */}
           <div className="lg:hidden space-y-3">
             {filteredEmployees.map((emp) => (
-              <div key={`m-${emp.uid}`} className="bg-[var(--surface)] rounded-2xl border border-[var(--border-subtle)] p-4 shadow-sm text-right overflow-hidden">
+              <div key={`m-${emp.uid}`} className={cn("bg-[var(--surface)] rounded-2xl border border-[var(--border-subtle)] p-4 shadow-sm overflow-hidden", isRTL ? "text-right" : "text-left")}>
                 <div className="flex items-start justify-between gap-2.5 min-w-0">
                   <div className="flex items-start gap-2.5 min-w-0 flex-1">
                     <Avatar name={formatFullName(emp.displayName)} src={emp.photoURL} size="sm" className="shrink-0 mt-0.5" />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-                        <p className="font-bold text-[var(--text-primary)] text-sm truncate">{formatFullName(emp.displayName)}</p>
+                        <UserNameWithRole user={emp} showAvatar={false} showRoleBadge={false} clickable={true} nameClassName="text-sm font-bold" />
                         <span className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20 shrink-0">
                           {emp.employeeCode || generateEmployeeCode(emp.username || emp.uid)}
                         </span>

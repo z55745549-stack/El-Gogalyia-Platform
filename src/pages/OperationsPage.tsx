@@ -4,10 +4,12 @@ import { CheckSquare, Inbox, ShieldCheck } from 'lucide-react';
 import { TasksPage } from '@/pages/TasksPage';
 import { SubmittedTasksPage } from '@/pages/SubmittedTasksPage';
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { cn } from '@/utils';
 
 export function OperationsPage() {
   const { userProfile } = useAuth();
+  const { t, isRTL } = useLanguage();
   const isViceHead = userProfile?.role === 'vice_head';
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -17,7 +19,7 @@ export function OperationsPage() {
     : (isViceHead ? 'submissions' : 'tasks');
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto dir-rtl text-right font-sans pb-12 animate-fadeIn">
+    <div className={cn("space-y-6 max-w-7xl mx-auto font-sans pb-12 animate-fadeIn", isRTL ? "dir-rtl text-right" : "text-left")}>
       {/* Top Management Switcher Bar */}
       <div className="flex items-center justify-between p-2 rounded-2xl bg-[var(--surface-elevated)] border border-[var(--border-subtle)] flex-wrap gap-2">
         <div className="flex items-center gap-1.5 flex-wrap">
@@ -33,7 +35,11 @@ export function OperationsPage() {
             )}
           >
             <Inbox className="h-4 w-4" />
-            <span>{isViceHead ? 'مراجعة تسليمات أعضاء لجنتي' : 'مراجعة تسليمات الأعضاء'}</span>
+            <span>
+              {isViceHead
+                ? t('operations.tab_submissions_vice', 'مراجعة تسليمات أعضاء لجنتي')
+                : t('operations.tab_submissions', 'مراجعة تسليمات الأعضاء')}
+            </span>
           </button>
 
           {/* Tasks Tab */}
@@ -48,13 +54,21 @@ export function OperationsPage() {
             )}
           >
             <CheckSquare className="h-4 w-4" />
-            <span>{isViceHead ? 'استعراض مهام اللجنة' : 'المهام والتكليفات'}</span>
+            <span>
+              {isViceHead
+                ? t('operations.tab_tasks_vice', 'استعراض مهام اللجنة')
+                : t('operations.tab_tasks', 'المهام والتكليفات')}
+            </span>
           </button>
         </div>
 
         <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-500/10 text-emerald-500 text-[11px] font-black border border-emerald-500/20">
           <ShieldCheck className="h-3.5 w-3.5" />
-          <span>{isViceHead ? 'صلاحيات مراجعة تسليمات اللجنة مفعّلة' : 'صلاحيات الإشراف مفعّلة'}</span>
+          <span>
+            {isViceHead
+              ? t('operations.management_active_vice', 'صلاحيات مراجعة تسليمات اللجنة مفعّلة')
+              : t('operations.management_active', 'صلاحيات الإشراف مفعّلة')}
+          </span>
         </div>
       </div>
 
