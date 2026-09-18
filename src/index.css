@@ -334,6 +334,88 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
+   DYNAMIC GLOW & SPOTLIGHT SYSTEM (Tech Cyber Aura)
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.glow-card-interactive {
+  position: relative;
+  background-color: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 1rem;
+  transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+.glow-card-interactive::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    450px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(108, 99, 255, 0.16),
+    transparent 55%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.glow-card-interactive:hover {
+  border-color: rgba(108, 99, 255, 0.5);
+  box-shadow: 0 12px 36px -10px rgba(108, 99, 255, 0.3), 0 0 24px -4px rgba(108, 99, 255, 0.2);
+  transform: translateY(-3px);
+}
+
+.glow-card-interactive:hover::before {
+  opacity: 1;
+}
+
+/* Card items reaction to hover glow */
+.glow-card-interactive:hover .glow-text {
+  text-shadow: 0 0 14px rgba(167, 139, 250, 0.7);
+  transition: all 0.25s ease;
+}
+
+.glow-card-interactive:hover .glow-icon {
+  filter: drop-shadow(0 0 12px var(--brand-primary));
+  transform: scale(1.12);
+  transition: all 0.25s ease;
+}
+
+.glow-card-interactive:hover .glow-badge {
+  box-shadow: 0 0 16px rgba(108, 99, 255, 0.45);
+  transition: all 0.25s ease;
+}
+
+/* Specific glowing variants */
+.glow-primary:hover {
+  border-color: rgba(108, 99, 255, 0.6);
+  box-shadow: 0 12px 36px -10px rgba(108, 99, 255, 0.35), 0 0 25px rgba(108, 99, 255, 0.25);
+}
+
+.glow-accent:hover {
+  border-color: rgba(34, 211, 238, 0.6);
+  box-shadow: 0 12px 36px -10px rgba(34, 211, 238, 0.35), 0 0 25px rgba(34, 211, 238, 0.25);
+}
+
+.glow-warm:hover {
+  border-color: rgba(245, 158, 11, 0.6);
+  box-shadow: 0 12px 36px -10px rgba(245, 158, 11, 0.35), 0 0 25px rgba(245, 158, 11, 0.25);
+}
+
+.glow-success:hover {
+  border-color: rgba(16, 185, 129, 0.6);
+  box-shadow: 0 12px 36px -10px rgba(16, 185, 129, 0.35), 0 0 25px rgba(16, 185, 129, 0.25);
+}
+
+.glow-danger:hover {
+  border-color: rgba(244, 63, 94, 0.6);
+  box-shadow: 0 12px 36px -10px rgba(244, 63, 94, 0.35), 0 0 25px rgba(244, 63, 94, 0.25);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
    BUTTONS
    ═══════════════════════════════════════════════════════════════════════ */
 

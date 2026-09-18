@@ -255,27 +255,81 @@ export function AdminDashboard() {
 
   // Overall completion rate for gauge (based on scoped tasks for head, all tasks for leaders)
   const scopedTasks = isHead ? myCommitteeTasks : tasks;
-  const scopedApprovedCount = isHead
-    ? myCommitteeTasks.filter(t => t.status === 'approved' || t.status === 'completed').length
-    : stats.approved;
-  const overallCompletionRate = scopedTasks.length > 0 ? (scopedApprovedCount / scopedTasks.length) * 100 : 0;
+  const scopedTotalAssignments = scopedTasks.reduce(
+    (acc, t) => acc + Math.max(1, (t.assignedTo || []).length),
+    0
+  );
+  const scopedApprovedAssignments = scopedTasks.reduce((acc, t) => {
+    if (t.status === 'completed' || t.status === 'approved') {
+      return acc + Math.max(1, (t.assignedTo || []).length);
+    }
+    const approvedCount = (t.assignedTo || []).filter(
+      (uid) => t.userStatuses?.[uid]?.status === 'approved'
+    ).length;
+    return acc + approvedCount;
+  }, 0);
+
+  const overallCompletionRate =
+    scopedTotalAssignments > 0
+      ? Math.round((scopedApprovedAssignments / scopedTotalAssignments) * 100)
+      : scopedTasks.length > 0
+      ? Math.round(
+          (scopedTasks.filter((t) => t.status === 'approved' || t.status === 'completed').length /
+            scopedTasks.length) *
+            100
+        )
+      : 0;
+
+  // Helpers to accurately identify user assignments and completion
+  const getUserSearchKeys = (u: UserProfile) => {
+    return [
+      u.uid,
+      (u as any).id,
+      u.username,
+      u.email,
+      u.displayName,
+      ...(u.username ? [u.username.replace('@', '')] : []),
+      ...(u.email ? [u.email.split('@')[0]] : []),
+    ]
+      .filter(Boolean)
+      .map((s) => String(s).toLowerCase().trim());
+  };
+
+  const isUserAssigned = (t: Task, u: UserProfile) => {
+    const keys = getUserSearchKeys(u);
+    const assigned = (t.assignedTo || []).map((a) => String(a).toLowerCase().trim());
+    return keys.some((k) => assigned.includes(k));
+  };
+
+  const isUserCompleted = (t: Task, u: UserProfile) => {
+    if (t.status === 'completed' || t.status === 'approved') return true;
+    const keys = getUserSearchKeys(u);
+
+    // Check userStatuses map
+    if (t.userStatuses && typeof t.userStatuses === 'object') {
+      for (const [k, val] of Object.entries(t.userStatuses)) {
+        if (keys.includes(k.toLowerCase().trim()) && val?.status === 'approved') {
+          return true;
+        }
+      }
+    }
+
+    // Check latestSubmission
+    if (t.latestSubmission && t.latestSubmission.status === 'approved') {
+      const subBy = (t.latestSubmission.submittedBy || '').toLowerCase().trim();
+      if (keys.includes(subBy)) return true;
+    }
+
+    return false;
+  };
 
   // Employee Performance breakdown — EXCLUDES Lead, Co-Lead, and Committee Heads (unlimited coins)
   const employeeReports = allUsers
     .filter((u) => !hasUnlimitedCoins(u.role))
     .filter((u) => !effectiveCommitteeFilter || u.committeeId === effectiveCommitteeFilter || (u.committeeName && u.committeeName.trim().toLowerCase() === effectiveCommitteeFilter.toLowerCase()))
     .map((u) => {
-      const ids = [u.uid, u.username || '', u.email || ''].filter(Boolean).map((v) => v.toLowerCase());
-      const userTasks = tasks.filter((t) => {
-        const assigned = (t.assignedTo || []).map((a) => a.toLowerCase());
-        return ids.some((id) => assigned.includes(id));
-      });
-      // User is completed if the task is completed OR if user's personal status in userStatuses is approved
-      const completed = userTasks.filter((t) => {
-        if (t.status === 'approved' || t.status === 'completed') return true;
-        if (!t.userStatuses) return false;
-        return ids.some((id) => t.userStatuses?.[id]?.status === 'approved');
-      }).length;
+      const userTasks = tasks.filter((t) => isUserAssigned(t, u));
+      const completed = userTasks.filter((t) => isUserCompleted(t, u)).length;
       const overdue = userTasks.filter((t) => isOverdue(t.deadline, t.status)).length;
       const rate = userTasks.length > 0 ? Math.round((completed / userTasks.length) * 100) : 0;
       const userCoins = typeof u.oCoinsBalance === 'number' ? u.oCoinsBalance : (typeof u.ocoins_balance === 'number' ? u.ocoins_balance : 0);
@@ -393,22 +447,44 @@ export function AdminDashboard() {
     }
   };
 
+  // Interactive mouse spotlight handler for cards
+  const handleCardMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    e.currentTarget.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
+    e.currentTarget.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
+  };
+
+  // Activity log action translation
+  const getActivityArabicAction = (action: string): string => {
+    const clean = (action || '').toLowerCase().trim();
+    if (clean.includes('user_approved') || clean.includes('user approved')) return 'اعتماد تسليم مهمة لعضو';
+    if (clean.includes('user_rejected') || clean.includes('user rejected')) return 'رفض تسليم مهمة';
+    if (clean.includes('status_changed') || clean.includes('status changed')) return 'تحديث حالة تكليف';
+    if (clean.includes('task_created') || clean.includes('task created')) return 'إنشاء مهمة جديدة';
+    if (clean.includes('task_updated') || clean.includes('task updated')) return 'تعديل تفاصيل المهمة';
+    if (clean.includes('task_completed') || clean.includes('task completed')) return 'إكمال مهمة';
+    if (clean.includes('reward') || clean.includes('coin')) return 'منح مكافأة O-Coins';
+    if (clean.includes('login')) return 'تسجيل دخول للمنصة';
+    if (clean.includes('user updated') || clean.includes('user_updated')) return 'تحديث بيانات مستخدم';
+    return action.replace(/\./g, ' ').replace(/_/g, ' ');
+  };
+
   // Role-specific badge and subtitle
   const roleBadgeText = isLead
-    ? t('adminDashboard.lead_subtitle')
+    ? 'القائد العام (Lead)'
     : isCoLead
-    ? t('adminDashboard.lead_subtitle') // Co-lead gets same as lead
+    ? 'نائب القائد العام (Co-Lead)'
     : isHead
-    ? `👑 HEAD · ${t('role.head')} ${userProfile?.committeeName || t('common.committee')}`
-    : t('adminDashboard.lead_subtitle'); // Default for others
+    ? `رئيس لجنة ${userProfile?.committeeName || ''}`
+    : 'مشرف المنصة';
 
-  const roleSubtitle = isTopLeader
-    ? t('adminDashboard.lead_subtitle')
+  const roleSubtitle = isLead
+    ? 'لوحة تحكم القائد العام · متابعة شاملة ومباشرة لكافة اللجان والمهام والتكليفات'
+    : isCoLead
+    ? 'لوحة تحكم نائب القائد العام · إشراف ومتابعة شاملة لجميع اللجان ومعدلات الإنجاز'
     : isHead
-    ? t('adminDashboard.head_subtitle').replace('{name}', userProfile?.committeeName || '')
-    : stats.submitted > 0
-    ? t('adminDashboard.pending_submissions_count').replace('{count}', String(stats.submitted))
-    : t('adminDashboard.all_submissions_stable');
+    ? `لوحة تحكم رئيس لجنة ${userProfile?.committeeName || ''} · إدارة مهام وتسليمات الأعضاء`
+    : 'لوحة التحكم الإدارية';
 
   const { notifications } = useNotifications(5);
   const unreadCount = notifications.filter((n) => !n.read).length;
@@ -418,22 +494,25 @@ export function AdminDashboard() {
       {/* Broadcast System Announcement Banner */}
       <BroadcastBanner />
 
-      {/* Modern High-Tech Hero Header */}
-      <div className="card card-glass p-5 sm:p-6 relative overflow-hidden mesh-bg">
+      {/* Modern High-Tech Hero Header with Cyber Aura */}
+      <div
+        onMouseMove={handleCardMouseMove}
+        className="glow-card-interactive p-5 sm:p-7 relative overflow-hidden bg-gradient-to-br from-[var(--surface-elevated)] via-[var(--surface)] to-[var(--surface-secondary)] border border-[var(--border-subtle)] shadow-xl"
+      >
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
           <div className="space-y-2">
             <div className="flex items-center gap-2 flex-wrap">
               <div className={cn(
-                "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black shadow-xs",
+                "inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-black shadow-sm transition-all duration-300 glow-badge",
                 isLead
-                  ? "bg-amber-500/20 text-amber-900 dark:text-amber-200 border border-amber-500/40"
+                  ? "bg-amber-500/20 text-amber-300 border border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.25)]"
                   : isCoLead
-                  ? "bg-purple-500/20 text-purple-900 dark:text-purple-200 border border-purple-500/40"
+                  ? "bg-purple-500/25 text-purple-200 border border-purple-500/50 shadow-[0_0_18px_rgba(168,85,247,0.35)]"
                   : isHead
-                  ? "bg-blue-500/20 text-blue-900 dark:text-blue-200 border border-blue-500/40"
+                  ? "bg-blue-500/20 text-blue-300 border border-blue-500/40 shadow-[0_0_15px_rgba(59,130,246,0.25)]"
                   : "badge-primary"
               )}>
-                <Shield className="h-3.5 w-3.5 shrink-0" />
+                <Shield className="h-3.5 w-3.5 shrink-0 glow-icon" />
                 <span>{roleBadgeText}</span>
               </div>
 
@@ -601,11 +680,14 @@ export function AdminDashboard() {
               return (
                 <div
                   key={c.id}
-                  className="p-4 rounded-2xl bg-[var(--bg-elevated)]/50 border border-[var(--border-subtle)] space-y-3 hover:border-[var(--brand-primary)]/40 transition-all"
+                  onMouseMove={handleCardMouseMove}
+                  className="glow-card-interactive p-4 rounded-2xl border border-[var(--border-subtle)] space-y-3 transition-all duration-300 group"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <h3 className="text-xs font-bold text-[var(--text-primary)]">{c.name}</h3>
+                      <h3 className="text-xs font-bold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] glow-text transition-colors">
+                        {c.name}
+                      </h3>
                       <p className="text-[10px] text-[var(--text-muted)] mt-0.5">
                         {c.membersCount} أعضاء مسجلين
                       </p>
@@ -616,7 +698,7 @@ export function AdminDashboard() {
                       </span>
                     ) : (
                       <span className={cn(
-                        "text-xs font-black px-2 py-0.5 rounded-lg",
+                        "text-xs font-black px-2 py-0.5 rounded-lg glow-badge",
                         c.completionRate >= 75
                           ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
                           : c.completionRate >= 40
@@ -674,14 +756,17 @@ export function AdminDashboard() {
 
       {/* ─── HEAD EXCLUSIVE: Committee Review Queue ──────────────────────────── */}
       {isHead && (
-        <div className="card p-5 sm:p-6 space-y-4 border-l-4 border-l-[var(--brand-primary)]">
+        <div
+          onMouseMove={handleCardMouseMove}
+          className="glow-card-interactive p-5 sm:p-6 space-y-4 border-l-4 border-l-[var(--brand-primary)]"
+        >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="p-1.5 rounded-lg bg-[var(--brand-primary)]/10 text-[var(--brand-primary)]">
+              <span className="p-1.5 rounded-lg bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] glow-icon">
                 <Inbox className="h-4 w-4" />
               </span>
               <div>
-                <h2 className="section-title text-sm sm:text-base text-[var(--text-primary)]">
+                <h2 className="section-title text-sm sm:text-base text-[var(--text-primary)] glow-text">
                   {t('adminDashboard.review_queue_title').replace('{name}', userProfile?.committeeName || '')}
                 </h2>
                 <p className="text-[11px] text-[var(--text-muted)]">
@@ -725,82 +810,138 @@ export function AdminDashboard() {
         </div>
       )}
 
-      {/* Main Split Content */}
+      {/* Main Split Content — Balanced 2 columns + 1 column */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {/* Recent Tasks List — 2 Columns */}
-        <div className="lg:col-span-2 card overflow-hidden">
-          <div className="p-4 sm:p-5 border-b border-[var(--border-subtle)] flex items-center justify-between bg-[var(--bg-elevated)]/30">
-            <div>
-              <h2 className="section-title text-sm sm:text-base text-[var(--text-primary)]">
-                {!isTopLeader ? t('adminDashboard.latest_committee_tasks').replace('{name}', userProfile?.committeeName || 'اللجنة') : t('adminDashboard.latest_all_tasks')}
-              </h2>
-              <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
-                {!isTopLeader ? t('adminDashboard.committee_tasks_count').replace('{count}', String(myCommitteeTasks.length)) : t('adminDashboard.all_tasks_count').replace('{count}', String(tasks.length))}
-              </p>
+        {/* Left 2 Columns: Tasks & O-Coins Rewards */}
+        <div className="lg:col-span-2 space-y-5">
+          {/* Recent Tasks List */}
+          <div
+            onMouseMove={handleCardMouseMove}
+            className="glow-card-interactive overflow-hidden rounded-2xl border border-[var(--border-subtle)]"
+          >
+            <div className="p-4 sm:p-5 border-b border-[var(--border-subtle)] flex items-center justify-between bg-[var(--bg-elevated)]/30">
+              <div>
+                <h2 className="section-title text-sm sm:text-base text-[var(--text-primary)] flex items-center gap-2">
+                  <span className="glow-text">
+                    {!isTopLeader ? t('adminDashboard.latest_committee_tasks').replace('{name}', userProfile?.committeeName || 'اللجنة') : t('adminDashboard.latest_all_tasks')}
+                  </span>
+                </h2>
+                <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
+                  {!isTopLeader ? t('adminDashboard.committee_tasks_count').replace('{count}', String(myCommitteeTasks.length)) : t('adminDashboard.all_tasks_count').replace('{count}', String(tasks.length))}
+                </p>
+              </div>
+              <Link to="/tasks" className="text-xs font-bold text-[var(--brand-primary)] hover:text-[var(--brand-accent)] hover:underline flex items-center gap-1">
+                <span>{t('adminDashboard.view_all_tasks')}</span>
+                <ArrowUpRight className="h-3 w-3" />
+              </Link>
             </div>
-            <Link to="/tasks" className="text-xs font-bold text-[var(--brand-primary)] hover:text-[var(--brand-accent)] hover:underline flex items-center gap-1">
-              {t('adminDashboard.view_all_tasks')} <ArrowUpRight className="h-3 w-3" />
-            </Link>
+
+            <div className="divide-y divide-[var(--border-subtle)]">
+              {loading ? (
+                <div className="p-5 space-y-3">
+                  {[1, 2, 3].map((i) => <SkeletonCard key={i} />)}
+                </div>
+              ) : (isTopLeader ? tasks : myCommitteeTasks).length === 0 ? (
+                <div className="p-8 text-center text-[var(--text-muted)] text-xs sm:text-sm">
+                  {t('adminDashboard.no_tasks_registered')}{' '}
+                  <Link to="/tasks" className="text-[var(--brand-primary)] font-bold hover:underline">
+                    {t('adminDashboard.create_first_task')}
+                  </Link>
+                </div>
+              ) : (
+                (isTopLeader ? tasks : myCommitteeTasks).slice(0, 6).map((task) => {
+                  const overdue = isOverdue(task.deadline, task.status);
+                  return (
+                    <Link
+                      key={task.id}
+                      to={`/tasks/${task.id}`}
+                      className={cn(
+                        'flex items-center justify-between gap-3 px-4 sm:px-5 py-3.5 hover:bg-[var(--bg-elevated)]/60 transition-colors group',
+                        overdue && 'bg-[var(--brand-danger)]/[0.04]'
+                      )}
+                    >
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <div className="flex items-center gap-2">
+                          <PriorityBadge priority={task.priority} />
+                          <span className="text-xs sm:text-sm font-bold text-[var(--text-primary)] truncate group-hover:text-[var(--brand-primary)] transition-colors">
+                            {task.title}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2.5 text-[11px] text-[var(--text-muted)]">
+                          <span>الموعد: {formatDate(task.deadline)}</span>
+                          <span>·</span>
+                          <span className="truncate">
+                            {task.assignedToNames?.length
+                              ? `${task.assignedToNames[0]}${task.assignedToNames.length > 1 ? ` +${task.assignedToNames.length - 1}` : ''}`
+                              : 'غير محدد'}
+                          </span>
+                          <span>·</span>
+                          <span className="text-[var(--brand-warm)] font-bold">🪙 {task.oCoinsReward} OC</span>
+                        </div>
+                      </div>
+                      <StatusBadge status={task.status} overdue={overdue} />
+                    </Link>
+                  );
+                })
+              )}
+            </div>
           </div>
 
-          <div className="divide-y divide-[var(--border-subtle)]">
-            {loading ? (
-              <div className="p-5 space-y-3">
-                {[1, 2, 3].map((i) => <SkeletonCard key={i} />)}
-              </div>
-            ) : (isTopLeader ? tasks : myCommitteeTasks).length === 0 ? (
-              <div className="p-8 text-center text-[var(--text-muted)] text-xs sm:text-sm">
-                {t('adminDashboard.no_tasks_registered')}{' '}
-                <Link to="/tasks" className="text-[var(--brand-primary)] font-bold hover:underline">
-                  {t('adminDashboard.create_first_task')}
-                </Link>
-              </div>
-            ) : (
-              (isTopLeader ? tasks : myCommitteeTasks).slice(0, 6).map((task) => {
-                const overdue = isOverdue(task.deadline, task.status);
-                return (
-                  <Link
-                    key={task.id}
-                    to={`/tasks/${task.id}`}
-                    className={cn(
-                      'flex items-center justify-between gap-3 px-4 sm:px-5 py-3.5 hover:bg-[var(--bg-elevated)]/60 transition-colors group',
-                      overdue && 'bg-[var(--brand-danger)]/[0.04]'
-                    )}
-                  >
-                    <div className="flex-1 min-w-0 space-y-1">
-                      <div className="flex items-center gap-2">
-                        <PriorityBadge priority={task.priority} />
-                        <span className="text-xs sm:text-sm font-bold text-[var(--text-primary)] truncate group-hover:text-[var(--brand-primary)] transition-colors">
-                          {task.title}
-                        </span>
+          {/* O Coins Recent Rewards Feed — Moved here for perfect height harmony */}
+          <div
+            onMouseMove={handleCardMouseMove}
+            className="glow-card-interactive overflow-hidden rounded-2xl border border-[var(--border-subtle)]"
+          >
+            <div className="p-3.5 sm:p-4 border-b border-[var(--border-subtle)] flex items-center justify-between bg-[var(--bg-elevated)]/30">
+              <h2 className="text-xs sm:text-sm font-bold text-[var(--text-primary)] flex items-center gap-2">
+                <Coins className="h-4 w-4 text-[var(--brand-warm)] glow-icon" />
+                <span className="glow-text">{t('adminDashboard.recent_ocoins_rewards')}</span>
+              </h2>
+              <Link to="/ocoins" className="text-[11px] font-bold text-[var(--brand-primary)] hover:underline">
+                {t('adminDashboard.rewards_ledger')}
+              </Link>
+            </div>
+            <div className="p-3 space-y-2">
+              {recentTransactions.length === 0 ? (
+                <p className="text-xs text-[var(--text-muted)] text-center py-4">{t('adminDashboard.no_rewards_recorded')}</p>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {recentTransactions.slice(0, 6).map((tx) => (
+                    <div
+                      key={tx.id}
+                      className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-[var(--bg-elevated)]/50 border border-[var(--border-subtle)] hover:border-[var(--brand-warm)]/40 transition-all"
+                    >
+                      <div className="min-w-0 pr-1">
+                        <p className="text-xs font-bold text-[var(--text-primary)] truncate">{tx.userDisplayName}</p>
+                        <p className="text-[10px] text-[var(--text-muted)] truncate">{tx.reason}</p>
                       </div>
-                      <div className="flex items-center gap-2.5 text-[11px] text-[var(--text-muted)]">
-                        <span>الموعد: {formatDate(task.deadline)}</span>
-                        <span>·</span>
-                        <span className="truncate">
-                          {task.assignedToNames?.length
-                            ? `${task.assignedToNames[0]}${task.assignedToNames.length > 1 ? ` +${task.assignedToNames.length - 1}` : ''}`
-                            : 'غير محدد'}
-                        </span>
-                        <span>·</span>
-                        <span className="text-[var(--brand-warm)] font-bold">🪙 {task.oCoinsReward} OC</span>
-                      </div>
+                      <span className={cn(
+                        'text-xs font-black shrink-0 px-2 py-0.5 rounded-lg font-mono glow-badge',
+                        tx.amount > 0
+                          ? 'text-[var(--brand-warm)] bg-[var(--brand-warm)]/15 border border-[var(--brand-warm)]/30'
+                          : 'text-[var(--brand-danger)] bg-[var(--brand-danger)]/15 border border-[var(--brand-danger)]/30'
+                      )}>
+                        {tx.amount > 0 ? '+' : ''}{tx.amount} OC
+                      </span>
                     </div>
-                    <StatusBadge status={task.status} overdue={overdue} />
-                  </Link>
-                );
-              })
-            )}
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Side Column: Notifications, Activity & Coins Feeds */}
-        <div className="space-y-4">
+        {/* Right Column: Notifications & Live Activity */}
+        <div className="space-y-5">
           {/* Recent Notifications Feed */}
-          <div className="card overflow-hidden">
+          <div
+            onMouseMove={handleCardMouseMove}
+            className="glow-card-interactive overflow-hidden rounded-2xl border border-[var(--border-subtle)]"
+          >
             <div className="p-3.5 sm:p-4 border-b border-[var(--border-subtle)] flex items-center justify-between bg-[var(--bg-elevated)]/30">
               <h2 className="text-xs sm:text-sm font-bold text-[var(--text-primary)] flex items-center gap-2">
-                <Bell className="h-4 w-4 text-[var(--brand-primary)]" /> {t('adminDashboard.alerts_notifications')}
+                <Bell className="h-4 w-4 text-[var(--brand-primary)] glow-icon" />
+                <span className="glow-text">{t('adminDashboard.alerts_notifications')}</span>
                 {unreadCount > 0 && (
                   <span className="px-1.5 py-0.5 text-[10px] font-black rounded-full bg-[var(--brand-danger)] text-white">
                     {t('adminDashboard.new_count').replace('{count}', String(unreadCount))}
@@ -813,15 +954,15 @@ export function AdminDashboard() {
             </div>
             <div className="p-3 space-y-2">
               {notifications.length === 0 ? (
-                <p className="text-xs text-[var(--text-muted)] text-center py-3">{t('common.no_data')}</p>
+                <p className="text-xs text-[var(--text-muted)] text-center py-4">{t('common.no_data')}</p>
               ) : (
                 notifications.slice(0, 4).map((n) => (
                   <Link
                     key={n.id}
                     to={n.actionUrl || '/notifications'}
                     className={cn(
-                      'flex items-start gap-2.5 p-2 rounded-xl transition-colors text-right block',
-                      !n.read ? 'bg-[var(--brand-primary)]/[0.06] border border-[var(--brand-primary)]/20' : 'hover:bg-[var(--bg-elevated)]/60'
+                      'flex items-start gap-2.5 p-2.5 rounded-xl transition-all duration-200 text-right block',
+                      !n.read ? 'bg-[var(--brand-primary)]/[0.08] border border-[var(--brand-primary)]/20' : 'hover:bg-[var(--bg-elevated)]/60'
                     )}
                   >
                     <span className="text-sm shrink-0 mt-0.5">{getNotificationEmoji(n.type)}</span>
@@ -838,11 +979,16 @@ export function AdminDashboard() {
               )}
             </div>
           </div>
+
           {/* Live Activity Feed */}
-          <div className="card overflow-hidden">
+          <div
+            onMouseMove={handleCardMouseMove}
+            className="glow-card-interactive overflow-hidden rounded-2xl border border-[var(--border-subtle)]"
+          >
             <div className="p-3.5 sm:p-4 border-b border-[var(--border-subtle)] flex items-center justify-between bg-[var(--bg-elevated)]/30">
               <h2 className="text-xs sm:text-sm font-bold text-[var(--text-primary)] flex items-center gap-2">
-                <Activity className="h-4 w-4 text-[var(--brand-accent)]" /> {t('adminDashboard.live_activity_log')}
+                <Activity className="h-4 w-4 text-[var(--brand-accent)] glow-icon" />
+                <span className="glow-text">{t('adminDashboard.live_activity_log')}</span>
               </h2>
               <Link to="/activity-logs" className="text-[11px] font-bold text-[var(--brand-primary)] hover:underline">
                 {t('adminDashboard.full_log')}
@@ -850,54 +996,20 @@ export function AdminDashboard() {
             </div>
             <div className="p-3.5 space-y-2.5">
               {recentActivity.length === 0 ? (
-                <p className="text-xs text-[var(--text-muted)] text-center py-3">{t('common.no_data')}</p>
+                <p className="text-xs text-[var(--text-muted)] text-center py-4">{t('common.no_data')}</p>
               ) : (
-                recentActivity.slice(0, 5).map((log) => (
-                  <div key={log.id} className="flex items-start gap-2.5 text-right">
+                recentActivity.slice(0, 6).map((log) => (
+                  <div key={log.id} className="flex items-start gap-2.5 text-right p-1.5 rounded-xl hover:bg-[var(--bg-elevated)]/40 transition-colors">
                     <Avatar src={log.actorPhoto} name={log.actorName || log.actor} size="xs" />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs text-[var(--text-primary)] leading-snug">
                         <span className="font-bold">{log.actorName?.split(' ')[0] || log.actor}</span>{' '}
-                        <span className="text-[var(--text-muted)]">{log.action.replace(/\./g, ' ').replace(/_/g, ' ')}</span>
+                        <span className="text-[var(--text-secondary)] font-medium">{getActivityArabicAction(log.action)}</span>
                       </p>
-                      <p className="text-[10px] text-[var(--text-muted)] mt-0.5 font-medium">
+                      <p className="text-[10px] text-[var(--text-muted)] mt-0.5 font-medium font-mono">
                         {log.timestamp ? formatRelative(log.timestamp) : 'الآن'}
                       </p>
                     </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* O Coins Recent Rewards Feed */}
-          <div className="card overflow-hidden">
-            <div className="p-3.5 sm:p-4 border-b border-[var(--border-subtle)] flex items-center justify-between bg-[var(--bg-elevated)]/30">
-              <h2 className="text-xs sm:text-sm font-bold text-[var(--text-primary)] flex items-center gap-2">
-                <Coins className="h-4 w-4 text-[var(--brand-warm)]" /> {t('adminDashboard.recent_ocoins_rewards')}
-              </h2>
-              <Link to="/ocoins" className="text-[11px] font-bold text-[var(--brand-primary)] hover:underline">
-                {t('adminDashboard.rewards_ledger')}
-              </Link>
-            </div>
-            <div className="p-3 space-y-2">
-              {recentTransactions.length === 0 ? (
-                <p className="text-xs text-[var(--text-muted)] text-center py-3">{t('adminDashboard.no_rewards_recorded')}</p>
-              ) : (
-                recentTransactions.map((tx) => (
-                  <div key={tx.id} className="flex items-center justify-between gap-2 p-2 rounded-xl bg-[var(--bg-elevated)]/50 border border-[var(--border-subtle)]">
-                    <div className="min-w-0 pr-1">
-                      <p className="text-xs font-bold text-[var(--text-primary)] truncate">{tx.userDisplayName}</p>
-                      <p className="text-[10px] text-[var(--text-muted)] truncate">{tx.reason}</p>
-                    </div>
-                    <span className={cn(
-                      'text-xs font-black shrink-0 px-2 py-0.5 rounded-lg',
-                      tx.amount > 0
-                        ? 'text-[var(--brand-accent)] bg-[var(--brand-accent)]/10'
-                        : 'text-[var(--brand-danger)] bg-[var(--brand-danger)]/10'
-                    )}>
-                      {tx.amount > 0 ? '+' : ''}{tx.amount} OC
-                    </span>
                   </div>
                 ))
               )}
@@ -956,11 +1068,14 @@ export function AdminDashboard() {
 
         {/* Top 3 Performers Podium */}
         {topPerformers.length > 0 ? (
-          <div className="card p-5 sm:p-6 rounded-2xl border border-[var(--border-subtle)]">
+          <div
+            onMouseMove={handleCardMouseMove}
+            className="glow-card-interactive p-5 sm:p-6 rounded-2xl border border-[var(--border-subtle)]"
+          >
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-extrabold text-[var(--text-primary)] flex items-center gap-2">
-                <Crown className="h-4 w-4 text-amber-500" />
-                <span>{t('adminDashboard.honor_board_title')}</span>
+                <Crown className="h-4 w-4 text-amber-500 glow-icon" />
+                <span className="glow-text">{t('adminDashboard.honor_board_title')}</span>
               </h3>
               <span className="text-[11px] text-[var(--text-muted)] font-bold">{t('adminDashboard.honor_board_subtitle')}</span>
             </div>
@@ -968,29 +1083,34 @@ export function AdminDashboard() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
               {topPerformers.map((item, idx) => {
                 const medals = [
-                  { rank: t('adminDashboard.rank_1'), color: 'border-amber-400/50 bg-amber-500/10 text-amber-500', icon: '🏆' },
-                  { rank: t('adminDashboard.rank_2'), color: 'border-slate-300 dark:border-slate-700 bg-slate-500/10 text-slate-400', icon: '🥈' },
-                  { rank: t('adminDashboard.rank_3'), color: 'border-amber-700/50 bg-amber-700/10 text-amber-700 dark:text-amber-500', icon: '🥉' },
+                  { rank: t('adminDashboard.rank_1'), color: 'border-amber-400/50 bg-amber-500/10 text-amber-400', glow: 'glow-warm' },
+                  { rank: t('adminDashboard.rank_2'), color: 'border-slate-300 dark:border-slate-700 bg-slate-500/10 text-slate-300', glow: 'glow-primary' },
+                  { rank: t('adminDashboard.rank_3'), color: 'border-amber-700/50 bg-amber-700/10 text-amber-500', glow: 'glow-warm' },
                 ];
                 const medal = medals[idx] || medals[0];
                 return (
                   <div
                     key={item.user.uid}
-                    className={`p-4 rounded-2xl border ${medal.color} flex items-center gap-3 transition-transform hover:-translate-y-0.5`}
+                    onMouseMove={handleCardMouseMove}
+                    className={cn(
+                      "glow-card-interactive p-4 rounded-2xl border flex items-center gap-3 transition-transform hover:-translate-y-1 group",
+                      medal.color,
+                      medal.glow
+                    )}
                   >
                     <Avatar src={item.user.photoURL} name={item.user.displayName || item.user.username || 'User'} size="md" />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-black">{medal.rank}</span>
-                        <span className="text-xs font-black text-amber-500 font-mono">
+                        <span className="text-xs font-black glow-badge">{medal.rank}</span>
+                        <span className="text-xs font-black text-amber-400 font-mono glow-text">
                           {item.coins > 0 ? `+${formatOCoins(item.coins)}` : formatOCoins(item.coins)} OC
                         </span>
                       </div>
-                      <p className="text-xs font-bold text-[var(--text-primary)] truncate mt-0.5">
+                      <p className="text-xs font-bold text-[var(--text-primary)] truncate mt-0.5 group-hover:text-white transition-colors">
                         {formatFullName(item.user.displayName || 'عضو')}
                       </p>
                       <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
-                        {t('adminDashboard.completed_tasks_count').replace('{count}', String(item.completed)).replace('{rate}', String(Math.round(item.rate)))}
+                        {item.completed > 0 ? `${item.completed} مهمة معتمدة` : 'تكليفات قيد العمل'} {item.rate > 0 ? `· %${Math.round(item.rate)} إنجاز` : ''}
                       </p>
                     </div>
                   </div>
@@ -999,12 +1119,12 @@ export function AdminDashboard() {
             </div>
           </div>
         ) : (
-          <div className="card p-5 rounded-2xl border border-dashed border-[var(--border-subtle)] bg-[var(--surface-elevated)]/30 flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0 text-lg">
+          <div className="glow-card-interactive p-5 rounded-2xl border border-dashed border-[var(--border-subtle)] bg-[var(--surface-elevated)]/30 flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0 text-lg glow-icon">
               🏆
             </div>
             <div className="min-w-0 text-right">
-              <h4 className="text-xs sm:text-sm font-bold text-[var(--text-primary)]">{t('adminDashboard.member_honor_board')}</h4>
+              <h4 className="text-xs sm:text-sm font-bold text-[var(--text-primary)] glow-text">{t('adminDashboard.member_honor_board')}</h4>
               <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
                 {t('adminDashboard.member_honor_board_desc')}
               </p>
@@ -1015,14 +1135,17 @@ export function AdminDashboard() {
         {/* Visual Charts Row */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Chart 1: Tasks Health Gauge */}
-          <div className="card p-5 sm:p-6 rounded-2xl flex flex-col justify-between">
+          <div
+            onMouseMove={handleCardMouseMove}
+            className="glow-card-interactive p-5 sm:p-6 rounded-2xl flex flex-col justify-between"
+          >
             <div>
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-extrabold text-[var(--text-primary)] flex items-center gap-2">
-                  <PieChartIcon className="h-4 w-4 text-[var(--brand-primary)]" />
-                  <span>{t('adminDashboard.task_status_distribution')}</span>
+                  <PieChartIcon className="h-4 w-4 text-[var(--brand-primary)] glow-icon" />
+                  <span className="glow-text">{t('adminDashboard.task_status_distribution')}</span>
                 </h3>
-                <span className="text-xs text-[var(--text-muted)] font-mono">{t('adminDashboard.total_tasks_count').replace('{count}', String(tasks.length))}</span>
+                <span className="text-xs text-[var(--text-muted)] font-mono">{t('adminDashboard.total_tasks_count').replace('{count}', String(scopedTasks.length))}</span>
               </div>
               <p className="text-xs text-[var(--text-muted)] mt-1">{t('adminDashboard.completion_vs_ongoing')}</p>
             </div>
@@ -1048,35 +1171,38 @@ export function AdminDashboard() {
                   />
                 </svg>
                 <div className="absolute flex flex-col items-center justify-center text-center">
-                  <span className="text-2xl font-black text-[var(--text-primary)] font-mono">{Math.round(overallCompletionRate)}%</span>
-                  <span className="text-[10px] font-bold text-emerald-500">{t('adminDashboard.completion_rate')}</span>
+                  <span className="text-2xl font-black text-[var(--text-primary)] font-mono glow-text">{Math.round(overallCompletionRate)}%</span>
+                  <span className="text-[10px] font-bold text-emerald-400">{t('adminDashboard.completion_rate')}</span>
                 </div>
               </div>
             </div>
 
             <div className="grid grid-cols-3 gap-2 text-center text-xs pt-4 border-t border-[var(--border-subtle)]">
               <div>
-                <p className="text-[10px] text-[var(--text-muted)] font-bold">{t('adminDashboard.completed_label')}</p>
-                <p className="font-extrabold text-emerald-500 mt-0.5">{stats.approved}</p>
+                <p className="text-[10px] text-[var(--text-muted)] font-bold">تسليمات معتمدة</p>
+                <p className="font-extrabold text-emerald-400 mt-0.5 glow-text font-mono">{scopedApprovedAssignments}</p>
               </div>
               <div>
-                <p className="text-[10px] text-[var(--text-muted)] font-bold">{t('adminDashboard.in_progress_label')}</p>
-                <p className="font-extrabold text-[var(--brand-primary)] mt-0.5">{stats.inProgress + stats.pending}</p>
+                <p className="text-[10px] text-[var(--text-muted)] font-bold">تكليفات جارية</p>
+                <p className="font-extrabold text-[var(--brand-primary)] mt-0.5 glow-text font-mono">{Math.max(0, scopedTotalAssignments - scopedApprovedAssignments)}</p>
               </div>
               <div>
-                <p className="text-[10px] text-[var(--text-muted)] font-bold">{t('adminDashboard.overdue_label')}</p>
-                <p className="font-extrabold text-rose-500 mt-0.5">{stats.overdue}</p>
+                <p className="text-[10px] text-[var(--text-muted)] font-bold">متأخرة</p>
+                <p className="font-extrabold text-rose-500 mt-0.5 glow-text font-mono">{stats.overdue}</p>
               </div>
             </div>
           </div>
 
           {/* Chart 2: Committee Performance Distribution */}
-          <div className="card p-5 sm:p-6 rounded-2xl flex flex-col justify-between lg:col-span-2">
+          <div
+            onMouseMove={handleCardMouseMove}
+            className="glow-card-interactive p-5 sm:p-6 rounded-2xl flex flex-col justify-between lg:col-span-2"
+          >
             <div>
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-extrabold text-[var(--text-primary)] flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-cyan-500" />
-                  <span>{t('adminDashboard.committee_completion_rates')}</span>
+                  <TrendingUp className="h-4 w-4 text-cyan-400 glow-icon" />
+                  <span className="glow-text">{t('adminDashboard.committee_completion_rates')}</span>
                 </h3>
                 <span className="text-xs text-[var(--text-muted)]">{t('adminDashboard.active_committees_count').replace('{count}', String(committeesStats.length))}</span>
               </div>
@@ -1089,8 +1215,10 @@ export function AdminDashboard() {
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-bold text-[var(--text-primary)]">{c.name}</span>
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] text-[var(--text-muted)]">{c.completedTasks} من {c.totalTasks} مهمة</span>
-                      <span className="font-bold text-cyan-500 font-mono">{c.completionRate}%</span>
+                      <span className="text-[10px] text-[var(--text-muted)]">
+                        {c.totalTasks === 0 ? 'لا توجد مهام' : `${c.approvedAssignments} معتمد من ${c.totalAssignments} تكليف`}
+                      </span>
+                      <span className="font-bold text-cyan-400 font-mono glow-badge">{c.completionRate}%</span>
                     </div>
                   </div>
                   <div className="w-full bg-[var(--bg-elevated)] h-2 rounded-full overflow-hidden border border-[var(--border-subtle)]">
@@ -1110,10 +1238,15 @@ export function AdminDashboard() {
         </div>
 
         {/* Employee Performance Breakdown Table */}
-        <div className="card overflow-hidden rounded-2xl border border-[var(--border-subtle)]">
+        <div
+          onMouseMove={handleCardMouseMove}
+          className="glow-card-interactive overflow-hidden rounded-2xl border border-[var(--border-subtle)]"
+        >
           <div className="px-5 py-4 border-b border-[var(--border-subtle)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[var(--bg-elevated)]/40">
             <div>
-              <h3 className="text-sm font-extrabold text-[var(--text-primary)]">تفاصيل أداء أعضاء فريق العمل</h3>
+              <h3 className="text-sm font-extrabold text-[var(--text-primary)] flex items-center gap-2">
+                <span className="glow-text">تفاصيل أداء أعضاء فريق العمل</span>
+              </h3>
               <p className="text-[11px] text-[var(--text-muted)]">إحصائيات إنجاز التكليفات ومجموع الرصيد (مستثنى منها القادة تلقائياً)</p>
             </div>
             <div className="flex items-center gap-2">
@@ -1138,11 +1271,16 @@ export function AdminDashboard() {
           ) : (
             <div className="divide-y divide-[var(--border-subtle)] overflow-x-auto">
               {filteredEmployeeReports.map(({ user, total, completed, overdue, rate, coins }) => (
-                <div key={user.uid} className="px-5 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-[var(--bg-elevated)]/30 transition-colors min-w-[600px] sm:min-w-0">
+                <div
+                  key={user.uid}
+                  className="px-5 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-[var(--bg-elevated)]/60 transition-all duration-200 min-w-[600px] sm:min-w-0 group"
+                >
                   <div className="flex items-center gap-3.5 sm:w-64 min-w-0">
                     <Avatar src={user.photoURL} name={formatFullName(user.displayName || user.username || 'User')} size="sm" />
                     <div className="min-w-0">
-                      <p className="font-bold text-[var(--text-primary)] truncate text-xs">{formatFullName(user.displayName || 'عضو الفريق')}</p>
+                      <p className="font-bold text-[var(--text-primary)] truncate text-xs group-hover:text-[var(--brand-primary)] transition-colors">
+                        {formatFullName(user.displayName || 'عضو الفريق')}
+                      </p>
                       <p className="text-[10px] text-[var(--text-muted)] truncate font-mono">@{user.username || user.email}</p>
                     </div>
                   </div>
@@ -1150,27 +1288,29 @@ export function AdminDashboard() {
                   <div className="flex-1 grid grid-cols-4 gap-2 text-center">
                     <div>
                       <span className="text-[9px] uppercase font-bold text-[var(--text-muted)] block">المسندة</span>
-                      <strong className="text-xs font-extrabold text-[var(--text-primary)]">{total}</strong>
+                      <strong className="text-xs font-extrabold text-[var(--text-primary)] font-mono">{total}</strong>
                     </div>
                     <div>
                       <span className="text-[9px] uppercase font-bold text-[var(--text-muted)] block">المكتملة</span>
-                      <strong className="text-xs font-extrabold text-emerald-500">{completed}</strong>
+                      <strong className="text-xs font-extrabold text-emerald-400 font-mono glow-text">{completed}</strong>
                     </div>
                     <div>
                       <span className="text-[9px] uppercase font-bold text-[var(--text-muted)] block">نسبة الإنجاز</span>
-                      <strong className="text-xs font-extrabold text-[var(--brand-primary)]">{Math.round(rate)}%</strong>
+                      <strong className="text-xs font-extrabold text-[var(--brand-primary)] font-mono glow-badge px-1.5 py-0.5 rounded">
+                        {Math.round(rate)}%
+                      </strong>
                     </div>
                     <div>
                       <span className="text-[9px] uppercase font-bold text-[var(--text-muted)] block">O Coins</span>
                       <strong
                         dir="ltr"
                         className={cn(
-                          "text-xs font-extrabold font-mono",
+                          "text-xs font-extrabold font-mono glow-text",
                           hasUnlimitedCoins(user.role)
-                            ? "text-amber-500"
+                            ? "text-amber-400"
                             : coins < 0
                             ? "text-rose-500 dark:text-rose-400"
-                            : "text-amber-500"
+                            : "text-amber-400"
                         )}
                       >
                         {hasUnlimitedCoins(user.role) ? '∞' : formatOCoins(coins)}

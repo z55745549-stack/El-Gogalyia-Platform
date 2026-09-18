@@ -52,46 +52,63 @@ export function StatCard({
 }: StatCardProps) {
   const vStyle = variantStyles[variant];
 
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    e.currentTarget.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
+    e.currentTarget.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
+  };
+
+  const glowColorVariant =
+    variant === 'warm'
+      ? 'glow-warm'
+      : variant === 'accent'
+      ? 'glow-accent'
+      : variant === 'success'
+      ? 'glow-success'
+      : 'glow-primary';
+
   return (
     <motion.div
-      whileHover={{ y: -3 }}
-      transition={{ duration: 0.2, ease: 'easeOut' }}
+      whileHover={{ y: -3, scale: 1.01 }}
+      transition={{ duration: 0.22, ease: 'easeOut' }}
+      onMouseMove={handleMouseMove}
       className={cn(
-        'card relative p-4 sm:p-5 transition-all duration-200 overflow-hidden group text-right dir-rtl',
-        vStyle.borderHover,
+        'glow-card-interactive relative p-4 sm:p-5 transition-all duration-200 overflow-hidden group text-right dir-rtl',
+        glowColorVariant,
         onClick && 'cursor-pointer',
         className
       )}
       onClick={onClick}
     >
-      {/* Ambient luxury glow in corner */}
+      {/* Dynamic ambient color glow */}
       <div
-        className="absolute -top-10 -left-10 w-28 h-28 rounded-full pointer-events-none opacity-30 dark:opacity-40 group-hover:opacity-60 transition-opacity duration-300"
+        className="absolute -top-10 -left-10 w-32 h-32 rounded-full pointer-events-none opacity-25 dark:opacity-35 group-hover:opacity-75 transition-opacity duration-300"
         style={{
-          background: variant === 'warm'
-            ? 'radial-gradient(circle, rgba(245,158,11,0.3) 0%, transparent 70%)'
-            : variant === 'accent'
-            ? 'radial-gradient(circle, rgba(34,211,238,0.3) 0%, transparent 70%)'
-            : variant === 'success'
-            ? 'radial-gradient(circle, rgba(16,185,129,0.3) 0%, transparent 70%)'
-            : 'radial-gradient(circle, rgba(99,102,241,0.3) 0%, transparent 70%)',
-          filter: 'blur(16px)',
+          background:
+            variant === 'warm'
+              ? 'radial-gradient(circle, rgba(245,158,11,0.45) 0%, transparent 70%)'
+              : variant === 'accent'
+              ? 'radial-gradient(circle, rgba(34,211,238,0.45) 0%, transparent 70%)'
+              : variant === 'success'
+              ? 'radial-gradient(circle, rgba(16,185,129,0.45) 0%, transparent 70%)'
+              : 'radial-gradient(circle, rgba(108,99,255,0.45) 0%, transparent 70%)',
+          filter: 'blur(20px)',
         }}
       />
 
       <div className="flex items-start justify-between gap-3 relative z-10">
         <div className="space-y-1.5 flex-1 min-w-0">
-          <p className="text-xs font-semibold text-[var(--text-muted)] tracking-wider truncate">
+          <p className="text-xs font-semibold text-[var(--text-muted)] tracking-wider truncate group-hover:text-[var(--text-secondary)] transition-colors">
             {title}
           </p>
           <div className="flex items-baseline gap-2">
-            <p className="text-2xl sm:text-3xl font-extrabold text-[var(--text-primary)] tracking-tight">
+            <p className="text-2xl sm:text-3xl font-extrabold text-[var(--text-primary)] tracking-tight glow-text font-mono">
               {value}
             </p>
             {trend && (
               <span
                 className={cn(
-                  'text-xs font-semibold px-2 py-0.5 rounded-full',
+                  'text-xs font-semibold px-2 py-0.5 rounded-full glow-badge',
                   trendColor ?? 'bg-[var(--brand-accent)]/10 text-[var(--brand-accent)]'
                 )}
               >
@@ -100,7 +117,7 @@ export function StatCard({
             )}
           </div>
           {subtext && (
-            <p className="text-[11px] text-[var(--text-muted)] font-normal truncate">
+            <p className="text-[11px] text-[var(--text-muted)] font-normal truncate group-hover:text-[var(--text-secondary)] transition-colors">
               {subtext}
             </p>
           )}
@@ -108,7 +125,7 @@ export function StatCard({
 
         <div
           className={cn(
-            'w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-110',
+            'w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300 glow-icon',
             iconBg || vStyle.iconBox
           )}
         >
