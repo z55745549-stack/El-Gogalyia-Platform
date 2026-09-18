@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, CheckSquare, Users, Coins, BarChart3,
@@ -11,7 +11,6 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useNotificationCount } from '@/hooks/useNotifications';
-import { Avatar } from '@/components/ui/avatar';
 import { useLanguage } from '@/context/LanguageContext';
 import { cn } from '@/utils';
 import { getRoleLabel } from '@/utils/permissions';
@@ -143,16 +142,23 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
         borderRight: !isRTL ? '1px solid var(--border-subtle)' : 'none',
       }}
     >
-      {/* ── Brand Header ─────────────────────────────────────────── */}
+      {/* ── Brand Header (Clickable: redirects to Dashboard Home) ── */}
       <div
         className="p-4 sm:p-5"
         style={{ borderBottom: '1px solid var(--border-subtle)' }}
       >
-        <div className="flex items-center gap-3">
-          <GogalyiaLogoMark />
+        <Link
+          to="/dashboard"
+          onClick={onMobileClose}
+          className="flex items-center gap-3 group transition-all duration-200 cursor-pointer select-none"
+          title="الانتقال إلى لوحة التحكم الرئيسية (الرئيسية)"
+        >
+          <div className="transition-transform duration-300 group-hover:scale-105 group-hover:drop-shadow-[0_0_10px_rgba(108,99,255,0.4)]">
+            <GogalyiaLogoMark />
+          </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5">
-              <span className="font-black text-sm tracking-tight text-slate-900 dark:text-transparent dark:bg-clip-text dark:bg-gradient-to-r dark:from-white dark:via-slate-100 dark:to-indigo-200">
+              <span className="font-black text-sm tracking-tight text-slate-900 dark:text-transparent dark:bg-clip-text dark:bg-gradient-to-r dark:from-white dark:via-slate-100 dark:to-indigo-200 group-hover:text-[var(--brand-primary)] transition-colors">
                 {t('platform.name', 'منصة الجوجالية')}
               </span>
               <span
@@ -166,26 +172,25 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
                 2026
               </span>
             </div>
-            <div className="text-[10px] font-medium" style={{ color: 'var(--text-muted)' }}>
+            <div className="text-[10px] font-medium text-[var(--text-muted)] group-hover:text-[var(--text-secondary)] transition-colors">
               {t('platform.desc', 'مجتمع الجوجالية الرسمي')}
             </div>
           </div>
-        </div>
+        </Link>
       </div>
 
       {/* ── Navigation ───────────────────────────────────────────── */}
-      <nav className="flex-1 px-2.5 py-3 overflow-y-auto space-y-4 no-scrollbar">
+      <nav className="flex-1 px-3 py-3.5 overflow-y-auto space-y-4 no-scrollbar">
         {categories.map((cat) => {
           const itemsInCat = visibleItems.filter((item) => item.category === cat);
           if (!itemsInCat.length) return null;
 
           return (
-            <div key={cat} className="space-y-0.5">
+            <div key={cat} className="space-y-1">
               <div
-                className="text-[9.5px] font-bold uppercase tracking-widest px-2.5 mb-1.5"
-                style={{ color: 'var(--text-muted)' }}
+                className="text-[10px] font-black uppercase tracking-wider px-2 mb-1 text-[var(--text-muted)] flex items-center justify-between"
               >
-                {t('nav.cat.' + cat, categoryLabels[cat] || cat)}
+                <span>{t('nav.cat.' + cat, categoryLabels[cat] || cat)}</span>
               </div>
 
               {itemsInCat.map((item) => (
@@ -195,10 +200,10 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
                   onClick={onMobileClose}
                   className={({ isActive }) =>
                     cn(
-                      'flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-semibold transition-all duration-150 cursor-pointer group relative overflow-hidden',
+                      'sidebar-nav-item flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer group relative overflow-hidden',
                       isActive
-                        ? 'sidebar-nav-item-active'
-                        : 'sidebar-nav-item-inactive'
+                        ? 'sidebar-nav-item-active shadow-sm'
+                        : 'sidebar-nav-item-inactive hover:bg-[var(--surface-elevated)]'
                     )
                   }
                 >
@@ -206,16 +211,15 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
                     <>
                       <span
                         className={cn(
-                          'shrink-0 transition-colors duration-150',
-                          isActive ? 'text-[var(--brand-primary)]' : 'group-hover:text-[var(--brand-primary)]'
+                          'shrink-0 transition-transform duration-200 group-hover:scale-110',
+                          isActive ? 'text-[var(--brand-primary)]' : 'text-[var(--text-muted)] group-hover:text-[var(--brand-primary)]'
                         )}
-                        style={{ color: isActive ? 'var(--brand-primary)' : 'var(--text-muted)' }}
                       >
                         {item.icon}
                       </span>
                       <span className="truncate flex-1">{t('nav.' + item.key, item.label)}</span>
                       {item.path === '/notifications' && unreadCount > 0 && (
-                        <span className="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-rose-500 text-white min-w-[18px] text-center leading-none">
+                        <span className="shrink-0 text-[10px] font-black px-1.5 py-0.5 rounded-full bg-rose-500 text-white min-w-[18px] text-center leading-none animate-pulse">
                           {unreadCount > 99 ? '99+' : unreadCount}
                         </span>
                       )}
@@ -228,60 +232,16 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
         })}
       </nav>
 
-      {/* ── User Card ─────────────────────────────────────────────── */}
+      {/* ── Sign Out ─────────────────────────────────────────────── */}
       <div
-        className="p-3 space-y-2"
+        className="p-3 shrink-0"
         style={{ borderTop: '1px solid var(--border-subtle)' }}
       >
         <button
-          type="button"
-          onClick={() => {
-            navigate('/settings');
-            onMobileClose();
-          }}
-          className="w-full flex items-center gap-2.5 p-2.5 rounded-xl text-right transition-all duration-200 cursor-pointer group hover:scale-[1.01] active:scale-[0.99]"
-          style={{
-            background: 'var(--surface-elevated)',
-            border: '1px solid var(--border-subtle)',
-          }}
-          title="عرض الملف الشخصي والإعدادات والأمان"
-          aria-label="الملف الشخصي والإعدادات والأمان"
-        >
-          <div className="relative">
-            <Avatar
-              src={userProfile?.photoURL}
-              name={userProfile?.displayName || userProfile?.username || 'User'}
-              size="sm"
-            />
-            <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 border border-white dark:border-slate-900" />
-          </div>
-          <div className="flex-1 min-w-0 text-right">
-            <p className="text-xs font-bold truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors" style={{ color: 'var(--text-primary)' }}>
-              {userProfile?.displayName || userProfile?.username || 'عضو الفريق'}
-            </p>
-            <div className="flex items-center justify-between gap-1 mt-0.5">
-              <p className="text-[10px] font-semibold" style={{ color: '#A78BFA' }}>
-                {getRoleLabel(role)}
-              </p>
-              <span className="text-[9px] font-bold text-slate-400 group-hover:text-indigo-500 transition-colors">
-                {t('nav.settings', 'الملف الشخصي')} {isRTL ? '←' : '→'}
-              </span>
-            </div>
-          </div>
-        </button>
-
-        <button
           onClick={handleSignOut}
-          className="w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
-          style={{ color: 'var(--brand-danger)' }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLElement).style.background = 'rgba(244,63,94,0.08)';
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLElement).style.background = 'transparent';
-          }}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-black transition-all duration-200 cursor-pointer text-rose-500 hover:text-rose-400 bg-rose-500/5 hover:bg-rose-500/15 border border-rose-500/15 hover:border-rose-500/30 active:scale-98"
         >
-          <LogOut className="h-3.5 w-3.5" />
+          <LogOut className="h-4 w-4" />
           <span>{t('nav.logout', 'تسجيل الخروج')}</span>
         </button>
       </div>

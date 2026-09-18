@@ -66,6 +66,7 @@ export default function App() {
               <Route path="/courses/:courseId/learn" element={<CoursePlayerPage />} />
               <Route path="/notifications" element={<NotificationsPage />} />
               <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/profile" element={<Navigate to="/settings" replace />} />
               <Route path="/meetings" element={<MeetingsPage />} />
               <Route path="/opportunities" element={<OpportunitiesPage />} />
               <Route path="/support" element={<SupportPage />} />

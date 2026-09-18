@@ -158,12 +158,12 @@ export function Header({ onMobileMenuClick }: HeaderProps) {
           )}
         </button>
 
-        {/* Executive User Profile Quick Pill */}
+        {/* Executive User Profile Quick Pill — Leads to Profile & Account Settings */}
         {userProfile && (
           <Link
-            to="/profile"
-            title="الملف الشخصي والإعدادات"
-            className="flex items-center gap-2 p-1 pl-2 sm:pl-3 rounded-xl bg-[var(--surface-elevated)] border border-[var(--border-subtle)] hover:border-[var(--brand-primary)]/50 transition-all shadow-2xs group"
+            to="/settings"
+            title="إعدادات الحساب والملف الشخصي"
+            className="flex items-center gap-2 p-1 pl-2 sm:pl-3 rounded-xl bg-[var(--surface-elevated)] border border-[var(--border-subtle)] hover:border-[var(--brand-primary)]/50 transition-all shadow-2xs group cursor-pointer"
           >
             <Avatar
               src={userProfile.photoURL}

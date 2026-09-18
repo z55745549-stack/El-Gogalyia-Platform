@@ -707,24 +707,25 @@ html:not(.dark) .badge-danger {
 }
 
 .sidebar-nav-item-active {
-  background: rgba(108, 99, 255, 0.12);
-  color: #A78BFA;
-  font-weight: 700;
-  border-right: 2px solid #6C63FF;
-  box-shadow: inset 0 0 20px rgba(108, 99, 255, 0.05);
+  background: linear-gradient(90deg, rgba(108, 99, 255, 0.18) 0%, rgba(108, 99, 255, 0.05) 100%);
+  color: #C4B5FD;
+  font-weight: 800;
+  border-right: 3px solid #8B5CF6;
+  box-shadow: 0 0 15px rgba(108, 99, 255, 0.12), inset 0 0 20px rgba(108, 99, 255, 0.06);
 }
 .sidebar-nav-item-active::before {
   content: '';
   position: absolute;
   left: 0; right: 0; top: 0; bottom: 0;
-  background: linear-gradient(90deg, rgba(108,99,255,0.08) 0%, transparent 100%);
+  background: linear-gradient(90deg, rgba(108,99,255,0.1) 0%, transparent 100%);
   pointer-events: none;
 }
 
 html:not(.dark) .sidebar-nav-item-active {
-  background: rgba(91, 80, 240, 0.08);
+  background: linear-gradient(90deg, rgba(91, 80, 240, 0.12) 0%, rgba(91, 80, 240, 0.03) 100%);
   color: #5B50F0;
   border-right-color: #5B50F0;
+  box-shadow: 0 0 12px rgba(91, 80, 240, 0.1);
 }
 
 .sidebar-nav-item-inactive {
@@ -732,7 +733,7 @@ html:not(.dark) .sidebar-nav-item-active {
 }
 .sidebar-nav-item-inactive:hover {
   background: var(--surface-elevated);
-  color: var(--text-secondary);
+  color: var(--text-primary);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
