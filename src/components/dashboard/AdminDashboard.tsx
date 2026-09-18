@@ -4,7 +4,7 @@ import {
   Users, Upload, Clock, AlertTriangle, CheckCircle2,
   Coins, Activity, ArrowUpRight, Plus, Shield, Inbox, Calendar, Sparkles, Bell,
   Radio, Gift, Megaphone, AlertCircle, ChevronLeft, Crown, Download, BarChart3, TrendingUp,
-  PieChart as PieChartIcon, Search, Lock
+  PieChart as PieChartIcon, Search, Lock, Cpu, Camera, GraduationCap, HeartHandshake, Cog, CheckSquare, Zap, Flame
 } from 'lucide-react';
 import { BroadcastBanner } from '@/components/dashboard/BroadcastBanner';
 import { Link } from 'react-router-dom';
@@ -33,6 +33,33 @@ export function AdminDashboard() {
   const [totalEmployees, setTotalEmployees] = useState(0);
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Live System Clock & Command Status
+  const [currentDateTime, setCurrentDateTime] = useState('');
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      const formatted =
+        now.toLocaleDateString('ar-EG', {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+        }) +
+        ' · ' +
+        now.toLocaleTimeString('ar-EG', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true,
+        });
+      setCurrentDateTime(formatted);
+    };
+    updateTime();
+    const timer = setInterval(updateTime, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Quick Task Filter Tabs inside Recent Tasks Card
+  const [taskTabFilter, setTaskTabFilter] = useState<'all' | 'high' | 'in_progress' | 'pending_review'>('all');
 
   // Broadcast Modal State (Lead / Co-Lead)
   const [showBroadcastModal, setShowBroadcastModal] = useState(false);
@@ -197,6 +224,33 @@ export function AdminDashboard() {
     ? (headCommitteeId || headCommitteeName)
     : leaderboardCommitteeFilter;
 
+  // Committee neon visual identity mapping
+  const getCommitteeVisuals = (commId: string, commName: string) => {
+    const id = (commId || commName || '').toLowerCase();
+    if (id.includes('tech') || id.includes('تقن')) {
+      return { icon: Cpu, color: 'text-cyan-400 bg-cyan-500/15 border-cyan-500/30' };
+    }
+    if (id.includes('pr') || id.includes('media') || id.includes('إعلام')) {
+      return { icon: Camera, color: 'text-fuchsia-400 bg-fuchsia-500/15 border-fuchsia-500/30' };
+    }
+    if (id.includes('teach') || id.includes('تدريس')) {
+      return { icon: GraduationCap, color: 'text-emerald-400 bg-emerald-500/15 border-emerald-500/30' };
+    }
+    if (id.includes('hr') || id.includes('موارد')) {
+      return { icon: HeartHandshake, color: 'text-rose-400 bg-rose-500/15 border-rose-500/30' };
+    }
+    if (id.includes('oper') || id.includes('تشغيل')) {
+      return { icon: Cog, color: 'text-amber-400 bg-amber-500/15 border-amber-500/30' };
+    }
+    if (id.includes('student') || id.includes('طلاب')) {
+      return { icon: Sparkles, color: 'text-sky-400 bg-sky-500/15 border-sky-500/30' };
+    }
+    if (id.includes('moder') || id.includes('تنظيم')) {
+      return { icon: Shield, color: 'text-indigo-400 bg-indigo-500/15 border-indigo-500/30' };
+    }
+    return { icon: Activity, color: 'text-violet-400 bg-violet-500/15 border-violet-500/30' };
+  };
+
   // Committees performance stats (Head sees ONLY their committee, Top Leaders see all)
   const visibleCommittees = isHead
     ? DEFAULT_COMMITTEES.filter(comm =>
@@ -242,8 +296,11 @@ export function AdminDashboard() {
       ? Math.round((commCompletedTasks / commTasks.length) * 100)
       : 0;
 
+    const visuals = getCommitteeVisuals(comm.id, comm.name);
+
     return {
       ...comm,
+      visuals,
       totalTasks: commTasks.length,
       completedTasks: commCompletedTasks,
       totalAssignments,
@@ -490,7 +547,7 @@ export function AdminDashboard() {
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
-    <div className="space-y-5 sm:space-y-6 font-sans text-right dir-rtl">
+    <div className="space-y-6 font-sans text-right dir-rtl cyber-grid-bg p-1 sm:p-2.5 rounded-3xl transition-all">
       {/* Broadcast System Announcement Banner */}
       <BroadcastBanner />
 
@@ -500,7 +557,7 @@ export function AdminDashboard() {
         className="glow-card-interactive p-5 sm:p-7 relative overflow-hidden bg-gradient-to-br from-[var(--surface-elevated)] via-[var(--surface)] to-[var(--surface-secondary)] border border-[var(--border-subtle)] shadow-xl"
       >
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             <div className="flex items-center gap-2 flex-wrap">
               <div className={cn(
                 "inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-black shadow-sm transition-all duration-300 glow-badge",
@@ -520,7 +577,7 @@ export function AdminDashboard() {
               <Link
                 to="/ocoins"
                 className={cn(
-                  "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black border transition-colors",
+                  "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black border transition-colors glow-badge",
                   !hasUnlimitedCoins(userProfile?.role) && (userProfile?.oCoinsBalance ?? 0) < 0
                     ? "bg-rose-500/15 text-rose-500 border-rose-500/30 hover:bg-rose-500/25"
                     : "bg-[var(--brand-warm)]/15 text-[var(--brand-warm)] border-[var(--brand-warm)]/30 hover:bg-[var(--brand-warm)]/25"
@@ -534,15 +591,41 @@ export function AdminDashboard() {
                     : t('adminDashboard.your_balance').replace('{amount}', formatOCoins(userProfile?.oCoinsBalance ?? 0))}
                 </span>
               </Link>
+
+              {/* Live Status & Clock Ticker */}
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-semibold bg-[var(--bg-elevated)]/80 border border-[var(--border-subtle)] text-[var(--text-muted)]">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span className="font-mono text-[var(--text-secondary)]">{currentDateTime || 'متصل الآن'}</span>
+                <span className="text-[var(--border-strong)]">|</span>
+                <span className="text-emerald-400 font-bold text-[10px]">مزامنة لحظية</span>
+              </div>
             </div>
 
-            <h1 className="page-title text-xl sm:text-2xl font-extrabold text-[var(--text-primary)]">
+            <h1 className="page-title text-xl sm:text-2xl font-extrabold text-[var(--text-primary)] glow-text">
               {t('adminDashboard.welcome_user').replace('{name}', userProfile?.displayName || 'المشرف')}
             </h1>
             <p className="text-xs sm:text-sm text-[var(--text-secondary)] max-w-2xl leading-relaxed">
               {roleSubtitle}
               {stats.overdue > 0 && t('adminDashboard.overdue_alert').replace('{count}', String(stats.overdue))}
             </p>
+
+            {/* Quick Micro-Stats Pill */}
+            <div className="inline-flex items-center gap-3 px-3 py-1 rounded-xl text-xs bg-[var(--surface-secondary)]/80 border border-[var(--border-subtle)] font-medium">
+              <span className="flex items-center gap-1.5 text-[var(--text-muted)]">
+                <Zap className="h-3.5 w-3.5 text-amber-400 glow-icon" />
+                <span>إنجاز المنظومة:</span>
+                <strong className="text-[var(--text-primary)] font-mono glow-text">{Math.round(overallCompletionRate)}%</strong>
+              </span>
+              <span className="text-[var(--border-strong)]">·</span>
+              <span className="flex items-center gap-1.5 text-[var(--text-muted)]">
+                <Inbox className="h-3.5 w-3.5 text-[var(--brand-primary)] glow-icon" />
+                <span>تسليمات للمراجعة:</span>
+                <strong className="text-[var(--brand-warm)] font-mono glow-text">{stats.submitted}</strong>
+              </span>
+            </div>
           </div>
 
           {/* Action CTAs */}
@@ -677,6 +760,7 @@ export function AdminDashboard() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
             {committeesStats.map((c) => {
               const hasNoTasks = c.totalTasks === 0;
+              const VisualIcon = c.visuals.icon;
               return (
                 <div
                   key={c.id}
@@ -684,21 +768,35 @@ export function AdminDashboard() {
                   className="glow-card-interactive p-4 rounded-2xl border border-[var(--border-subtle)] space-y-3 transition-all duration-300 group"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <h3 className="text-xs font-bold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] glow-text transition-colors">
-                        {c.name}
-                      </h3>
-                      <p className="text-[10px] text-[var(--text-muted)] mt-0.5">
-                        {c.membersCount} أعضاء مسجلين
-                      </p>
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className={cn("w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 glow-icon", c.visuals.color)}>
+                        <VisualIcon className="h-4 w-4" />
+                      </span>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <h3 className="text-xs font-bold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] glow-text transition-colors truncate">
+                            {c.name}
+                          </h3>
+                          {c.totalTasks > 0 && (
+                            <span className="relative flex h-2 w-2 shrink-0" title="لجنة نشطة ومكلفة حالياً">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-[var(--text-muted)] mt-0.5">
+                          {c.membersCount} أعضاء مسجلين
+                        </p>
+                      </div>
                     </div>
+
                     {hasNoTasks ? (
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-lg bg-[var(--border-subtle)]/60 text-[var(--text-muted)]">
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-lg bg-[var(--border-subtle)]/60 text-[var(--text-muted)] shrink-0">
                         لا توجد مهام
                       </span>
                     ) : (
                       <span className={cn(
-                        "text-xs font-black px-2 py-0.5 rounded-lg glow-badge",
+                        "text-xs font-black px-2 py-0.5 rounded-lg glow-badge shrink-0",
                         c.completionRate >= 75
                           ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
                           : c.completionRate >= 40
@@ -819,9 +917,10 @@ export function AdminDashboard() {
             onMouseMove={handleCardMouseMove}
             className="glow-card-interactive overflow-hidden rounded-2xl border border-[var(--border-subtle)]"
           >
-            <div className="p-4 sm:p-5 border-b border-[var(--border-subtle)] flex items-center justify-between bg-[var(--bg-elevated)]/30">
+            <div className="p-4 sm:p-5 border-b border-[var(--border-subtle)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[var(--bg-elevated)]/30">
               <div>
                 <h2 className="section-title text-sm sm:text-base text-[var(--text-primary)] flex items-center gap-2">
+                  <CheckSquare className="h-4 w-4 text-[var(--brand-primary)] glow-icon" />
                   <span className="glow-text">
                     {!isTopLeader ? t('adminDashboard.latest_committee_tasks').replace('{name}', userProfile?.committeeName || 'اللجنة') : t('adminDashboard.latest_all_tasks')}
                   </span>
@@ -830,7 +929,61 @@ export function AdminDashboard() {
                   {!isTopLeader ? t('adminDashboard.committee_tasks_count').replace('{count}', String(myCommitteeTasks.length)) : t('adminDashboard.all_tasks_count').replace('{count}', String(tasks.length))}
                 </p>
               </div>
-              <Link to="/tasks" className="text-xs font-bold text-[var(--brand-primary)] hover:text-[var(--brand-accent)] hover:underline flex items-center gap-1">
+
+              {/* Pill Filter Tabs */}
+              <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] self-start sm:self-auto overflow-x-auto">
+                <button
+                  type="button"
+                  onClick={() => setTaskTabFilter('all')}
+                  className={cn(
+                    "px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer",
+                    taskTabFilter === 'all'
+                      ? "bg-[var(--brand-primary)] text-white shadow-xs"
+                      : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                  )}
+                >
+                  الكل ({scopedTasks.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTaskTabFilter('high')}
+                  className={cn(
+                    "px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1",
+                    taskTabFilter === 'high'
+                      ? "bg-rose-500 text-white shadow-xs"
+                      : "text-[var(--text-muted)] hover:text-rose-400"
+                  )}
+                >
+                  <Flame className="h-3 w-3" />
+                  <span>عالية ({scopedTasks.filter(t => t.priority === 'high').length})</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTaskTabFilter('in_progress')}
+                  className={cn(
+                    "px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer",
+                    taskTabFilter === 'in_progress'
+                      ? "bg-blue-500 text-white shadow-xs"
+                      : "text-[var(--text-muted)] hover:text-blue-400"
+                  )}
+                >
+                  جارية ({scopedTasks.filter(t => t.status === 'in_progress').length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTaskTabFilter('pending_review')}
+                  className={cn(
+                    "px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer",
+                    taskTabFilter === 'pending_review'
+                      ? "bg-amber-500 text-white shadow-xs"
+                      : "text-[var(--text-muted)] hover:text-amber-400"
+                  )}
+                >
+                  للمراجعة ({scopedTasks.filter(isTaskPendingReview).length})
+                </button>
+              </div>
+
+              <Link to="/tasks" className="text-xs font-bold text-[var(--brand-primary)] hover:text-[var(--brand-accent)] hover:underline flex items-center gap-1 shrink-0">
                 <span>{t('adminDashboard.view_all_tasks')}</span>
                 <ArrowUpRight className="h-3 w-3" />
               </Link>
@@ -841,7 +994,7 @@ export function AdminDashboard() {
                 <div className="p-5 space-y-3">
                   {[1, 2, 3].map((i) => <SkeletonCard key={i} />)}
                 </div>
-              ) : (isTopLeader ? tasks : myCommitteeTasks).length === 0 ? (
+              ) : scopedTasks.length === 0 ? (
                 <div className="p-8 text-center text-[var(--text-muted)] text-xs sm:text-sm">
                   {t('adminDashboard.no_tasks_registered')}{' '}
                   <Link to="/tasks" className="text-[var(--brand-primary)] font-bold hover:underline">
@@ -849,40 +1002,48 @@ export function AdminDashboard() {
                   </Link>
                 </div>
               ) : (
-                (isTopLeader ? tasks : myCommitteeTasks).slice(0, 6).map((task) => {
-                  const overdue = isOverdue(task.deadline, task.status);
-                  return (
-                    <Link
-                      key={task.id}
-                      to={`/tasks/${task.id}`}
-                      className={cn(
-                        'flex items-center justify-between gap-3 px-4 sm:px-5 py-3.5 hover:bg-[var(--bg-elevated)]/60 transition-colors group',
-                        overdue && 'bg-[var(--brand-danger)]/[0.04]'
-                      )}
-                    >
-                      <div className="flex-1 min-w-0 space-y-1">
-                        <div className="flex items-center gap-2">
-                          <PriorityBadge priority={task.priority} />
-                          <span className="text-xs sm:text-sm font-bold text-[var(--text-primary)] truncate group-hover:text-[var(--brand-primary)] transition-colors">
-                            {task.title}
-                          </span>
+                scopedTasks
+                  .filter((t) => {
+                    if (taskTabFilter === 'high') return t.priority === 'high';
+                    if (taskTabFilter === 'in_progress') return t.status === 'in_progress';
+                    if (taskTabFilter === 'pending_review') return isTaskPendingReview(t);
+                    return true;
+                  })
+                  .slice(0, 6)
+                  .map((task) => {
+                    const overdue = isOverdue(task.deadline, task.status);
+                    return (
+                      <Link
+                        key={task.id}
+                        to={`/tasks/${task.id}`}
+                        className={cn(
+                          'flex items-center justify-between gap-3 px-4 sm:px-5 py-3.5 hover:bg-[var(--bg-elevated)]/60 transition-colors group',
+                          overdue && 'bg-[var(--brand-danger)]/[0.04]'
+                        )}
+                      >
+                        <div className="flex-1 min-w-0 space-y-1">
+                          <div className="flex items-center gap-2">
+                            <PriorityBadge priority={task.priority} />
+                            <span className="text-xs sm:text-sm font-bold text-[var(--text-primary)] truncate group-hover:text-[var(--brand-primary)] transition-colors">
+                              {task.title}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2.5 text-[11px] text-[var(--text-muted)]">
+                            <span>الموعد: {formatDate(task.deadline)}</span>
+                            <span>·</span>
+                            <span className="truncate">
+                              {task.assignedToNames?.length
+                                ? `${task.assignedToNames[0]}${task.assignedToNames.length > 1 ? ` +${task.assignedToNames.length - 1}` : ''}`
+                                : 'غير محدد'}
+                            </span>
+                            <span>·</span>
+                            <span className="text-[var(--brand-warm)] font-bold">🪙 {task.oCoinsReward} OC</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2.5 text-[11px] text-[var(--text-muted)]">
-                          <span>الموعد: {formatDate(task.deadline)}</span>
-                          <span>·</span>
-                          <span className="truncate">
-                            {task.assignedToNames?.length
-                              ? `${task.assignedToNames[0]}${task.assignedToNames.length > 1 ? ` +${task.assignedToNames.length - 1}` : ''}`
-                              : 'غير محدد'}
-                          </span>
-                          <span>·</span>
-                          <span className="text-[var(--brand-warm)] font-bold">🪙 {task.oCoinsReward} OC</span>
-                        </div>
-                      </div>
-                      <StatusBadge status={task.status} overdue={overdue} />
-                    </Link>
-                  );
-                })
+                        <StatusBadge status={task.status} overdue={overdue} />
+                      </Link>
+                    );
+                  })
               )}
             </div>
           </div>
@@ -1080,12 +1241,34 @@ export function AdminDashboard() {
               <span className="text-[11px] text-[var(--text-muted)] font-bold">{t('adminDashboard.honor_board_subtitle')}</span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 items-end">
               {topPerformers.map((item, idx) => {
+                const isChampion = idx === 0;
                 const medals = [
-                  { rank: t('adminDashboard.rank_1'), color: 'border-amber-400/50 bg-amber-500/10 text-amber-400', glow: 'glow-warm' },
-                  { rank: t('adminDashboard.rank_2'), color: 'border-slate-300 dark:border-slate-700 bg-slate-500/10 text-slate-300', glow: 'glow-primary' },
-                  { rank: t('adminDashboard.rank_3'), color: 'border-amber-700/50 bg-amber-700/10 text-amber-500', glow: 'glow-warm' },
+                  {
+                    rank: 'المركز الأول 🥇',
+                    title: 'بطل الشهر',
+                    color: 'gold-shimmer-border border-amber-400/80 bg-gradient-to-b from-amber-500/20 via-amber-500/10 to-transparent shadow-[0_0_30px_rgba(245,158,11,0.25)]',
+                    glow: 'glow-warm',
+                    badge: 'bg-amber-400 text-slate-950 font-black',
+                    icon: '👑'
+                  },
+                  {
+                    rank: 'المركز الثاني 🥈',
+                    title: 'وصيف البطل',
+                    color: 'border-slate-400/40 bg-gradient-to-b from-slate-400/15 via-slate-500/5 to-transparent',
+                    glow: 'glow-primary',
+                    badge: 'bg-slate-300 text-slate-900 font-bold',
+                    icon: '🥈'
+                  },
+                  {
+                    rank: 'المركز الثالث 🥉',
+                    title: 'نجم المنظومة',
+                    color: 'border-amber-700/50 bg-gradient-to-b from-amber-700/15 via-amber-800/5 to-transparent',
+                    glow: 'glow-warm',
+                    badge: 'bg-amber-700/80 text-amber-100 font-bold',
+                    icon: '🥉'
+                  },
                 ];
                 const medal = medals[idx] || medals[0];
                 return (
@@ -1093,25 +1276,65 @@ export function AdminDashboard() {
                     key={item.user.uid}
                     onMouseMove={handleCardMouseMove}
                     className={cn(
-                      "glow-card-interactive p-4 rounded-2xl border flex items-center gap-3 transition-transform hover:-translate-y-1 group",
+                      "glow-card-interactive p-4 sm:p-5 rounded-2xl border flex flex-col justify-between gap-3.5 transition-all duration-300 hover:-translate-y-2 group relative overflow-hidden",
                       medal.color,
-                      medal.glow
+                      medal.glow,
+                      isChampion && "sm:-translate-y-2.5 z-10 border-2"
                     )}
                   >
-                    <Avatar src={item.user.photoURL} name={item.user.displayName || item.user.username || 'User'} size="md" />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-black glow-badge">{medal.rank}</span>
-                        <span className="text-xs font-black text-amber-400 font-mono glow-text">
-                          {item.coins > 0 ? `+${formatOCoins(item.coins)}` : formatOCoins(item.coins)} OC
+                    {isChampion && (
+                      <div className="absolute top-2 left-2">
+                        <span className="flex h-2.5 w-2.5">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
                         </span>
                       </div>
-                      <p className="text-xs font-bold text-[var(--text-primary)] truncate mt-0.5 group-hover:text-white transition-colors">
-                        {formatFullName(item.user.displayName || 'عضو')}
-                      </p>
-                      <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
-                        {item.completed > 0 ? `${item.completed} مهمة معتمدة` : 'تكليفات قيد العمل'} {item.rate > 0 ? `· %${Math.round(item.rate)} إنجاز` : ''}
-                      </p>
+                    )}
+
+                    <div className="flex items-center justify-between">
+                      <span className={cn("text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 shadow-sm", medal.badge)}>
+                        <span>{medal.icon}</span>
+                        <span>{medal.rank}</span>
+                      </span>
+                      <span className="text-xs font-black text-amber-400 font-mono glow-text flex items-center gap-1">
+                        <span>🪙</span>
+                        <span>{item.coins > 0 ? `+${formatOCoins(item.coins)}` : formatOCoins(item.coins)} OC</span>
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-3 mt-1">
+                      <div className="relative shrink-0">
+                        {isChampion && (
+                          <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 text-lg animate-bounce drop-shadow-[0_2px_8px_rgba(245,158,11,0.8)]">
+                            👑
+                          </span>
+                        )}
+                        <div className={cn(
+                          "rounded-full p-0.5 transition-all duration-300",
+                          isChampion ? "ring-2 ring-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.6)]" : "ring-1 ring-[var(--border-subtle)]"
+                        )}>
+                          <Avatar src={item.user.photoURL} name={item.user.displayName || item.user.username || 'User'} size={isChampion ? "lg" : "md"} />
+                        </div>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs sm:text-sm font-black text-[var(--text-primary)] truncate group-hover:text-amber-400 transition-colors">
+                          {formatFullName(item.user.displayName || 'عضو')}
+                        </p>
+                        <p className="text-[11px] text-[var(--text-muted)] truncate flex items-center gap-1.5 mt-0.5">
+                          <span className="text-[10px] px-2 py-0.5 rounded bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-[var(--text-muted)] font-semibold">
+                            {item.user.committeeName || 'عضو عام'}
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-[var(--border-subtle)]/50 flex items-center justify-between text-[11px]">
+                      <span className="text-[var(--text-muted)] font-medium">
+                        {item.completed > 0 ? `${item.completed} مهمة منجزة` : 'مهام جارية'}
+                      </span>
+                      <span className={cn("font-mono font-bold px-2 py-0.5 rounded-md", isChampion ? "bg-amber-400/20 text-amber-300" : "bg-[var(--bg-elevated)] text-[var(--text-primary)]")}>
+                        {Math.round(item.rate)}% إنجاز
+                      </span>
                     </div>
                   </div>
                 );
@@ -1275,13 +1498,20 @@ export function AdminDashboard() {
                   key={user.uid}
                   className="px-5 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-[var(--bg-elevated)]/60 transition-all duration-200 min-w-[600px] sm:min-w-0 group"
                 >
-                  <div className="flex items-center gap-3.5 sm:w-64 min-w-0">
+                  <div className="flex items-center gap-3.5 sm:w-72 min-w-0">
                     <Avatar src={user.photoURL} name={formatFullName(user.displayName || user.username || 'User')} size="sm" />
                     <div className="min-w-0">
-                      <p className="font-bold text-[var(--text-primary)] truncate text-xs group-hover:text-[var(--brand-primary)] transition-colors">
-                        {formatFullName(user.displayName || 'عضو الفريق')}
-                      </p>
-                      <p className="text-[10px] text-[var(--text-muted)] truncate font-mono">@{user.username || user.email}</p>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className="font-bold text-[var(--text-primary)] truncate text-xs group-hover:text-[var(--brand-primary)] transition-colors">
+                          {formatFullName(user.displayName || 'عضو الفريق')}
+                        </p>
+                        {user.committeeName && (
+                          <span className="px-1.5 py-0.2 text-[9px] font-bold rounded bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] border border-[var(--brand-primary)]/20 inline-block">
+                            {user.committeeName}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-[var(--text-muted)] truncate font-mono mt-0.5">@{user.username || user.email}</p>
                     </div>
                   </div>
 
@@ -1294,11 +1524,20 @@ export function AdminDashboard() {
                       <span className="text-[9px] uppercase font-bold text-[var(--text-muted)] block">المكتملة</span>
                       <strong className="text-xs font-extrabold text-emerald-400 font-mono glow-text">{completed}</strong>
                     </div>
-                    <div>
+                    <div className="flex flex-col items-center justify-center gap-1">
                       <span className="text-[9px] uppercase font-bold text-[var(--text-muted)] block">نسبة الإنجاز</span>
                       <strong className="text-xs font-extrabold text-[var(--brand-primary)] font-mono glow-badge px-1.5 py-0.5 rounded">
                         {Math.round(rate)}%
                       </strong>
+                      <div className="w-14 sm:w-16 h-1 bg-[var(--bg-surface)] rounded-full overflow-hidden border border-[var(--border-subtle)]">
+                        <div
+                          className={cn(
+                            "h-full rounded-full transition-all duration-500",
+                            rate >= 80 ? "bg-emerald-400" : rate >= 50 ? "bg-[var(--brand-primary)]" : "bg-amber-400"
+                          )}
+                          style={{ width: `${Math.min(Math.max(rate, 0), 100)}%` }}
+                        />
+                      </div>
                     </div>
                     <div>
                       <span className="text-[9px] uppercase font-bold text-[var(--text-muted)] block">O Coins</span>

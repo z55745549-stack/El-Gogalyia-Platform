@@ -38,6 +38,46 @@ const variantStyles = {
   },
 };
 
+function AnimatedNumber({ value }: { value: number | string }) {
+  const [displayValue, setDisplayValue] = React.useState<number | string>(() => {
+    return typeof value === 'number' ? 0 : value;
+  });
+
+  React.useEffect(() => {
+    if (typeof value !== 'number') {
+      setDisplayValue(value);
+      return;
+    }
+    let start = 0;
+    const end = value;
+    if (end === 0) {
+      setDisplayValue(0);
+      return;
+    }
+    const duration = 750; // ms
+    const startTime = performance.now();
+
+    const update = (currentTime: number) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // easeOutCubic
+      const ease = 1 - Math.pow(1 - progress, 3);
+      const current = Math.round(start + (end - start) * ease);
+      setDisplayValue(current);
+      if (progress < 1) {
+        requestAnimationFrame(update);
+      } else {
+        setDisplayValue(end);
+      }
+    };
+
+    const animId = requestAnimationFrame(update);
+    return () => cancelAnimationFrame(animId);
+  }, [value]);
+
+  return <>{displayValue}</>;
+}
+
 export function StatCard({
   title,
   value,
@@ -103,7 +143,7 @@ export function StatCard({
           </p>
           <div className="flex items-baseline gap-2">
             <p className="text-2xl sm:text-3xl font-extrabold text-[var(--text-primary)] tracking-tight glow-text font-mono">
-              {value}
+              <AnimatedNumber value={value} />
             </p>
             {trend && (
               <span

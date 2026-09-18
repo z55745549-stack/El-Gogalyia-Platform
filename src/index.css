@@ -415,6 +415,34 @@
   box-shadow: 0 12px 36px -10px rgba(244, 63, 94, 0.35), 0 0 25px rgba(244, 63, 94, 0.25);
 }
 
+/* Cyber Dot Grid & Ambient Mission Control Background */
+.cyber-grid-bg {
+  background-image: 
+    radial-gradient(rgba(108, 99, 255, 0.1) 1.2px, transparent 1.2px),
+    radial-gradient(ellipse 70% 35% at 50% 0%, rgba(108, 99, 255, 0.08), transparent);
+  background-size: 28px 28px, 100% 100%;
+}
+
+/* Gold shimmer animation for 1st place champion podium */
+@keyframes goldShimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.gold-shimmer-border {
+  position: relative;
+}
+.gold-shimmer-border::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, transparent, rgba(251, 191, 36, 0.5), transparent);
+  background-size: 200% 100%;
+  animation: goldShimmer 3.5s infinite linear;
+  pointer-events: none;
+}
+
 /* ═══════════════════════════════════════════════════════════════════════
    BUTTONS
    ═══════════════════════════════════════════════════════════════════════ */
