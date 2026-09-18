@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { doc, onSnapshot, collection, query, orderBy, db } from '@/lib/supabase';
+import { doc, onSnapshot, collection, query, orderBy, getDocs, db } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, Calendar, Coins, User, AlertTriangle, CheckCircle, CheckCircle2,
   Clock, Upload, X, Check, Trash2, Ban, Archive, FileCheck, Users,
-  Sparkles, ExternalLink, ShieldCheck, MessageSquare, Pencil
+  Sparkles, ExternalLink, ShieldCheck, MessageSquare, Pencil, Search
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
@@ -26,7 +26,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { SkeletonCard } from '@/components/ui/skeleton';
 import { Avatar } from '@/components/ui/avatar';
 import { formatDate, isOverdue, cn, safeDate } from '@/utils';
-import type { Task, TaskSubmission, UserTaskStatus } from '@/types';
+import type { Task, TaskSubmission, UserTaskStatus, UserProfile } from '@/types';
 import { uploadTaskAttachment, type UploadedFile } from '@/lib/storage';
 import { isAdminRole } from '@/utils/permissions';
 
@@ -60,6 +60,10 @@ export function TaskDetailPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editForm, setEditForm] = useState({ title: '', description: '', requirements: '', deadline: '', oCoinsReward: 0 });
   const [savingEdit, setSavingEdit] = useState(false);
+  // Edit: assignees
+  const [editAssignees, setEditAssignees] = useState<UserProfile[]>([]);
+  const [editSelectedUids, setEditSelectedUids] = useState<string[]>([]);
+  const [editMemberSearch, setEditMemberSearch] = useState('');
 
   // Lifecycle Modals
   const [showEndConfirm, setShowEndConfirm] = useState(false);
@@ -384,7 +388,7 @@ export function TaskDetailPage() {
     }
   };
 
-  const handleOpenEdit = () => {
+  const handleOpenEdit = async () => {
     if (!task) return;
     const dl = task.deadline
       ? new Date(typeof (task.deadline as any)?.seconds !== 'undefined'
@@ -399,13 +403,58 @@ export function TaskDetailPage() {
       deadline: dl,
       oCoinsReward: task.oCoinsReward || 0,
     });
+    // Pre-select current assignees
+    setEditSelectedUids([...(task.assignedTo || [])]);
+    setEditMemberSearch('');
+
+    // Load assignable users
+    try {
+      const snap = await getDocs(collection(db, 'users'));
+      const allUsers: UserProfile[] = [];
+      snap.docs.forEach((d) => {
+        const data = { uid: d.id, ...d.data() } as UserProfile;
+        if (data.username && data.status === 'active') allUsers.push(data);
+      });
+      const isTopLeader = userProfile?.role === 'lead' || userProfile?.role === 'co_lead';
+      const myCommId = userProfile?.committeeId;
+      const myCommName = (userProfile?.committeeName || '').trim().toLowerCase();
+      const assignable = allUsers.filter((u) => {
+        if (u.uid === userProfile?.uid) return false;
+        if (u.role === 'lead' || u.role === 'co_lead') return false;
+        if (!isTopLeader) {
+          const matchId = Boolean(myCommId && u.committeeId === myCommId);
+          const matchName = Boolean(myCommName && (u.committeeName || '').trim().toLowerCase() === myCommName);
+          return matchId || matchName;
+        }
+        return true;
+      });
+      assignable.sort((a, b) => (a.displayName || '').localeCompare(b.displayName || '', 'ar', { sensitivity: 'base' }));
+      setEditAssignees(assignable);
+    } catch {
+      setEditAssignees([]);
+    }
+
     setShowEditModal(true);
+  };
+
+  const toggleEditAssignee = (uid: string) => {
+    setEditSelectedUids((prev) =>
+      prev.includes(uid) ? prev.filter((id) => id !== uid) : [...prev, uid]
+    );
   };
 
   const handleSaveEdit = async () => {
     if (!task || !userProfile || !editForm.title.trim() || !editForm.deadline) return;
+    if (editSelectedUids.length === 0) {
+      toast.error('يجب اختيار عضو واحد على الأقل.');
+      return;
+    }
     setSavingEdit(true);
     try {
+      // Build assignedToNames from editAssignees
+      const selectedEmployees = editAssignees.filter((e) => editSelectedUids.includes(e.uid));
+      const assignedToNames = selectedEmployees.map((e) => e.displayName || e.username || '');
+
       await updateTaskDetails(
         task.id,
         {
@@ -414,6 +463,8 @@ export function TaskDetailPage() {
           requirements: editForm.requirements,
           deadline: new Date(editForm.deadline),
           oCoinsReward: Number(editForm.oCoinsReward),
+          assignedTo: editSelectedUids,
+          assignedToNames,
         },
         {
           email: userProfile.email || userProfile.username,
@@ -421,7 +472,7 @@ export function TaskDetailPage() {
           photoURL: userProfile.photoURL || '',
         }
       );
-      toast.success('تم تحديث بيانات المهمة بنجاح ✨');
+      toast.success('تم تحديث بيانات المهمة والأعضاء المكلفين بنجاح ✨');
       setShowEditModal(false);
     } catch (err) {
       toast.error('فشل تحديث المهمة.');
@@ -985,14 +1036,14 @@ export function TaskDetailPage() {
         open={showEditModal}
         onClose={() => setShowEditModal(false)}
         title="تعديل بيانات المهمة"
-        size="md"
+        size="lg"
         footer={
           <>
             <Button variant="secondary" onClick={() => setShowEditModal(false)} disabled={savingEdit}>إلغاء</Button>
             <Button
               onClick={handleSaveEdit}
               loading={savingEdit}
-              disabled={!editForm.title.trim() || !editForm.deadline}
+              disabled={!editForm.title.trim() || !editForm.deadline || editSelectedUids.length === 0}
               className="btn-primary font-bold"
             >
               حفظ التعديلات
@@ -1048,6 +1099,90 @@ export function TaskDetailPage() {
               onChange={(e) => setEditForm((p) => ({ ...p, requirements: e.target.value }))}
               placeholder="متطلبات أو تعليمات إضافية للمهمة"
             />
+          </div>
+
+          {/* Assignees Section */}
+          <div className="border-t border-[var(--border-subtle)] pt-4">
+            <div className="flex items-center justify-between mb-2">
+              <label className="form-label mb-0">الأعضاء المكلفون * (متعدد)</label>
+              <span className="text-xs font-bold" style={{ color: 'var(--brand-primary)' }}>
+                {editSelectedUids.length} مختار
+              </span>
+            </div>
+            <div
+              className="rounded-xl overflow-hidden"
+              style={{ border: '1px solid var(--border-default)', background: 'var(--bg-card)' }}
+            >
+              {/* Search */}
+              <div className="p-2.5" style={{ borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-elevated)' }}>
+                <div className="relative">
+                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
+                  <input
+                    type="text"
+                    placeholder="بحث بالاسم أو اسم المستخدم..."
+                    value={editMemberSearch}
+                    onChange={(e) => setEditMemberSearch(e.target.value)}
+                    className="w-full pr-9 pl-3 py-2 rounded-lg text-xs bg-[var(--bg-input)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]/30"
+                  />
+                </div>
+              </div>
+              {/* Members list */}
+              <div className="max-h-44 overflow-y-auto no-scrollbar divide-y divide-[var(--border-subtle)]">
+                {editAssignees.length === 0 ? (
+                  <p className="text-xs text-center py-5 text-[var(--text-muted)]">جاري تحميل الأعضاء...</p>
+                ) : editAssignees
+                  .filter((e) =>
+                    (e.displayName || '').toLowerCase().includes(editMemberSearch.toLowerCase()) ||
+                    (e.username || '').toLowerCase().includes(editMemberSearch.toLowerCase())
+                  )
+                  .map((emp) => {
+                    const isSelected = editSelectedUids.includes(emp.uid);
+                    const isCurrentAssignee = (task.assignedTo || []).includes(emp.uid);
+                    return (
+                      <button
+                        key={emp.uid}
+                        type="button"
+                        onClick={() => toggleEditAssignee(emp.uid)}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 transition-colors text-right cursor-pointer"
+                        style={{ background: isSelected ? 'rgba(108,99,255,0.08)' : 'transparent' }}
+                      >
+                        {/* Checkbox */}
+                        <div
+                          className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0 transition-all"
+                          style={{
+                            background: isSelected ? 'var(--brand-primary)' : 'transparent',
+                            border: isSelected ? '1px solid var(--brand-primary)' : '1px solid var(--border-strong)',
+                          }}
+                        >
+                          {isSelected && <Check className="h-3 w-3 text-white stroke-[3]" />}
+                        </div>
+                        <Avatar src={emp.photoURL} name={emp.displayName || emp.username || ''} size="xs" />
+                        <div className="flex-1 min-w-0 text-right">
+                          <p className="text-xs font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
+                            {emp.displayName}
+                            {isCurrentAssignee && (
+                              <span className="mr-1.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">(مكلَّف حالياً)</span>
+                            )}
+                          </p>
+                          <p className="text-[11px] truncate font-mono" style={{ color: 'var(--text-muted)' }}>
+                            @{emp.username || emp.email}
+                          </p>
+                        </div>
+                        <span
+                          className="text-[10px] font-bold uppercase px-2 py-0.5 rounded shrink-0"
+                          style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)', border: '1px solid var(--border-subtle)' }}
+                        >
+                          {emp.role}
+                        </span>
+                      </button>
+                    );
+                  })
+                }
+              </div>
+            </div>
+            {editSelectedUids.length === 0 && (
+              <p className="text-xs text-rose-500 mt-1 font-medium">يجب اختيار عضو واحد على الأقل.</p>
+            )}
           </div>
         </div>
       </Modal>

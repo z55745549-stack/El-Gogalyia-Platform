@@ -381,7 +381,7 @@ export async function extendTaskDeadline(
 
 export async function updateTaskDetails(
   taskId: string,
-  updates: { title?: string; description?: string; requirements?: string; deadline?: Date; oCoinsReward?: number },
+  updates: { title?: string; description?: string; requirements?: string; deadline?: Date; oCoinsReward?: number; assignedTo?: string[]; assignedToNames?: string[] },
   actor: { email: string; displayName: string; photoURL?: string }
 ) {
   const patch: any = { updatedAt: serverTimestamp() };
@@ -390,6 +390,8 @@ export async function updateTaskDetails(
   if (updates.requirements !== undefined) patch.requirements = updates.requirements.trim();
   if (updates.deadline)    patch.deadline = Timestamp.fromDate(updates.deadline);
   if (updates.oCoinsReward !== undefined) patch.oCoinsReward = Number(updates.oCoinsReward);
+  if (updates.assignedTo)      patch.assignedTo = updates.assignedTo;
+  if (updates.assignedToNames) patch.assignedToNames = updates.assignedToNames;
 
   await updateDoc(doc(db, 'tasks', taskId), patch);
   patchLocalTask(taskId, (t) => ({
@@ -410,6 +412,7 @@ export async function updateTaskDetails(
     metadata: { updates: Object.keys(updates) },
   }).catch(() => {});
 }
+
 
 export function getUserTaskStatus(task: Task | null | undefined, userIdentifiers: string[]): UserTaskStatus {
   if (!task) return { status: 'pending' };
