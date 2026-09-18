@@ -20,7 +20,7 @@ import { subscribeBans, createBan, endBan, getActiveBan } from '@/lib/bans';
 // 2-Step admin auth removed — Lead/Co-Lead and Head act directly
 import { generateEmployeeCode } from '@/lib/attendance';
 import { canManageRole, canManageUser, isTopTierRole, getRoleLabel, getRoleColor, isAdminRole } from '@/utils/permissions';
-import { formatFullName, hasArabic, hasUnlimitedCoins, cn, sortUsersWithLeadershipPinned } from '@/utils';
+import { formatFullName, hasArabic, hasUnlimitedCoins, cn, sortUsersWithLeadershipPinned, formatOCoins } from '@/utils';
 import { logActivity } from '@/lib/database-service';
 import { UserNameWithRole } from '@/components/ui/user-name-badge';
 
