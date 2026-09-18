@@ -62,9 +62,25 @@ export function AdminDashboard() {
     );
 
     const actUnsub = onSnapshot(
-      query(collection(db, 'activityLogs'), orderBy('timestamp', 'desc'), limit(10)),
-      (snap) => setRecentActivity(snap.docs.map((d) => ({ id: d.id, ...d.data() } as ActivityLog))),
-      (err) => console.error('Activity error:', err)
+      query(collection(db, 'activityLogs'), orderBy('createdAt', 'desc'), limit(10)),
+      (snap) => {
+        const fetched = snap.docs.map((d) => ({ id: d.id, ...d.data() } as ActivityLog));
+        if (fetched.length > 0) {
+          setRecentActivity(fetched);
+        } else {
+          try {
+            const local = JSON.parse(localStorage.getItem('elgogalyia_activity_logs') || '[]');
+            setRecentActivity(local.slice(0, 10));
+          } catch {}
+        }
+      },
+      (err) => {
+        console.warn('Activity error:', err);
+        try {
+          const local = JSON.parse(localStorage.getItem('elgogalyia_activity_logs') || '[]');
+          setRecentActivity(local.slice(0, 10));
+        } catch {}
+      }
     );
 
     const txUnsub = onSnapshot(
@@ -79,12 +95,20 @@ export function AdminDashboard() {
       (snapshot) => {
         const activeUsers = snapshot.docs
           .map((d) => ({ uid: d.id, ...d.data() } as UserProfile))
-          .filter((u) => u.status === 'active');
+          .filter((u) => (u.status as string) !== 'suspended' && u.status !== 'inactive');
         setTotalEmployees(activeUsers.length);
         setAllUsers(activeUsers);
       },
       (err) => console.error('Employees snapshot error:', err)
     );
+
+    // Activity log event listener
+    const handleActivityLogged = (e: any) => {
+      if (e.detail) {
+        setRecentActivity((prev) => [e.detail, ...prev].slice(0, 10));
+      }
+    };
+    window.addEventListener('elgogalyia_activity_logged', handleActivityLogged);
 
     // Same-tab instant sync listener
     const handleDataChange = () => {
@@ -111,21 +135,36 @@ export function AdminDashboard() {
       txUnsub();
       usersUnsub();
       window.removeEventListener('elgogalyia_data_change', handleDataChange);
+      window.removeEventListener('elgogalyia_activity_logged', handleActivityLogged);
     };
   }, []);
+
+  const isTaskPendingReview = (t: Task) => {
+    if (t.status === 'submitted') return true;
+    if (t.latestSubmission && t.latestSubmission.status === 'pending') return true;
+    return Object.values(t.userStatuses || {}).some((st: any) => st?.status === 'submitted');
+  };
+
+  const isTaskApprovedOrCompleted = (t: Task) => {
+    return t.status === 'approved' || t.status === 'completed';
+  };
 
   const stats = {
     total: tasks.length,
     pending: tasks.filter((t) => t.status === 'pending').length,
     inProgress: tasks.filter((t) => t.status === 'in_progress').length,
-    submitted: tasks.filter((t) => t.status === 'submitted').length,
-    approved: tasks.filter((t) => t.status === 'approved' || t.status === 'completed').length,
+    submitted: tasks.filter((t) => isTaskPendingReview(t)).length,
+    approved: tasks.filter((t) => isTaskApprovedOrCompleted(t)).length,
     overdue: tasks.filter((t) => isOverdue(t.deadline, t.status)).length,
   };
 
-  const totalCoinsDistributed = recentTransactions
-    .filter((t) => t.amount > 0)
-    .reduce((s, t) => s + t.amount, 0);
+  // Real calculation of all coins in circulation across members
+  const totalMemberCoinsInCirculation = allUsers
+    .filter((u) => !hasUnlimitedCoins(u.role))
+    .reduce((sum, u) => {
+      const bal = typeof u.oCoinsBalance === 'number' ? u.oCoinsBalance : (typeof u.ocoins_balance === 'number' ? u.ocoins_balance : 0);
+      return sum + (bal > 0 ? bal : 0);
+    }, 0);
 
   const role = userProfile?.role;
   const isLead = role === 'lead';
@@ -149,7 +188,7 @@ export function AdminDashboard() {
       (t.committeeName && userProfile?.committeeName && t.committeeName.trim().toLowerCase() === userProfile.committeeName.trim().toLowerCase())
     )
   );
-  const myCommitteeSubmitted = myCommitteeTasks.filter(t => t.status === 'submitted');
+  const myCommitteeSubmitted = myCommitteeTasks.filter((t) => isTaskPendingReview(t));
 
   // Determine effective committee filter (head is strictly locked to their own committee)
   const headCommitteeId = userProfile?.committeeId || '';
@@ -203,9 +242,14 @@ export function AdminDashboard() {
         const assigned = (t.assignedTo || []).map((a) => a.toLowerCase());
         return ids.some((id) => assigned.includes(id));
       });
-      const completed = userTasks.filter((t) => t.status === 'approved' || t.status === 'completed').length;
+      // User is completed if the task is completed OR if user's personal status in userStatuses is approved
+      const completed = userTasks.filter((t) => {
+        if (t.status === 'approved' || t.status === 'completed') return true;
+        if (!t.userStatuses) return false;
+        return ids.some((id) => t.userStatuses?.[id]?.status === 'approved');
+      }).length;
       const overdue = userTasks.filter((t) => isOverdue(t.deadline, t.status)).length;
-      const rate = userTasks.length > 0 ? (completed / userTasks.length) * 100 : 0;
+      const rate = userTasks.length > 0 ? Math.round((completed / userTasks.length) * 100) : 0;
       const userCoins = typeof u.oCoinsBalance === 'number' ? u.oCoinsBalance : (typeof u.ocoins_balance === 'number' ? u.ocoins_balance : 0);
       return { user: u, total: userTasks.length, completed, overdue, rate, coins: userCoins };
     })
@@ -493,10 +537,10 @@ export function AdminDashboard() {
         />
         <StatCard
           title={t('adminDashboard.ocoins_rewards')}
-          value={hasUnlimitedCoins(userProfile?.role) ? "∞" : formatOCoins(totalCoinsDistributed)}
+          value={formatOCoins(totalMemberCoinsInCirculation)}
           variant="warm"
           icon={<Coins className="h-4 w-4" />}
-          subtext={hasUnlimitedCoins(userProfile?.role) ? (isHead ? t('adminDashboard.committee_head_vault_unlimited') : t('adminDashboard.unlimited_vault')) : t('adminDashboard.total_distributed_rewards')}
+          subtext={isHead ? t('adminDashboard.committee_head_vault_unlimited') : t('adminDashboard.total_distributed_rewards')}
         />
       </div>
 
@@ -533,7 +577,7 @@ export function AdminDashboard() {
                   <div>
                     <h3 className="text-xs font-bold text-[var(--text-primary)]">{c.name}</h3>
                     <p className="text-[10px] text-[var(--text-muted)] mt-0.5">
-                      {language === 'en' ? `${c.membersCount} Registered Members` : `${c.membersCount} أعضاء مسجلين`}
+                      {c.membersCount} أعضاء مسجلين
                     </p>
                   </div>
                   <span className={cn(
@@ -563,8 +607,8 @@ export function AdminDashboard() {
                     />
                   </div>
                   <div className="flex justify-between text-[10px] text-[var(--text-muted)] font-medium">
-                    <span>{language === 'en' ? `${c.completedTasks} Tasks Completed` : `${c.completedTasks} مهمة منجزة`}</span>
-                    <span>{language === 'en' ? `Out of ${c.totalTasks}` : `من أصل ${c.totalTasks}`}</span>
+                    <span>{c.completedTasks} مهمة منجزة</span>
+                    <span>من أصل {c.totalTasks}</span>
                   </div>
                 </div>
               </div>
@@ -676,12 +720,12 @@ export function AdminDashboard() {
                         </span>
                       </div>
                       <div className="flex items-center gap-2.5 text-[11px] text-[var(--text-muted)]">
-                        <span>{language === 'en' ? 'Deadline: ' : 'الموعد: '}{formatDate(task.deadline, language)}</span>
+                        <span>الموعد: {formatDate(task.deadline)}</span>
                         <span>·</span>
                         <span className="truncate">
                           {task.assignedToNames?.length
                             ? `${task.assignedToNames[0]}${task.assignedToNames.length > 1 ? ` +${task.assignedToNames.length - 1}` : ''}`
-                            : (language === 'en' ? 'Unassigned' : 'غير محدد')}
+                            : 'غير محدد'}
                         </span>
                         <span>·</span>
                         <span className="text-[var(--brand-warm)] font-bold">🪙 {task.oCoinsReward} OC</span>
