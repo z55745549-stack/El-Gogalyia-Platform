@@ -7,7 +7,8 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, Tag, Shield, Users, Coins, Award } from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
-import { getRoleLabel, getRoleColor } from '@/utils/permissions';
+import { VerifiedBadge } from '@/components/ui/VerifiedBadge';
+import { getRoleLabel, getRoleColor, isUserVerified } from '@/utils/permissions';
 import { formatFullName, formatDate, hasUnlimitedCoins, cn } from '@/utils';
 import { useLanguage } from '@/context/LanguageContext';
 import type { UserProfile } from '@/types';
@@ -98,9 +99,12 @@ export function UserProfileModal({ user, open, onClose }: UserProfileModalProps)
 
                 {/* Name & Username */}
                 <div className="mb-4">
-                  <h2 className="text-lg font-black text-[var(--text-primary)] leading-tight">
-                    {name}
-                  </h2>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <h2 className="text-lg font-black text-[var(--text-primary)] leading-tight">
+                      {name}
+                    </h2>
+                    {isUserVerified(user) && <VerifiedBadge size="sm" />}
+                  </div>
                   {user.username && (
                     <p className="text-xs font-mono font-bold text-indigo-500 mt-0.5">
                       @{user.username}

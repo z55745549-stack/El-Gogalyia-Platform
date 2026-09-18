@@ -5,12 +5,13 @@
 import React, { useState } from 'react';
 import { Avatar } from '@/components/ui/avatar';
 import { UserProfileModal } from '@/components/ui/user-profile-modal';
-import { getRoleLabel, getRoleColor } from '@/utils/permissions';
+import { VerifiedBadge } from '@/components/ui/VerifiedBadge';
+import { getRoleLabel, getRoleColor, isUserVerified } from '@/utils/permissions';
 import { formatFullName, cn } from '@/utils';
 import type { UserProfile } from '@/types';
 
 interface UserNameWithRoleProps {
-  user: Pick<UserProfile, 'uid' | 'displayName' | 'username' | 'role' | 'photoURL' | 'specialtyTag' | 'committeeName' | 'committeeId' | 'employeeCode' | 'createdAt' | 'status' | 'oCoinsBalance'>;
+  user: Pick<UserProfile, 'uid' | 'displayName' | 'username' | 'role' | 'photoURL' | 'specialtyTag' | 'committeeName' | 'committeeId' | 'employeeCode' | 'createdAt' | 'status' | 'oCoinsBalance' | 'isVerified'>;
   showAvatar?: boolean;
   avatarSize?: 'xs' | 'sm' | 'md' | 'lg';
   showRoleBadge?: boolean;
@@ -55,6 +56,7 @@ export function UserNameWithRole({
           >
             {name}
           </span>
+          {isUserVerified(user as UserProfile) && <VerifiedBadge size="xs" />}
           {showRoleBadge && (
             <span
               className={cn(

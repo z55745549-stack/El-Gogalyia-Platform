@@ -19,6 +19,8 @@ import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
+import { VerifiedBadge } from '@/components/ui/VerifiedBadge';
+import { isUserVerified } from '@/utils/permissions';
 import { formatDate, formatOCoins, formatRelative, isOverdue, getNotificationEmoji, cn, formatFullName, hasUnlimitedCoins } from '@/utils';
 import { broadcastNotificationToAll, manualOCoinAdjustment } from '@/lib/database-service';
 import { DEFAULT_COMMITTEES } from '@/types';
@@ -1302,9 +1304,12 @@ export function AdminDashboard() {
                         </div>
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-xs sm:text-sm font-black text-[var(--text-primary)] truncate group-hover:text-amber-400 transition-colors">
-                          {formatFullName(item.user.displayName || 'عضو')}
-                        </p>
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <p className="text-xs sm:text-sm font-black text-[var(--text-primary)] truncate group-hover:text-amber-400 transition-colors">
+                            {formatFullName(item.user.displayName || 'عضو')}
+                          </p>
+                          {isUserVerified(item.user) && <VerifiedBadge size="xs" />}
+                        </div>
                         <p className="text-[11px] text-[var(--text-muted)] truncate flex items-center gap-1.5 mt-0.5">
                           <span className="text-[10px] px-2 py-0.5 rounded bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-[var(--text-muted)] font-semibold">
                             {item.user.committeeName || 'عضو عام'}
@@ -1490,6 +1495,7 @@ export function AdminDashboard() {
                         <p className="font-bold text-[var(--text-primary)] truncate text-xs group-hover:text-[var(--brand-primary)] transition-colors">
                           {formatFullName(user.displayName || 'عضو الفريق')}
                         </p>
+                        {isUserVerified(user) && <VerifiedBadge size="xs" />}
                         {user.committeeName && (
                           <span className="px-1.5 py-0.2 text-[9px] font-bold rounded bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] border border-[var(--brand-primary)]/20 inline-block">
                             {user.committeeName}

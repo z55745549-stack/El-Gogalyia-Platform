@@ -6,14 +6,15 @@ import { useLanguage } from '@/context/LanguageContext';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { getRoleLabel, getRoleColor } from '@/utils/permissions';
-import { formatOCoins, cn, formatFullName, formatTitleCaseLive, hasUnlimitedCoins } from '@/utils';
+import { VerifiedBadge } from '@/components/ui/VerifiedBadge';
+import { getRoleLabel, getRoleColor, isUserVerified } from '@/utils/permissions';
+import { formatOCoins, cn, formatFullName, formatTitleCaseLive, hasUnlimitedCoins, formatDate } from '@/utils';
 import { generateSalt, hashPassword } from '@/lib/auth-security';
 import {
-  Coins, Shield, User, Info, Users, KeyRound,
+  Coins, Shield, User, Users, KeyRound,
   Lock, AtSign, Eye, EyeOff, CheckCircle2, Sparkles, Infinity,
-  Camera, Upload, Trash2, Check, RefreshCw, Crop, Tag,
-  Clock, ShieldCheck, CheckCheck, Award, ExternalLink
+  Camera, Upload, Trash2, Check, RefreshCw, Tag,
+  Calendar, ShieldCheck, ArrowUpRight, Smartphone, Fingerprint
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { DeviceIdentitySection } from '@/components/settings/DeviceIdentitySection';
@@ -45,6 +46,7 @@ export function SettingsPage() {
   if (!userProfile) return null;
 
   const isUnlimited = hasUnlimitedCoins(userProfile.role);
+  const verified = isUserVerified(userProfile);
 
   // Interactive mouse spotlight handler for cards
   const handleCardMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -234,144 +236,109 @@ export function SettingsPage() {
   };
 
   return (
-    <div className={cn("space-y-6 max-w-5xl mx-auto font-sans pb-16 cyber-grid-bg p-1 sm:p-3", isRTL ? "text-right dir-rtl" : "text-left")}>
-      {/* ── Page Header ──────────────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 sm:p-6 rounded-3xl bg-[var(--surface-elevated)]/60 border border-[var(--border-subtle)] shadow-md">
-        <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[var(--brand-primary)] via-indigo-600 to-cyan-500 text-white flex items-center justify-center shadow-lg shadow-indigo-500/25 shrink-0">
-            <Shield className="h-6 w-6" />
-          </div>
-          <div>
-            <h1 className="text-xl sm:text-2xl font-black text-[var(--text-primary)] flex items-center gap-2">
-              <span>{t('settings.title', 'إعدادات الحساب والهوية الرقمية')}</span>
-            </h1>
-            <p className="text-xs sm:text-sm text-[var(--text-muted)] mt-0.5">
-              {t('settings.profile_desc', 'إدارة الهوية الرقمية، الصورة الشخصية، وبيانات المصادقة الخاصة بحسابك في منصة الجوجالية.')}
-            </p>
-          </div>
-        </div>
+    <div className={cn("space-y-6 max-w-6xl mx-auto font-sans pb-16 cyber-grid-bg p-2 sm:p-4 transition-all", isRTL ? "text-right dir-rtl" : "text-left")}>
+      
+      {/* ── Main Executive Grid: Identity Card on side, Settings on the other ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            <span>حساب موثق ونشط</span>
-          </span>
-        </div>
-      </div>
-
-      {/* ── Section 1: Ultra-Premium Profile Card Banner ───────────────────── */}
-      <div
-        onMouseMove={handleCardMouseMove}
-        className="glow-card-interactive rounded-3xl overflow-hidden border border-[var(--border-subtle)] bg-[var(--surface)] shadow-2xl relative"
-      >
-        {/* Ambient Glowing Header Banner */}
-        <div className="h-32 sm:h-36 relative overflow-hidden bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-6 flex items-start justify-between">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-500/25 via-transparent to-transparent opacity-70 pointer-events-none" />
-          <div className="absolute -right-10 -bottom-10 w-56 h-56 bg-[var(--brand-primary)]/20 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -left-10 -top-10 w-56 h-56 bg-cyan-500/20 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="relative z-10 flex items-center gap-2">
-            <span className="px-3 py-1 rounded-full text-[10px] font-mono font-black uppercase tracking-wider bg-white/10 text-white border border-white/15 backdrop-blur-md shadow-sm">
-              IDENTITY PASS · 2026
-            </span>
-          </div>
-
-          {/* O-Coins Chip */}
-          <Link
-            to="/ocoins"
-            title="الانتقال إلى محفظة O-Coins"
-            className="relative z-10 flex items-center gap-2.5 px-3.5 py-1.5 rounded-2xl bg-black/50 border border-amber-500/40 backdrop-blur-md shadow-lg hover:border-amber-400 hover:scale-105 transition-all group"
+        {/* ─── Column 1 (lg:col-span-5): Official Identity Card ────────────── */}
+        <div className="lg:col-span-5 space-y-4">
+          <div
+            onMouseMove={handleCardMouseMove}
+            className="glow-card-interactive rounded-3xl overflow-hidden border border-[var(--border-subtle)] bg-[var(--surface)] shadow-2xl relative"
           >
-            {isUnlimited ? (
-              <Infinity className="h-4 w-4 text-amber-400 shrink-0 group-hover:scale-110 transition-transform" />
-            ) : (
-              <Coins className="h-4 w-4 text-amber-400 shrink-0 group-hover:scale-110 transition-transform" />
-            )}
-            <div className={isRTL ? "text-right" : "text-left"}>
-              <span className="text-xs font-black text-amber-300 font-mono">
-                {isUnlimited ? '∞ ' + t('common.unlimited', 'خزينة لا نهائية') : `${formatOCoins(userProfile.oCoinsBalance ?? 0)} OC`}
+            {/* Ambient Cyber Cover Banner */}
+            <div className="h-28 relative overflow-hidden bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-4 flex items-start justify-between">
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-500/25 via-transparent to-transparent opacity-70 pointer-events-none" />
+              <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-[var(--brand-primary)]/20 rounded-full blur-2xl pointer-events-none" />
+              <div className="absolute -left-10 -top-10 w-40 h-40 bg-cyan-500/20 rounded-full blur-2xl pointer-events-none" />
+
+              <span className="relative z-10 px-3 py-1 rounded-full text-[10px] font-mono font-black uppercase tracking-wider bg-white/10 text-white/90 border border-white/15 backdrop-blur-md">
+                OFFICIAL IDENTITY
               </span>
-            </div>
-          </Link>
-        </div>
 
-        {/* Profile Details & Avatar Upload Area — Fully Separated & Responsive */}
-        <div className="px-6 sm:px-8 pb-8 -mt-16 sm:-mt-18 relative z-10 space-y-6">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-            {/* Avatar & User Details */}
-            <div className="flex flex-col sm:flex-row items-center sm:items-end gap-5 text-center sm:text-right min-w-0">
-              {/* Avatar with Interactive Upload Frame */}
-              <div className="relative group shrink-0">
-                <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-3xl overflow-hidden ring-4 ring-[var(--surface)] shadow-2xl bg-[var(--surface-elevated)] relative flex items-center justify-center border-2 border-indigo-500/30">
-                  <Avatar
-                    src={avatarPreview || userProfile.photoURL}
-                    name={userProfile.displayName || userProfile.username || 'User'}
-                    size="xl"
-                    className="w-full h-full rounded-none"
-                  />
-
-                  {/* Upload Overlay on Hover */}
-                  <label
-                    htmlFor="avatar-file-input"
-                    className="absolute inset-0 bg-black/65 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer text-white gap-1.5 backdrop-blur-xs"
-                    title={t('settings.upload_photo', 'تغيير الصورة')}
-                  >
-                    <Camera className="h-6 w-6 text-indigo-300" />
-                    <span className="text-[10px] font-bold">تغيير الصورة</span>
-                  </label>
+              {verified && (
+                <div className="relative z-10 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/15 border border-blue-500/30 text-blue-300 text-[11px] font-black backdrop-blur-md">
+                  <VerifiedBadge size="xs" />
+                  <span>موثق رسمياً</span>
                 </div>
+              )}
+            </div>
 
-                {/* Floating Quick Upload Button */}
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploadingAvatar}
-                  className={cn(
-                    "absolute -bottom-1 p-2.5 rounded-2xl bg-[var(--brand-primary)] text-white shadow-xl hover:scale-110 active:scale-95 transition-all cursor-pointer border-2 border-[var(--surface)]",
-                    isRTL ? "-left-1" : "-right-1"
-                  )}
-                  title={t('settings.upload_photo', 'رفع واقتصاص صورة جديدة')}
-                >
-                  {uploadingAvatar ? (
-                    <RefreshCw className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Camera className="h-4 w-4" />
-                  )}
-                </button>
+            {/* Profile Content */}
+            <div className="px-6 pb-6 -mt-14 relative z-10 space-y-4">
+              {/* Avatar Frame with Upload Button */}
+              <div className="flex flex-col items-center sm:items-start">
+                <div className="relative group shrink-0">
+                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl overflow-hidden ring-4 ring-[var(--surface)] shadow-2xl bg-[var(--surface-elevated)] relative flex items-center justify-center border-2 border-indigo-500/30">
+                    <Avatar
+                      src={avatarPreview || userProfile.photoURL}
+                      name={userProfile.displayName || userProfile.username || 'User'}
+                      size="xl"
+                      className="w-full h-full rounded-none"
+                    />
 
-                {/* Hidden File Input */}
-                <input
-                  ref={fileInputRef}
-                  id="avatar-file-input"
-                  type="file"
-                  accept="image/png, image/jpeg, image/webp"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
+                    {/* Upload Overlay */}
+                    <label
+                      htmlFor="avatar-file-input"
+                      className="absolute inset-0 bg-black/65 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer text-white gap-1 backdrop-blur-xs"
+                      title="تغيير الصورة"
+                    >
+                      <Camera className="h-5 w-5 text-indigo-300" />
+                      <span className="text-[10px] font-bold">تغيير</span>
+                    </label>
+                  </div>
+
+                  {/* Floating Camera Button */}
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingAvatar}
+                    className={cn(
+                      "absolute -bottom-1 p-2 rounded-xl bg-[var(--brand-primary)] text-white shadow-xl hover:scale-110 active:scale-95 transition-all cursor-pointer border-2 border-[var(--surface)]",
+                      isRTL ? "-left-1" : "-right-1"
+                    )}
+                    title="رفع واقتصاص صورة جديدة"
+                  >
+                    {uploadingAvatar ? (
+                      <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Camera className="h-3.5 w-3.5" />
+                    )}
+                  </button>
+
+                  <input
+                    ref={fileInputRef}
+                    id="avatar-file-input"
+                    type="file"
+                    accept="image/png, image/jpeg, image/webp"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                </div>
               </div>
 
-              {/* User Identity Info with Zero Overlap */}
-              <div className="space-y-2 min-w-0 flex-1">
-                <div className="flex items-center justify-center sm:justify-start gap-2.5 flex-wrap">
-                  <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-[var(--text-primary)] tracking-tight glow-text break-words">
+              {/* User Identity Details */}
+              <div className="space-y-2 text-center sm:text-right">
+                <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
+                  <h2 className="text-xl sm:text-2xl font-black text-[var(--text-primary)] tracking-tight glow-text">
                     {formatFullName(userProfile.displayName || t('common.team_member', 'عضو الفريق'))}
                   </h2>
+                  {verified && <VerifiedBadge size="sm" />}
                 </div>
 
-                <p className="text-xs sm:text-sm font-mono font-bold text-[var(--text-muted)] flex items-center justify-center sm:justify-start gap-1.5">
+                <p className="text-xs font-mono font-bold text-[var(--text-muted)] flex items-center justify-center sm:justify-start gap-1">
                   <AtSign className="h-3.5 w-3.5 text-[var(--brand-primary)]" />
                   <span>{userProfile.username || userProfile.email}</span>
                 </p>
 
-                <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap pt-1">
+                {/* Badges Flow */}
+                <div className="flex items-center justify-center sm:justify-start gap-1.5 flex-wrap pt-1">
                   <span className={cn("badge text-xs font-black uppercase shadow-xs glow-badge", getRoleColor(userProfile.role))}>
                     {getRoleLabel(userProfile.role)}
                   </span>
                   <span className="badge text-xs font-bold bg-[var(--surface-elevated)] border border-[var(--border-subtle)] text-[var(--text-secondary)] shadow-xs">
-                    🏛️ {userProfile.committeeName || t('common.general_member', 'القيادة العامة للمنظومة')}
+                    🏛️ {userProfile.committeeName || 'القيادة العامة للمنظومة'}
                   </span>
                   {specialtyTag && (
                     <span className="badge text-xs font-bold bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 shadow-xs">
@@ -379,197 +346,276 @@ export function SettingsPage() {
                     </span>
                   )}
                 </div>
+
+                {/* Avatar Action Buttons */}
+                <div className="flex items-center justify-center sm:justify-start gap-2 pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingAvatar}
+                    className="text-xs font-bold gap-1.5 cursor-pointer shadow-xs"
+                  >
+                    <Upload className="h-3.5 w-3.5 text-[var(--brand-primary)]" />
+                    <span>تغيير الصورة</span>
+                  </Button>
+
+                  {(avatarPreview || userProfile.photoURL) && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRemoveAvatar}
+                      disabled={uploadingAvatar}
+                      className="text-xs text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 border-rose-500/30 gap-1.5 cursor-pointer shadow-xs"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      <span>حذف</span>
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Quick Meta Cards */}
+              <div className="pt-4 border-t border-[var(--border-subtle)] space-y-2.5">
+                {/* O-Coins Card */}
+                <Link
+                  to="/ocoins"
+                  className="flex items-center justify-between p-3 rounded-2xl bg-[var(--surface-elevated)]/60 border border-[var(--border-subtle)] hover:border-amber-500/40 transition-all group cursor-pointer"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-400 flex items-center justify-center">
+                      <Coins className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <span className="text-[11px] font-bold text-[var(--text-muted)] block">رصيد O-Coins</span>
+                      <strong className="text-xs font-black text-amber-400 font-mono">
+                        {isUnlimited ? '∞ خزينة لا نهائية' : `${formatOCoins(userProfile.oCoinsBalance ?? 0)} OC`}
+                      </strong>
+                    </div>
+                  </div>
+                  <ArrowUpRight className="h-4 w-4 text-[var(--text-muted)] group-hover:text-amber-400 transition-colors" />
+                </Link>
+
+                {/* Verification Meta */}
+                <div className="flex items-center justify-between p-3 rounded-2xl bg-[var(--surface-elevated)]/60 border border-[var(--border-subtle)]">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-blue-500/15 text-blue-400 flex items-center justify-center">
+                      <VerifiedBadge size="sm" />
+                    </div>
+                    <div>
+                      <span className="text-[11px] font-bold text-[var(--text-muted)] block">حالة التوثيق (Meta)</span>
+                      <strong className="text-xs font-bold text-[var(--text-primary)]">
+                        {verified ? 'موثق رسمياً بالكامل' : 'عضو مسجل'}
+                      </strong>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                    رسمي
+                  </span>
+                </div>
+
+                {/* Join Date Meta */}
+                <div className="flex items-center justify-between p-3 rounded-2xl bg-[var(--surface-elevated)]/60 border border-[var(--border-subtle)]">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-indigo-500/15 text-indigo-400 flex items-center justify-center">
+                      <Calendar className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <span className="text-[11px] font-bold text-[var(--text-muted)] block">تاريخ الانضمام</span>
+                      <strong className="text-xs font-bold text-[var(--text-primary)] font-mono">
+                        {formatDate(userProfile.createdAt)}
+                      </strong>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ─── Column 2 (lg:col-span-7): Logical Management Sections ──────── */}
+        <div className="lg:col-span-7 space-y-6">
+
+          {/* Card 1: Personal & Professional Details */}
+          <div
+            onMouseMove={handleCardMouseMove}
+            className="glow-card-interactive p-6 sm:p-7 rounded-3xl space-y-5 border border-[var(--border-subtle)] bg-[var(--surface)] shadow-xl"
+          >
+            <div className="flex items-center gap-3 border-b border-[var(--border-subtle)] pb-4">
+              <div className="w-10 h-10 rounded-2xl flex items-center justify-center bg-[var(--brand-primary)]/15 text-[var(--brand-primary)] border border-[var(--brand-primary)]/30 shrink-0">
+                <User className="h-5 w-5" />
+              </div>
+              <div>
+                <h2 className="text-base font-extrabold text-[var(--text-primary)] glow-text">
+                  البيانات الشخصية والمهنية
+                </h2>
+                <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                  تحديث اسم العرض، اللقب التخصصي، واللجنة الرسمية التابع لها.
+                </p>
               </div>
             </div>
 
-            {/* Avatar Actions (Remove button if present) */}
-            <div className="flex items-center justify-center sm:justify-end gap-2 shrink-0">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploadingAvatar}
-                className="text-xs font-bold gap-1.5 cursor-pointer shadow-xs"
-              >
-                <Upload className="h-3.5 w-3.5 text-[var(--brand-primary)]" />
-                <span>رفع صورة جديدة</span>
-              </Button>
+            <form onSubmit={handleSaveProfile} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5">
+                    {t('settings.display_name', 'الاسم الكامل')}
+                  </label>
+                  <Input
+                    value={displayName}
+                    onChange={(e) => setDisplayName(formatTitleCaseLive(e.target.value))}
+                    placeholder={t('settings.display_name', 'الاسم الكامل...')}
+                    leftIcon={<User className="h-4 w-4 text-[var(--brand-primary)]" />}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5">
+                    {t('common.committee', 'اللجنة المسندة')}
+                  </label>
+                  <Input
+                    value={userProfile.committeeName || t('common.no_committee', 'القيادة العليا للمنظومة')}
+                    disabled
+                    className="opacity-75 cursor-not-allowed bg-[var(--surface-elevated)] text-[var(--text-secondary)] font-bold"
+                    leftIcon={<Users className="h-4 w-4 text-[var(--brand-primary)]" />}
+                  />
+                </div>
+              </div>
 
-              {(avatarPreview || userProfile.photoURL) && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleRemoveAvatar}
-                  disabled={uploadingAvatar}
-                  className="text-xs text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 border-rose-500/30 gap-1.5 cursor-pointer shadow-xs"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                  <span>{t('settings.remove_photo', 'حذف الصورة')}</span>
-                </Button>
-              )}
-            </div>
-          </div>
-
-          {/* Edit Display Name & Specialty Form */}
-          <form onSubmit={handleSaveProfile} className="pt-6 border-t border-[var(--border-subtle)] space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5">
-                  {t('settings.display_name', 'الاسم الكامل')}
+                  {t('settings.specialty_tag', 'الوسم التخصصي / مجال الاهتمام')}
                 </label>
                 <Input
-                  value={displayName}
-                  onChange={(e) => setDisplayName(formatTitleCaseLive(e.target.value))}
-                  placeholder={t('settings.display_name', 'الاسم الكامل...')}
-                  leftIcon={<User className="h-4 w-4 text-[var(--brand-primary)]" />}
+                  value={specialtyTag}
+                  onChange={(e) => setSpecialtyTag(e.target.value)}
+                  placeholder="مثال: Flutter, AI Engineering, UI/UX, إدارة مشاريع..."
+                  leftIcon={<Tag className="h-4 w-4 text-indigo-400" />}
+                />
+              </div>
+
+              <div className="flex justify-end pt-2">
+                <Button
+                  type="submit"
+                  variant="default"
+                  loading={savingProfile}
+                  className="font-black text-xs px-7 py-2.5 gap-2 cursor-pointer shadow-lg bg-gradient-to-r from-[var(--brand-primary)] to-indigo-600 hover:from-[var(--brand-primary)]/90 hover:to-indigo-700"
+                >
+                  <Check className="h-4 w-4" />
+                  <span>{t('settings.save_profile', 'حفظ بيانات الملف الشخصي')}</span>
+                </Button>
+              </div>
+            </form>
+          </div>
+
+          {/* Card 2: Security & Password */}
+          <div
+            onMouseMove={handleCardMouseMove}
+            className="glow-card-interactive p-6 sm:p-7 rounded-3xl space-y-5 border border-[var(--border-subtle)] bg-[var(--surface)] shadow-xl"
+          >
+            <div className="flex items-center gap-3 border-b border-[var(--border-subtle)] pb-4">
+              <div className="w-10 h-10 rounded-2xl flex items-center justify-center bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 shrink-0">
+                <KeyRound className="h-5 w-5" />
+              </div>
+              <div>
+                <h2 className="text-base font-extrabold text-[var(--text-primary)] glow-text">
+                  {t('settings.security_section', 'بيانات الدخول وكلمة المرور المشفرة')}
+                </h2>
+                <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                  {t('settings.security_desc', 'تحديث المعرف الرقمي أو تعيين كلمة مرور قوية جديدة لحسابك.')}
+                </p>
+              </div>
+            </div>
+
+            <form onSubmit={handleSaveCredentials} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5">
+                  {t('settings.username_label', 'اسم المستخدم (Username)')}
+                </label>
+                <Input
+                  value={newUsername}
+                  onChange={(e) => setNewUsername(e.target.value)}
+                  placeholder="e.g. zeyad-eltmsah"
+                  leftIcon={<AtSign className="h-4 w-4 text-[var(--brand-primary)]" />}
                   required
                 />
               </div>
-              <div>
-                <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5">
-                  {t('common.committee', 'اللجنة المسندة')}
-                </label>
-                <Input
-                  value={userProfile.committeeName || t('common.no_committee', 'القيادة العليا للمنظومة')}
-                  disabled
-                  className="opacity-75 cursor-not-allowed bg-[var(--surface-elevated)] text-[var(--text-secondary)] font-bold"
-                  leftIcon={<Users className="h-4 w-4 text-[var(--brand-primary)]" />}
-                />
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5">
+                    {t('settings.new_password', 'كلمة المرور الجديدة')}
+                  </label>
+                  <Input
+                    type={showPassword ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="اتركها فارغة إذا لم ترغب في التغيير"
+                    leftIcon={<Lock className="h-4 w-4 text-[var(--brand-primary)]" />}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5">
+                    {t('settings.confirm_password', 'تأكيد كلمة المرور الجديدة')}
+                  </label>
+                  <Input
+                    type={showPassword ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="أعد كتابة كلمة المرور للتأكيد"
+                    leftIcon={<Lock className="h-4 w-4 text-[var(--brand-primary)]" />}
+                  />
+                </div>
               </div>
-            </div>
 
-            <div>
-              <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5">
-                {t('settings.specialty_tag', 'الوسم التخصصي / مجال الاهتمام')}
-              </label>
-              <Input
-                value={specialtyTag}
-                onChange={(e) => setSpecialtyTag(e.target.value)}
-                placeholder={t('settings.specialty_placeholder', 'مثال: Flutter, AI Engineering, UI/UX, إدارة مشاريع...')}
-                leftIcon={<Tag className="h-4 w-4 text-indigo-400" />}
-              />
-            </div>
+              <div className="flex items-center justify-between pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="text-xs text-[var(--text-muted)] hover:text-[var(--brand-primary)] font-semibold flex items-center gap-1.5 cursor-pointer"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  <span>{showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}</span>
+                </button>
 
-            <div className="flex justify-end pt-2">
-              <Button
-                type="submit"
-                variant="default"
-                loading={savingProfile}
-                className="font-black text-xs px-7 py-2.5 gap-2 cursor-pointer shadow-lg bg-gradient-to-r from-[var(--brand-primary)] to-indigo-600 hover:from-[var(--brand-primary)]/90 hover:to-indigo-700"
-              >
-                <Check className="h-4 w-4" />
-                <span>{t('settings.save_profile', 'حفظ بيانات الملف الشخصي')}</span>
-              </Button>
-            </div>
-          </form>
-        </div>
-      </div>
-
-      {/* ── Section 2: Security & Authentication Credentials ─────────────────── */}
-      <div
-        onMouseMove={handleCardMouseMove}
-        className="glow-card-interactive p-6 sm:p-7 rounded-3xl space-y-6 border border-[var(--border-subtle)] bg-[var(--surface)] shadow-xl"
-      >
-        <div className="flex items-center gap-3.5 border-b border-[var(--border-subtle)] pb-4">
-          <div className="w-11 h-11 rounded-2xl flex items-center justify-center bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 shrink-0">
-            <KeyRound className="h-5 w-5" />
-          </div>
-          <div>
-            <h2 className="text-base font-extrabold text-[var(--text-primary)] glow-text">
-              {t('settings.security_section', 'بيانات الدخول وكلمة المرور المشفرة')}
-            </h2>
-            <p className="text-xs text-[var(--text-muted)] mt-0.5">
-              {t('settings.security_desc', 'تحديث المعرف الرقمي أو تعيين كلمة مرور قوية جديدة لحسابك.')}
-            </p>
-          </div>
-        </div>
-
-        <form onSubmit={handleSaveCredentials} className="space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5">
-              {t('settings.username_label', 'اسم المستخدم (Username)')}
-            </label>
-            <Input
-              value={newUsername}
-              onChange={(e) => setNewUsername(e.target.value)}
-              placeholder="e.g. zeyad-eltmsah"
-              leftIcon={<AtSign className="h-4 w-4 text-[var(--brand-primary)]" />}
-              required
-            />
+                <Button
+                  type="submit"
+                  variant="default"
+                  loading={savingCredentials}
+                  className="font-black text-xs px-7 py-2.5 gap-2 cursor-pointer shadow-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white"
+                >
+                  <Check className="h-4 w-4" />
+                  <span>{t('settings.save_credentials', 'تحديث بيانات الدخول والأمان')}</span>
+                </Button>
+              </div>
+            </form>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5">
-                {t('settings.new_password', 'كلمة المرور الجديدة')}
-              </label>
-              <Input
-                type={showPassword ? 'text' : 'password'}
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="اتركها فارغة إذا لم ترغب في التغيير"
-                leftIcon={<Lock className="h-4 w-4 text-[var(--brand-primary)]" />}
-              />
+          {/* Card 3: Biometric Devices */}
+          <div
+            onMouseMove={handleCardMouseMove}
+            className="glow-card-interactive p-6 sm:p-7 rounded-3xl border border-[var(--border-subtle)] bg-[var(--surface)] shadow-xl"
+          >
+            <DeviceIdentitySection />
+          </div>
+
+          {/* Card 4: Security Standard Compliance */}
+          <div className="flex items-start gap-3.5 p-5 rounded-3xl bg-[var(--surface-elevated)]/70 border border-[var(--border-subtle)] shadow-md">
+            <div className="p-2 rounded-xl bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] shrink-0 mt-0.5">
+              <ShieldCheck className="h-5 w-5" />
             </div>
-            <div>
-              <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5">
-                {t('settings.confirm_password', 'تأكيد كلمة المرور الجديدة')}
-              </label>
-              <Input
-                type={showPassword ? 'text' : 'password'}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="أعد كتابة كلمة المرور للتأكيد"
-                leftIcon={<Lock className="h-4 w-4 text-[var(--brand-primary)]" />}
-              />
+            <div className="space-y-1">
+              <h3 className="text-xs font-black uppercase tracking-wider text-[var(--brand-primary)]">
+                معايير الأمان والتشفير المعتمدة في المنظومة
+              </h3>
+              <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                تخضع جميع كلمات المرور لآليات التشفير التراكمي المتقدم (PBKDF2 / Salted Hash). يتم حفظ وتخزين بياناتك، هويات أجهزتك، وصورتك الشخصية بصورة مشفرة ومؤمنة بالكامل داخل البنية السحابية لمنصة الجوجالية.
+              </p>
             </div>
           </div>
 
-          <div className="flex items-center justify-between pt-1">
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="text-xs text-[var(--text-muted)] hover:text-[var(--brand-primary)] font-semibold flex items-center gap-1.5 cursor-pointer"
-            >
-              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              <span>{showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}</span>
-            </button>
-
-            <Button
-              type="submit"
-              variant="default"
-              loading={savingCredentials}
-              className="font-black text-xs px-7 py-2.5 gap-2 cursor-pointer shadow-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white"
-            >
-              <Check className="h-4 w-4" />
-              <span>{t('settings.save_credentials', 'تحديث بيانات الدخول والأمان')}</span>
-            </Button>
-          </div>
-        </form>
-      </div>
-
-      {/* ── Section 3: Device Identity (Biometric / WebAuthn) ────────────────── */}
-      <div
-        onMouseMove={handleCardMouseMove}
-        className="glow-card-interactive p-6 sm:p-7 rounded-3xl border border-[var(--border-subtle)] bg-[var(--surface)] shadow-xl"
-      >
-        <DeviceIdentitySection />
-      </div>
-
-      {/* ── Section 4: High-Security Compliance Banner ───────────────────────── */}
-      <div className="flex items-start gap-3.5 p-5 rounded-3xl bg-[var(--surface-elevated)]/70 border border-[var(--border-subtle)] shadow-md">
-        <div className="p-2 rounded-xl bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] shrink-0 mt-0.5">
-          <ShieldCheck className="h-5 w-5" />
-        </div>
-        <div className="space-y-1">
-          <h3 className="text-xs font-black uppercase tracking-wider text-[var(--brand-primary)]">
-            معايير الأمان والتشفير المعتمدة في المنظومة
-          </h3>
-          <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-            تخضع جميع كلمات المرور لآليات التشفير التراكمي المتقدم (PBKDF2 / Salted Hash) المقاومة للهجمات السيبرانية. يتم حفظ وتخزين بياناتك، هويات أجهزتك، وصورتك الشخصية بصورة مشفرة ومؤمنة بالكامل داخل البنية السحابية لمنصة الجوجالية.
-          </p>
         </div>
       </div>
 

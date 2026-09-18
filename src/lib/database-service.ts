@@ -1642,3 +1642,40 @@ export function subscribeAuthorizedAdmins(callback: (admins: AuthorizedAdmin[]) 
     return () => {};
   }
 }
+
+/**
+ * Toggle user Meta Verified Badge status (leadership action)
+ */
+export async function toggleUserVerification(params: {
+  targetUid: string;
+  targetName: string;
+  isVerified: boolean;
+  actor: { uid?: string; displayName?: string; email?: string; role?: string };
+}) {
+  const updates = {
+    isVerified: params.isVerified,
+    verifiedAt: params.isVerified ? serverTimestamp() : null,
+    verifiedBy: params.isVerified ? (params.actor.displayName || params.actor.email || 'القيادة العامة') : null,
+    updatedAt: serverTimestamp(),
+  };
+
+  await updateDoc(doc(db, 'users', params.targetUid), updates);
+
+  // Sync with local cache if present
+  try {
+    const local = JSON.parse(localStorage.getItem('elgogalyia_local_users') || '[]');
+    const updated = local.map((u: any) => u.uid === params.targetUid ? { ...u, ...updates } : u);
+    localStorage.setItem('elgogalyia_local_users', JSON.stringify(updated));
+  } catch {}
+
+  // Log activity
+  logActivity({
+    actor: params.actor.email || params.actor.uid || 'system',
+    actorName: params.actor.displayName || 'القيادة',
+    action: params.isVerified ? 'user.verified' as any : 'user.unverified' as any,
+    targetType: 'user',
+    targetId: params.targetUid,
+    targetName: params.targetName,
+    details: params.isVerified ? 'منح علامة التوثيق الرسمية للمستخدم' : 'إلغاء علامة التوثيق الرسمية للمستخدم',
+  }).catch(() => {});
+}

@@ -19,10 +19,11 @@ import { subscribeCommittees, assignUserCommittee, createCommittee } from '@/lib
 import { subscribeBans, createBan, endBan, getActiveBan } from '@/lib/bans';
 // 2-Step admin auth removed — Lead/Co-Lead and Head act directly
 import { generateEmployeeCode } from '@/lib/attendance';
-import { canManageRole, canManageUser, isTopTierRole, getRoleLabel, getRoleColor, isAdminRole } from '@/utils/permissions';
+import { canManageRole, canManageUser, isTopTierRole, getRoleLabel, getRoleColor, isAdminRole, isUserVerified, canGrantVerification } from '@/utils/permissions';
 import { formatFullName, hasArabic, hasUnlimitedCoins, cn, sortUsersWithLeadershipPinned, formatOCoins } from '@/utils';
-import { logActivity } from '@/lib/database-service';
+import { logActivity, toggleUserVerification } from '@/lib/database-service';
 import { UserNameWithRole } from '@/components/ui/user-name-badge';
+import { VerifiedBadge } from '@/components/ui/VerifiedBadge';
 
 export function EmployeesPage() {
   const { userProfile } = useAuth();
@@ -52,6 +53,7 @@ export function EmployeesPage() {
   const [formStatus, setFormStatus] = useState<UserStatus>('active');
   const [formCommitteeId, setFormCommitteeId] = useState<string>('');
   const [formSpecialtyTag, setFormSpecialtyTag] = useState('');
+  const [formIsVerified, setFormIsVerified] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState(false);
 
   // Password reset state
@@ -146,6 +148,7 @@ export function EmployeesPage() {
     setFormStatus('active');
     setFormCommitteeId(isHeadRole && userProfile?.committeeId ? userProfile.committeeId : '');
     setFormSpecialtyTag('');
+    setFormIsVerified(false);
     setSelectedUser(null);
     setNewPassword('');
   };
@@ -162,6 +165,7 @@ export function EmployeesPage() {
     setFormStatus(user.status);
     setFormCommitteeId(user.committeeId || '');
     setFormSpecialtyTag(user.specialtyTag || '');
+    setFormIsVerified(isUserVerified(user));
     setShowEditModal(true);
   };
 
@@ -326,6 +330,11 @@ export function EmployeesPage() {
         specialty_tag: formSpecialtyTag.trim() || null,
         permissions: ROLE_PERMISSIONS[formRole] || [],
         updatedAt: new Date().toISOString(),
+        ...(canGrantVerification(userProfile?.role, formRole) ? {
+          isVerified: formIsVerified,
+          verifiedBy: formIsVerified ? (selectedUser.verifiedBy || userProfile?.displayName || userProfile?.username || 'الإدارة') : null,
+          verifiedAt: formIsVerified ? (selectedUser.verifiedAt || new Date().toISOString()) : null,
+        } : {}),
         ...balanceUpdate,
       };
 
@@ -644,6 +653,28 @@ export function EmployeesPage() {
       toast.success(`تم رفض وحذف طلب ${emp.displayName}.`);
     } catch (err: any) {
       toast.error('حدث خطأ أثناء رفض الطلب.');
+    }
+  };
+
+  const handleToggleVerification = async (emp: UserProfile) => {
+    if (!canGrantVerification(userProfile?.role, emp.role)) {
+      toast.error('ليس لديك صلاحية لتعديل توثيق هذا العضو.');
+      return;
+    }
+    const willBeVerified = !isUserVerified(emp);
+    try {
+      await toggleUserVerification(
+        emp.uid,
+        willBeVerified,
+        userProfile?.displayName || userProfile?.username || 'الإدارة'
+      );
+      toast.success(
+        willBeVerified
+          ? `تم منح شارة التوثيق الرسمية Meta Verified لـ ${emp.displayName} بنجاح! 🌟`
+          : `تم إلغاء شارة التوثيق عن ${emp.displayName}.`
+      );
+    } catch (err: any) {
+      toast.error('حدث خطأ أثناء تعديل حالة التوثيق.');
     }
   };
 
@@ -1116,6 +1147,20 @@ export function EmployeesPage() {
                           </div>
                         ) : canManageUser(userProfile, emp) ? (
                           <div className="flex items-center justify-end gap-1">
+                            {canGrantVerification(userProfile?.role, emp.role) && (
+                              <button
+                                onClick={() => handleToggleVerification(emp)}
+                                title={isUserVerified(emp) ? "إلغاء التوثيق Meta Verified" : "منح توثيق Meta Verified"}
+                                className={cn(
+                                  "p-2 rounded-lg cursor-pointer transition-colors flex items-center justify-center",
+                                  isUserVerified(emp)
+                                    ? "bg-sky-500/15 text-sky-500 hover:bg-rose-500/10 hover:text-rose-500"
+                                    : "hover:bg-sky-500/10 text-[var(--text-muted)] hover:text-sky-500"
+                                )}
+                              >
+                                <VerifiedBadge size="xs" />
+                              </button>
+                            )}
                             <button onClick={() => handleOpenEdit(emp)} title="تعديل" className="p-2 hover:bg-[var(--surface-elevated)] rounded-lg text-[var(--text-muted)] cursor-pointer"><Edit3 className="h-4 w-4" /></button>
                             <button onClick={() => { setSelectedUser(emp); setShowPassModal(true); }} title="كلمة المرور" className="p-2 hover:bg-amber-500/10 rounded-lg text-amber-500 cursor-pointer"><KeyRound className="h-4 w-4" /></button>
                             {(() => { const ab = getActiveBan(bans, emp.uid); return ab ? (
@@ -1203,16 +1248,22 @@ export function EmployeesPage() {
                     <span>{language === 'en' ? 'Your Account (You)' : 'حسابك الحالي (أنت)'}</span>
                   </div>
                 ) : canManageUser(userProfile, emp) ? (
-                  <div className="grid grid-cols-5 gap-1.5 mt-3">
-                    <button onClick={() => handleOpenEdit(emp)} className="py-2 rounded-xl bg-[var(--surface-elevated)] hover:bg-[var(--brand-primary)]/10 text-[var(--text-secondary)] flex flex-col items-center gap-1 text-[10px] font-bold"><Edit3 className="h-4 w-4" /> تعديل</button>
-                    <button onClick={() => { setSelectedUser(emp); setShowPassModal(true); }} className="py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 flex flex-col items-center gap-1 text-[10px] font-bold"><KeyRound className="h-4 w-4" /> كلمة السر</button>
+                  <div className={cn("grid gap-1.5 mt-3", canGrantVerification(userProfile?.role, emp.role) ? "grid-cols-3 sm:grid-cols-6" : "grid-cols-5")}>
+                    <button onClick={() => handleOpenEdit(emp)} className="py-2 rounded-xl bg-[var(--surface-elevated)] hover:bg-[var(--brand-primary)]/10 text-[var(--text-secondary)] flex flex-col items-center gap-1 text-[10px] font-bold cursor-pointer"><Edit3 className="h-4 w-4" /> تعديل</button>
+                    {canGrantVerification(userProfile?.role, emp.role) && (
+                      <button onClick={() => handleToggleVerification(emp)} className={cn("py-2 rounded-xl flex flex-col items-center justify-center gap-1 text-[10px] font-bold cursor-pointer transition-colors", isUserVerified(emp) ? "bg-sky-500/15 text-sky-500" : "bg-[var(--surface-elevated)] text-[var(--text-muted)]")} title="شارة التوثيق">
+                        <VerifiedBadge size="xs" />
+                        <span>{isUserVerified(emp) ? 'موثق ✓' : 'توثيق'}</span>
+                      </button>
+                    )}
+                    <button onClick={() => { setSelectedUser(emp); setShowPassModal(true); }} className="py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 flex flex-col items-center gap-1 text-[10px] font-bold cursor-pointer"><KeyRound className="h-4 w-4" /> كلمة السر</button>
                     {(() => { const ab = getActiveBan(bans, emp.uid); return ab ? (
-                      <button onClick={() => { setUnbanTarget(emp); setShowUnbanModal(true); }} className="py-2 rounded-xl bg-emerald-500/10 text-emerald-500 flex flex-col items-center gap-1 text-[10px] font-bold"><BanIcon className="h-4 w-4" /> رفع الحظر</button>
+                      <button onClick={() => { setUnbanTarget(emp); setShowUnbanModal(true); }} className="py-2 rounded-xl bg-emerald-500/10 text-emerald-500 flex flex-col items-center gap-1 text-[10px] font-bold cursor-pointer"><BanIcon className="h-4 w-4" /> رفع الحظر</button>
                     ) : (
-                      <button onClick={() => openBanModal(emp)} className="py-2 rounded-xl bg-rose-500/10 text-rose-500 flex flex-col items-center gap-1 text-[10px] font-bold"><Gavel className="h-4 w-4" /> حظر</button>
+                      <button onClick={() => openBanModal(emp)} className="py-2 rounded-xl bg-rose-500/10 text-rose-500 flex flex-col items-center gap-1 text-[10px] font-bold cursor-pointer"><Gavel className="h-4 w-4" /> حظر</button>
                     );})()}
-                    <button onClick={() => { setStatusTarget(emp); setShowStatusModal(true); }} className={`py-2 rounded-xl flex flex-col items-center gap-1 text-[10px] font-bold ${emp.status === 'active' ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'}`}>{emp.status === 'active' ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}{emp.status === 'active' ? 'تعطيل' : 'تفعيل'}</button>
-                    <button onClick={() => { setSelectedUser(emp); setShowDeleteModal(true); }} className="py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 flex flex-col items-center gap-1 text-[10px] font-bold"><Trash2 className="h-4 w-4" /> حذف</button>
+                    <button onClick={() => { setStatusTarget(emp); setShowStatusModal(true); }} className={`py-2 rounded-xl flex flex-col items-center gap-1 text-[10px] font-bold cursor-pointer ${emp.status === 'active' ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'}`}>{emp.status === 'active' ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}{emp.status === 'active' ? 'تعطيل' : 'تفعيل'}</button>
+                    <button onClick={() => { setSelectedUser(emp); setShowDeleteModal(true); }} className="py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 flex flex-col items-center gap-1 text-[10px] font-bold cursor-pointer"><Trash2 className="h-4 w-4" /> حذف</button>
                   </div>
                 ) : null}
               </div>
@@ -1409,6 +1460,33 @@ export function EmployeesPage() {
               تُمنح كافة الصلاحيات آلياً وبأعلى معايير الأمان وفق هرمية الرتب المعتمدة لرتبة ({getRoleLabel(formRole)}).
             </p>
           </div>
+
+          {/* Meta Verified Badge Toggle (if actor is authorized) */}
+          {canGrantVerification(userProfile?.role, formRole) && (
+            <div className="p-3.5 rounded-xl border border-sky-500/30 bg-sky-500/5 flex items-center justify-between gap-3 text-right">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <VerifiedBadge size="sm" />
+                  <span className="text-xs font-bold text-[var(--text-primary)]">شارة التوثيق الرسمية (Meta Verified)</span>
+                </div>
+                <p className="text-[11px] text-[var(--text-muted)] mt-1 leading-relaxed">
+                  منح هذا العضو علامة التوثيق الزرقاء الرسمية لتظهر بجوار اسمه ورتبته عبر كامل أقسام المنصة.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setFormIsVerified(!formIsVerified)}
+                className={cn(
+                  "px-3 py-1.5 rounded-xl text-xs font-black transition-all shrink-0 cursor-pointer flex items-center gap-1.5",
+                  formIsVerified
+                    ? "bg-sky-500 text-white shadow-md shadow-sky-500/30"
+                    : "bg-[var(--surface-elevated)] border border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                )}
+              >
+                {formIsVerified ? '✓ موثق' : 'غير موثق'}
+              </button>
+            </div>
+          )}
 
           <div className="pt-4 flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => setShowEditModal(false)}>إلغاء</Button>

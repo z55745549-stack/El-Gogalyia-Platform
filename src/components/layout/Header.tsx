@@ -6,8 +6,9 @@ import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useNotificationCount } from '@/hooks/useNotifications';
 import { Avatar } from '@/components/ui/avatar';
+import { VerifiedBadge } from '@/components/ui/VerifiedBadge';
 import { formatOCoins, hasUnlimitedCoins, formatFullName, cn } from '@/utils';
-import { getRoleLabel } from '@/utils/permissions';
+import { getRoleLabel, isUserVerified } from '@/utils/permissions';
 import type { UserRole } from '@/types';
 
 interface HeaderProps {
@@ -89,16 +90,18 @@ export function Header({ onMobileMenuClick }: HeaderProps) {
           <Menu className="h-5 w-5" />
         </button>
 
-        {/* Current View Indicator Pill */}
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[var(--surface-elevated)] border border-[var(--border-subtle)] shadow-2xs">
-          <span className="relative flex h-2 w-2 shrink-0">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-          </span>
-          <span className="text-xs sm:text-[13px] font-black text-[var(--text-primary)] tracking-tight truncate">
-            {currentTitle}
-          </span>
-        </div>
+        {/* Current View Indicator Pill (Hidden on Settings page as requested) */}
+        {!location.pathname.startsWith('/settings') && !location.pathname.startsWith('/profile') && (
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[var(--surface-elevated)] border border-[var(--border-subtle)] shadow-2xs">
+            <span className="relative flex h-2 w-2 shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span className="text-xs sm:text-[13px] font-black text-[var(--text-primary)] tracking-tight truncate">
+              {currentTitle}
+            </span>
+          </div>
+        )}
 
         {/* Global Live Date & Clock Widget (Unified in Navbar, keeping Dashboard Hero uncluttered) */}
         <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[var(--surface-elevated)] border border-[var(--border-subtle)] text-xs font-mono font-bold shadow-2xs">
@@ -174,8 +177,9 @@ export function Header({ onMobileMenuClick }: HeaderProps) {
               <span className="absolute -bottom-0.5 -left-0.5 w-2 h-2 rounded-full bg-emerald-500 border border-[var(--surface)] ring-1 ring-emerald-400/50" />
             </div>
             <div className="hidden lg:flex flex-col text-right leading-none">
-              <span className="text-[11px] font-black text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] transition-colors truncate max-w-[110px]">
-                {formatFullName(userProfile.displayName || 'المستخدم').split(' ')[0]}
+              <span className="text-[11px] font-black text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] transition-colors truncate max-w-[120px] flex items-center gap-1">
+                <span>{formatFullName(userProfile.displayName || 'المستخدم').split(' ')[0]}</span>
+                {isUserVerified(userProfile) && <VerifiedBadge size="xs" />}
               </span>
               <span className="text-[9px] text-[var(--text-muted)] font-bold mt-0.5">
                 {getRoleLabel(userProfile.role as UserRole)}

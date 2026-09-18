@@ -64,6 +64,35 @@ export function isAdminRole(role: UserRole): boolean {
 }
 
 /**
+ * True if user has the official Meta Verified Badge:
+ * - Lead, Co-Lead, Head, and Vice-Head are automatically verified by their leadership rank
+ * - Any member explicitly granted verification by leadership
+ */
+export function isUserVerified(user: { role?: UserRole | string; isVerified?: boolean } | null | undefined): boolean {
+  if (!user) return false;
+  if (['lead', 'co_lead', 'head', 'vice_head'].includes((user.role || '') as string)) {
+    return true;
+  }
+  return Boolean(user.isVerified);
+}
+
+/**
+ * True if actor can grant/revoke the verified badge to target:
+ * - Lead and Co-Lead can verify anyone
+ * - Head can verify subordinates in their own committee
+ */
+export function canGrantVerification(
+  actorRole: UserRole,
+  targetRole: UserRole
+): boolean {
+  if (actorRole === 'lead' || actorRole === 'co_lead') return true;
+  if (actorRole === 'head') {
+    return targetRole === 'member' || targetRole === 'vice_head';
+  }
+  return false;
+}
+
+/**
  * True if role can review & approve/reject task submissions:
  * LEAD, CO-LEAD, HEAD, and VICE-HEAD (for committee members)
  */
